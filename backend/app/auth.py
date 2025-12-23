@@ -3,20 +3,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
-from .db import SessionLocal
+from .deps import get_db
 from .models import User
 from .security import JWT_SECRET, JWT_ALG
 
 security = HTTPBearer()
-
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
