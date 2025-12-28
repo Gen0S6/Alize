@@ -2,21 +2,36 @@ import html
 import json
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 import smtplib
 import ssl
 from email.message import EmailMessage
 from typing import Optional
 from urllib import request as urlrequest
 
+from dotenv import load_dotenv
+
 from sqlalchemy.orm import Session
 
 from app.schemas import JobOut
-from app.models import User, UserJobNotification, UserJobVisit, JobListing
+from app.models import (
+    User,
+    UserJobNotification,
+    UserJobVisit,
+    JobListing,
+    CV,
+    UserPreference,
+    JobSearchRun,
+    UserAnalysisCache,
+)
+load_dotenv()
+
 from app.ai import search_jobs_for_user
 from app.services.preferences import get_or_create_pref
 from app.services.matching import cv_keywords, is_job_url_alive
 
 log = logging.getLogger("alize.notifications")
+NOTIFY_INTERVAL_MINUTES = int(os.getenv("NOTIFY_INTERVAL_MINUTES", "4320"))  # default 72h
 
 
 def format_matches(matches: list[JobOut]) -> str:
@@ -81,6 +96,26 @@ def build_notification_body(matches: list[JobOut]) -> tuple[str, str]:
     return text_body, html_body
 
 
+def build_empty_notification_body() -> tuple[str, str]:
+    text = "Aucune nouvelle offre pour le moment. On relance régulièrement."
+    html = """
+    <div style="font-family:Inter,Arial,sans-serif;max-width:720px;margin:0 auto;background:#F3F4F6;padding:20px;">
+      <div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:18px;padding:20px;text-align:center;">
+        <div style="font-weight:700;font-size:16px;color:#111827;">Aucune nouvelle offre trouvée</div>
+        <p style="margin-top:10px;color:#4B5563;font-size:13px;line-height:1.6;">
+          Nous continuons à relancer les sources et à surveiller tes critères.
+          Tu recevras un email dès que de nouvelles opportunités seront disponibles.
+        </p>
+        <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #E5E7EB;border-radius:12px;background:#F9FAFB;color:#374151;font-size:13px;">
+          <span style="font-weight:600;">Conseil :</span>
+          Mets à jour ton CV ou tes préférences pour élargir la recherche.
+        </div>
+      </div>
+    </div>
+    """
+    return text, html
+
+
 def send_email_via_resend(to_email: str, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
     api_key = os.getenv("RESEND_API_KEY")
     from_email = os.getenv("RESEND_FROM")
@@ -109,15 +144,19 @@ def send_email_via_resend(to_email: str, subject: str, body_text: str, body_html
             if 200 <= resp.status < 300:
                 log.info("Resend notification sent to %s", to_email)
                 return True
-            log.error("Resend returned status %s for %s", resp.status, to_email)
+            try:
+                resp_body = resp.read().decode("utf-8")
+            except Exception:
+                resp_body = "<no body>"
+            log.error("Resend returned status %s for %s body=%s", resp.status, to_email, resp_body)
     except Exception as exc:
         log.error("Failed to send via Resend: %s", exc)
     return False
 
 
-def send_email_notification(to_email: str, subject: str, body_text: str, body_html: Optional[str] = None):
+def send_email_notification(to_email: str, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
     if send_email_via_resend(to_email, subject, body_text, body_html):
-        return
+        return True
 
     smtp_host = os.getenv("SMTP_HOST")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -126,7 +165,7 @@ def send_email_notification(to_email: str, subject: str, body_text: str, body_ht
 
     if not (smtp_host and smtp_user and smtp_pass and to_email):
         log.info("Email notification skipped (missing SMTP/Resend config)")
-        return
+        return False
     msg = EmailMessage()
     msg["From"] = smtp_user
     msg["To"] = to_email
@@ -141,15 +180,17 @@ def send_email_notification(to_email: str, subject: str, body_text: str, body_ht
             server.login(smtp_user, smtp_pass)
             server.send_message(msg)
         log.info("Email notification sent to %s via SMTP", to_email)
+        return True
     except Exception as exc:
         log.error("Failed to send email via SMTP: %s", exc)
+    return False
 
 
-def send_slack_notification(text: str):
+def send_slack_notification(text: str) -> bool:
     webhook_url = os.getenv("SLACK_WEBHOOK_URL")
     if not webhook_url:
         log.info("Slack notification skipped (missing webhook)")
-        return
+        return False
     data = json.dumps({"text": text}).encode("utf-8")
     req = urlrequest.Request(
         webhook_url,
@@ -159,20 +200,123 @@ def send_slack_notification(text: str):
     try:
         with urlrequest.urlopen(req, timeout=5):  # nosec
             log.info("Slack notification sent")
+            return True
     except Exception as exc:
         log.error("Failed to send slack notification: %s", exc)
+    return False
+
+
+def _as_aware(dt: Optional[datetime]) -> datetime:
+    """
+    Ensure datetime is timezone-aware in UTC to avoid naive/aware comparison issues.
+    """
+    if not dt:
+        return datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def notify_all_users(db: Session, matches_func, refresh: bool = False):
+    """
+    Parcourt les utilisateurs et envoie les notifications si le délai depuis
+    la dernière activité (CV ou préférences) est supérieur au cooldown.
+    Le cooldown repart à zéro quand le CV ou les préférences changent.
+    """
+    now = datetime.now(timezone.utc)
+    cooldown = timedelta(minutes=NOTIFY_INTERVAL_MINUTES)
     users = db.query(User).all()
+    log.info("Scheduler notify run started users=%s refresh=%s", len(users), refresh)
     for user in users:
+        result = None
         try:
             if not user.notifications_enabled:
+                log.info("Skip user=%s (notifications disabled)", user.email)
+                continue
+            # Calcule la dernière activité utilisateur (CV ou préférences)
+            last_cv = (
+                db.query(CV)
+                .filter(CV.user_id == user.id)
+                .order_by(CV.created_at.desc())
+                .first()
+            )
+            last_pref = (
+                db.query(UserPreference)
+                .filter(UserPreference.user_id == user.id)
+                .order_by(UserPreference.updated_at.desc())
+                .first()
+            )
+            last_activity = _as_aware(user.created_at)
+            if last_cv:
+                last_activity = max(last_activity, _as_aware(last_cv.created_at))
+            if last_pref:
+                last_activity = max(last_activity, _as_aware(last_pref.updated_at))
+
+            last_notif_row = (
+                db.query(UserJobNotification)
+                .filter(UserJobNotification.user_id == user.id)
+                .order_by(UserJobNotification.notified_at.desc())
+                .first()
+            )
+            last_run_row = (
+                db.query(JobSearchRun)
+                .filter(JobSearchRun.user_id == user.id)
+                .order_by(JobSearchRun.created_at.desc(), JobSearchRun.id.desc())
+                .first()
+            )
+            last_notif = _as_aware(last_notif_row.notified_at) if last_notif_row else None
+            last_run_time = _as_aware(last_run_row.created_at) if last_run_row else None
+            candidates = [last_activity]
+            if last_notif:
+                candidates.append(last_notif)
+            if last_run_time:
+                candidates.append(last_run_time)
+            wait_anchor = max(candidates)
+            if now < wait_anchor + cooldown:
+                log.info("Skip user=%s cooldown not reached (now=%s anchor=%s cooldown=%s)", user.email, now, wait_anchor, cooldown)
                 continue
             if refresh:
                 pref = get_or_create_pref(user, db)
-                search_jobs_for_user(db, user.id, pref, force=False)
+                try:
+                    result = search_jobs_for_user(db, user.id, pref, force=True)
+                    log.info("Job search (scheduler) user=%s inserted=%s tried=%s", user.email, result.get("inserted"), result.get("tried_queries"))
+                except Exception as exc:
+                    log.error("Job search failed for user %s: %s", user.email, exc)
+                    result = {"inserted": 0, "tried_queries": [], "sources": {}, "analysis": {}}
+                try:
+                    run_entry = JobSearchRun(
+                        user_id=user.id,
+                        inserted=result.get("inserted", 0),
+                        tried_queries=json.dumps(result.get("tried_queries", [])),
+                        sources=json.dumps(result.get("sources", {})),
+                        created_at=datetime.now(timezone.utc),
+                        analysis_json=json.dumps(result.get("analysis", {})),
+                    )
+                    db.add(run_entry)
+                    db.commit()
+                    cache = db.query(UserAnalysisCache).filter(UserAnalysisCache.user_id == user.id).first()
+                    now_cache = datetime.now(timezone.utc)
+                    if cache:
+                        cache.analysis_json = json.dumps(result.get("analysis", {}))
+                        cache.updated_at = now_cache
+                        db.add(cache)
+                    else:
+                        db.add(UserAnalysisCache(user_id=user.id, analysis_json=json.dumps(result.get("analysis", {})), updated_at=now_cache))
+                    db.commit()
+                    stale = (
+                        db.query(JobSearchRun)
+                        .filter(JobSearchRun.user_id == user.id)
+                        .order_by(JobSearchRun.created_at.desc(), JobSearchRun.id.desc())
+                        .offset(8)
+                        .all()
+                    )
+                    for r in stale:
+                        db.delete(r)
+                    db.commit()
+                except Exception as exc:
+                    log.error("Failed to record job search run for user %s: %s", user.email, exc)
             matches_list = matches_func(user, db)
+            log.info("Scheduler matches for user=%s count=%s", user.email, len(matches_list))
             total_before_filter = len(matches_list)
             # retire les offres expirées
             cleaned_matches: list[JobOut] = []
@@ -207,13 +351,14 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 if visited_ids:
                     matches_list = [m for m in matches_list if m.id and m.id not in visited_ids]
             if not matches_list:
-                if total_before_filter == 0:
-                    send_email_notification(
-                        os.getenv("NOTIFY_EMAIL_TO") or user.email,
-                        "Vos matches Alizè",
-                        "Aucune nouvelle offre pour le moment. On relance régulièrement.",
-                        "<p style='font-family:Inter,Arial,sans-serif;color:#4B5563;font-size:14px;'>Aucune nouvelle offre pour le moment. On relance régulièrement.</p>",
-                    )
+                # Envoie un mail même si aucune nouvelle offre (après déduplication ou absence totale)
+                empty_text, empty_html = build_empty_notification_body()
+                send_email_notification(
+                    os.getenv("NOTIFY_EMAIL_TO") or user.email,
+                    "Vos matches Alizè",
+                    empty_text,
+                    empty_html,
+                )
                 continue
             body_text, body_html = build_notification_body(matches_list)
             to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email

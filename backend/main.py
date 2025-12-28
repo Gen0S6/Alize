@@ -5,8 +5,12 @@ from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+# Charger l'env avant tout import interne qui lit os.getenv
+load_dotenv()
 
 from app.api.ai_routes import router as ai_router
 from app.api.auth import router as auth_router
@@ -20,15 +24,19 @@ from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matc
 from app.services.notifications import notify_all_users
 from app.services.preferences import get_or_create_pref
 
-load_dotenv()
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Alizè")
+SWAGGER_FAVICON_URL = "/static/swagger-favicon.svg"
+
+app = FastAPI(title="Alizè", docs_url=None, redoc_url=None)
 log = logging.getLogger("alize")
 logging.basicConfig(level=logging.INFO)
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+STATIC_DIR = Path("static")
+STATIC_DIR.mkdir(exist_ok=True)
 
 # CORS: autorise le frontend (localhost:3000) à appeler l'API (localhost:8000)
 # Autorise localhost (dev) pour le frontend
@@ -51,6 +59,7 @@ app.add_middleware(
 )
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Routes
 app.include_router(auth_router)
@@ -67,9 +76,24 @@ def health():
     return {"ok": True}
 
 
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - Swagger UI",
+        swagger_favicon_url=SWAGGER_FAVICON_URL,
+    )
+
+
+@app.get("/docs/oauth2-redirect", include_in_schema=False)
+async def swagger_ui_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
+
 SCHEDULER_ENABLED = True
 scheduler = BackgroundScheduler()
 NOTIFY_ENABLED = os.getenv("NOTIFY_ENABLED", "true").lower() == "true"
+SCHEDULER_INTERVAL_MINUTES = int(os.getenv("SCHEDULER_INTERVAL_MINUTES", "60"))
 
 
 def refresh_jobs_task():
@@ -90,7 +114,15 @@ def refresh_jobs_task():
 
 
 if SCHEDULER_ENABLED:
-    scheduler.add_job(refresh_jobs_task, "interval", hours=72, id="refresh_jobs")
+    # Check frequently; per-user cooldown is enforced in notify_all_users
+    scheduler.add_job(
+        refresh_jobs_task,
+        "interval",
+        minutes=SCHEDULER_INTERVAL_MINUTES,
+        id="refresh_jobs",
+        coalesce=True,
+        max_instances=1,
+    )
     try:
         # éviter double démarrage en mode reload
         if os.environ.get("SCHEDULER_STARTED") != "1":

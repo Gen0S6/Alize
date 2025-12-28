@@ -55,6 +55,18 @@ async def upload_cv(
 
     text = extract_pdf_text(contents)
 
+    # Supprime les anciens CVs et leurs fichiers
+    old_cvs = db.query(CV).filter(CV.user_id == user.id).all()
+    for old in old_cvs:
+        if old.filename:
+            try:
+                old_path = UPLOAD_DIR / old.filename
+                if old_path.exists():
+                    old_path.unlink()
+            except Exception:
+                pass
+        db.delete(old)
+
     cv = CV(user_id=user.id, filename=safe_name, text=text)
     db.add(cv)
     db.commit()

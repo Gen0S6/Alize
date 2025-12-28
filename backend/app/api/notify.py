@@ -29,9 +29,9 @@ def notify_test(
     matches_list = list_matches_for_user(db, user.id, pref, user_cv)
     body_text, body_html = build_notification_body(matches_list)
     to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
-    send_email_notification(to_email, "Vos matches Alizè", body_text, body_html)
-    send_slack_notification(body_text)
-    return {"sent": True, "email": bool(to_email), "slack": True}
+    email_ok = send_email_notification(to_email, "Vos matches Alizè", body_text, body_html)
+    slack_ok = send_slack_notification(body_text)
+    return {"sent": True, "email": email_ok, "slack": slack_ok}
 
 
 @router.post("/run")
