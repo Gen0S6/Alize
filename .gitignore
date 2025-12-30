@@ -5,3 +5,17 @@ frontend/.env
 backend/.venv/
 frontend/.venv/
 .venv/
+# Python
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local DB / cache
+backend/app.db
+
+# Uploads
+backend/uploads/
+
+# OS
+.DS_Store
