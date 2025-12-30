@@ -2,6 +2,7 @@ import io
 import time
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pypdf import PdfReader
 
@@ -88,4 +89,23 @@ def latest_cv(
         created_at=cv.created_at,
         text=(cv.text or "")[:2000],
         url=storage.presigned_url(cv.filename),
+    )
+
+
+@router.get("/file/{cv_id}")
+def stream_cv_file(
+    cv_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    cv = db.query(CV).filter(CV.id == cv_id, CV.user_id == user.id).first()
+    if not cv:
+        raise HTTPException(status_code=404, detail="CV introuvable")
+    obj = storage.get_object_stream(cv.filename)
+    if not obj or "Body" not in obj:
+        raise HTTPException(status_code=404, detail="Fichier introuvable")
+    return StreamingResponse(
+        obj["Body"],
+        media_type=obj.get("ContentType", "application/pdf"),
+        headers={"Content-Disposition": f'inline; filename="{cv.filename}"'},
     )

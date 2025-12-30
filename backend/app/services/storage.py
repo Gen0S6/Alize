@@ -76,3 +76,12 @@ def delete_object(key: str):
     except Exception:
         # Best effort, on n'empêche pas la suite
         pass
+
+
+def get_object_stream(key: str):
+    """Retourne l'objet S3 (stream) ou None si absent."""
+    client = _client()
+    try:
+        return client.get_object(Bucket=AWS_S3_BUCKET, Key=key)
+    except Exception:
+        return None

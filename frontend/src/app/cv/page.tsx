@@ -202,10 +202,8 @@ export default function CVPage() {
             </p>
             <div className="mt-3 flex justify-center">
               {(() => {
-                const pdfBase =
-                  latest.url.startsWith("http")
-                    ? latest.url
-                    : (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000") + latest.url;
+                const base = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+                const pdfBase = latest.url.startsWith("http") ? latest.url : `${base}${latest.url}`;
                 const pdfUrl = `${pdfBase}#toolbar=0&navpanes=0&scrollbar=0`;
                 return (
                   <object
