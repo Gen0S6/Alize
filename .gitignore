@@ -19,3 +19,29 @@ backend/uploads/
 
 # OS
 .DS_Store
+
+# ---------- OS ----------
+.DS_Store
+
+# ---------- Frontend (Next.js) ----------
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# ---------- Backend (Python) ----------
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local DB / cache
+backend/app.db
+
+# Uploads (données user)
+backend/uploads/
