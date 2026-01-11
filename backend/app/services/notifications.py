@@ -2,12 +2,14 @@ import html
 import json
 import logging
 import os
+import time
 from datetime import datetime, timedelta, timezone
 import smtplib
 import ssl
 from email.message import EmailMessage
 from typing import Optional
 from urllib import request as urlrequest
+from urllib.error import HTTPError, URLError
 
 from dotenv import load_dotenv
 
@@ -116,11 +118,28 @@ def build_empty_notification_body() -> tuple[str, str]:
     return text, html
 
 
-def send_email_via_resend(to_email: str, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
+def send_email_via_resend(
+    to_email: str,
+    subject: str,
+    body_text: str,
+    body_html: Optional[str] = None,
+    max_retries: int = 3,
+) -> bool:
+    """
+    Send an email via Resend API with retry logic for transient failures.
+    """
     api_key = os.getenv("RESEND_API_KEY")
     from_email = os.getenv("RESEND_FROM")
-    if not (api_key and from_email and to_email):
+    if not api_key:
+        log.debug("Resend API key not configured, skipping Resend")
         return False
+    if not from_email:
+        log.warning("RESEND_FROM not configured, skipping Resend")
+        return False
+    if not to_email:
+        log.warning("No recipient email provided for Resend")
+        return False
+
     payload = {
         "from": from_email,
         "to": [to_email],
@@ -130,59 +149,202 @@ def send_email_via_resend(to_email: str, subject: str, body_text: str, body_html
     if body_html:
         payload["html"] = body_html
     data = json.dumps(payload).encode("utf-8")
-    req = urlrequest.Request(
-        "https://api.resend.com/emails",
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        method="POST",
-    )
-    try:
-        with urlrequest.urlopen(req, timeout=8) as resp:  # nosec
-            if 200 <= resp.status < 300:
-                log.info("Resend notification sent to %s", to_email)
-                return True
-            try:
+
+    last_error = None
+    for attempt in range(max_retries):
+        req = urlrequest.Request(
+            "https://api.resend.com/emails",
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        try:
+            with urlrequest.urlopen(req, timeout=15) as resp:  # nosec
                 resp_body = resp.read().decode("utf-8")
+                log.info("Resend notification sent to %s (status=%s)", to_email, resp.status)
+                return True
+        except HTTPError as exc:
+            # HTTPError is raised for 4xx/5xx responses
+            try:
+                error_body = exc.read().decode("utf-8")
             except Exception:
-                resp_body = "<no body>"
-            log.error("Resend returned status %s for %s body=%s", resp.status, to_email, resp_body)
-    except Exception as exc:
-        log.error("Failed to send via Resend: %s", exc)
+                error_body = "<could not read error body>"
+            log.error(
+                "Resend API error (attempt %d/%d): status=%s reason=%s body=%s",
+                attempt + 1,
+                max_retries,
+                exc.code,
+                exc.reason,
+                error_body,
+            )
+            last_error = exc
+            # Don't retry on client errors (4xx) except 429 (rate limit)
+            if 400 <= exc.code < 500 and exc.code != 429:
+                log.error("Resend rejected email to %s: not retrying client error", to_email)
+                return False
+        except URLError as exc:
+            # Network-level errors (DNS, connection refused, etc.)
+            log.warning(
+                "Resend network error (attempt %d/%d): %s",
+                attempt + 1,
+                max_retries,
+                exc.reason,
+            )
+            last_error = exc
+        except Exception as exc:
+            log.error(
+                "Resend unexpected error (attempt %d/%d): %s",
+                attempt + 1,
+                max_retries,
+                exc,
+            )
+            last_error = exc
+
+        # Exponential backoff before retry
+        if attempt < max_retries - 1:
+            wait_time = 2 ** attempt  # 1s, 2s, 4s
+            log.info("Retrying Resend in %ds...", wait_time)
+            time.sleep(wait_time)
+
+    log.error("Resend failed after %d attempts for %s: %s", max_retries, to_email, last_error)
     return False
 
 
-def send_email_notification(to_email: str, subject: str, body_text: str, body_html: Optional[str] = None) -> bool:
-    if send_email_via_resend(to_email, subject, body_text, body_html):
-        return True
-
+def send_email_via_smtp(
+    to_email: str,
+    subject: str,
+    body_text: str,
+    body_html: Optional[str] = None,
+    max_retries: int = 3,
+) -> bool:
+    """
+    Send an email via SMTP with retry logic and support for both STARTTLS and SSL.
+    """
     smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_port_str = os.getenv("SMTP_PORT", "587")
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
+    smtp_from = os.getenv("SMTP_FROM", smtp_user)  # Allow separate FROM address
+    smtp_use_ssl = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
 
-    if not (smtp_host and smtp_user and smtp_pass and to_email):
-        log.info("Email notification skipped (missing SMTP/Resend config)")
+    if not smtp_host:
+        log.debug("SMTP_HOST not configured, skipping SMTP")
         return False
+    if not smtp_user or not smtp_pass:
+        log.warning("SMTP credentials not configured (SMTP_USER/SMTP_PASS)")
+        return False
+    if not to_email:
+        log.warning("No recipient email provided for SMTP")
+        return False
+
+    try:
+        smtp_port = int(smtp_port_str)
+    except ValueError:
+        log.error("Invalid SMTP_PORT value: %s", smtp_port_str)
+        return False
+
     msg = EmailMessage()
-    msg["From"] = smtp_user
+    msg["From"] = smtp_from
     msg["To"] = to_email
     msg["Subject"] = subject
     msg.set_content(body_text)
     if body_html:
         msg.add_alternative(body_html, subtype="html")
+
     context = ssl.create_default_context()
-    try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls(context=context)
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-        log.info("Email notification sent to %s via SMTP", to_email)
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            if smtp_use_ssl or smtp_port == 465:
+                # Use SMTP_SSL for port 465 (implicit SSL)
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, context=context, timeout=30) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+            else:
+                # Use STARTTLS for port 587 or other ports
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+                    server.ehlo()
+                    if server.has_extn("STARTTLS"):
+                        server.starttls(context=context)
+                        server.ehlo()
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+
+            log.info("Email notification sent to %s via SMTP", to_email)
+            return True
+
+        except smtplib.SMTPAuthenticationError as exc:
+            log.error("SMTP authentication failed: %s", exc)
+            return False  # Don't retry auth failures
+
+        except smtplib.SMTPRecipientsRefused as exc:
+            log.error("SMTP recipient refused for %s: %s", to_email, exc)
+            return False  # Don't retry recipient errors
+
+        except smtplib.SMTPSenderRefused as exc:
+            log.error("SMTP sender refused (%s): %s", smtp_from, exc)
+            return False  # Don't retry sender errors
+
+        except (smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError, OSError) as exc:
+            log.warning(
+                "SMTP connection error (attempt %d/%d): %s",
+                attempt + 1,
+                max_retries,
+                exc,
+            )
+            last_error = exc
+
+        except smtplib.SMTPException as exc:
+            log.error(
+                "SMTP error (attempt %d/%d): %s",
+                attempt + 1,
+                max_retries,
+                exc,
+            )
+            last_error = exc
+
+        except Exception as exc:
+            log.error(
+                "Unexpected SMTP error (attempt %d/%d): %s",
+                attempt + 1,
+                max_retries,
+                exc,
+            )
+            last_error = exc
+
+        # Exponential backoff before retry
+        if attempt < max_retries - 1:
+            wait_time = 2 ** attempt  # 1s, 2s, 4s
+            log.info("Retrying SMTP in %ds...", wait_time)
+            time.sleep(wait_time)
+
+    log.error("SMTP failed after %d attempts for %s: %s", max_retries, to_email, last_error)
+    return False
+
+
+def send_email_notification(
+    to_email: str,
+    subject: str,
+    body_text: str,
+    body_html: Optional[str] = None,
+) -> bool:
+    """
+    Send an email notification, trying Resend first, then falling back to SMTP.
+    Returns True if the email was sent successfully via either method.
+    """
+    # Try Resend first (preferred method)
+    if send_email_via_resend(to_email, subject, body_text, body_html):
         return True
-    except Exception as exc:
-        log.error("Failed to send email via SMTP: %s", exc)
+
+    # Fall back to SMTP
+    if send_email_via_smtp(to_email, subject, body_text, body_html):
+        return True
+
+    log.error("Email notification failed for %s: no working delivery method", to_email)
     return False
 
 
