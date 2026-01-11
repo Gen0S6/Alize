@@ -113,9 +113,14 @@ export default function DashboardPage() {
       router.push("/login");
       return;
     }
-    load(1, filterText, minScore, sourceFilter);
-    loadAnalysis();
-    loadRuns();
+    // Load all data in parallel for better performance
+    Promise.all([
+      load(1, filterText, minScore, sourceFilter),
+      loadAnalysis(),
+      loadRuns(),
+    ]).catch((err) => {
+      console.error("Error loading dashboard data:", err);
+    });
   }, [router]);
 
   useEffect(() => {

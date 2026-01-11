@@ -128,7 +128,15 @@ export type Profile = {
   id: number;
   email: string;
   notifications_enabled: boolean;
+  email_verified: boolean;
   created_at: string;
+};
+
+export type ProfileUpdatePayload = {
+  email?: string;
+  current_password?: string;
+  new_password?: string;
+  notifications_enabled?: boolean;
 };
 
 async function http<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -220,11 +228,38 @@ export async function getProfile() {
   return apiFetch("/profile", { method: "GET" }) as Promise<Profile>;
 }
 
-export async function updateProfile(payload: Partial<Profile> & { password?: string }) {
+export async function updateProfile(payload: ProfileUpdatePayload) {
   return apiFetch("/profile", {
     method: "PUT",
     body: JSON.stringify(payload),
   }) as Promise<Profile>;
+}
+
+// Password Reset APIs
+export async function requestPasswordReset(email: string) {
+  return http<{ message: string; success: boolean }>("/auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function confirmPasswordReset(token: string, newPassword: string) {
+  return http<{ message: string; success: boolean }>("/auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+}
+
+// Email Verification APIs
+export async function requestEmailVerification() {
+  return apiFetch("/auth/email/verify/request", { method: "POST" }) as Promise<{ message: string; success: boolean }>;
+}
+
+export async function confirmEmailVerification(token: string) {
+  return http<{ message: string; success: boolean }>("/auth/email/verify/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
 }
 
 export async function deleteProfile() {

@@ -5,7 +5,7 @@ from pydantic import Field
 
 class RegisterIn(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
 class LoginIn(BaseModel):
     email: EmailStr
@@ -83,12 +83,14 @@ class ProfileOut(BaseModel):
     id: int
     email: EmailStr
     notifications_enabled: bool
+    email_verified: bool = False
     created_at: datetime
 
 
 class ProfileUpdate(BaseModel):
     email: Optional[EmailStr] = None
-    password: Optional[str] = Field(default=None, min_length=6)
+    current_password: Optional[str] = Field(default=None, min_length=1, description="Required when changing password")
+    new_password: Optional[str] = Field(default=None, min_length=8)
     notifications_enabled: Optional[bool] = None
 
 
@@ -98,3 +100,38 @@ class JobSearchRunOut(BaseModel):
     tried_queries: list[str]
     sources: dict
     created_at: datetime
+
+
+# Password Reset Schemas
+class PasswordResetRequest(BaseModel):
+    """Request a password reset email"""
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Confirm password reset with token"""
+    token: str = Field(min_length=32, max_length=64)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class PasswordResetResponse(BaseModel):
+    """Response for password reset request"""
+    message: str
+    success: bool = True
+
+
+# Email Verification Schemas
+class EmailVerificationRequest(BaseModel):
+    """Request email verification resend"""
+    email: Optional[EmailStr] = None
+
+
+class EmailVerificationConfirm(BaseModel):
+    """Confirm email with token"""
+    token: str = Field(min_length=32, max_length=64)
+
+
+class EmailVerificationResponse(BaseModel):
+    """Response for email verification"""
+    message: str
+    success: bool = True
