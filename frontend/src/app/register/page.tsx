@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { register } from "../../lib/api";
 import { setToken } from "../../lib/auth";
+import { useTheme } from "../ThemeProvider";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,67 +25,96 @@ export default function RegisterPage() {
       setToken(res.access_token);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.message ?? "Something went wrong");
+      setError(err?.message ?? "Une erreur est survenue");
     } finally {
       setLoading(false);
     }
   }
 
+  const containerClass = isDark
+    ? "min-h-screen flex items-center justify-center p-6 bg-[#0b0c10]"
+    : "min-h-screen flex items-center justify-center p-6 bg-gray-50";
+
+  const cardClass = isDark
+    ? "w-full max-w-md rounded-2xl border border-gray-700 bg-[#0f1116] p-8 shadow-xl"
+    : "w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl";
+
+  const inputClass = isDark
+    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+    : "mt-1 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none";
+
+  const buttonClass = isDark
+    ? "w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed";
+
+  const secondaryButtonClass = isDark
+    ? "w-full rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-300 hover:bg-gray-800"
+    : "w-full rounded-xl border px-4 py-3 text-sm text-gray-700 hover:bg-gray-50";
+
+  const textClass = isDark ? "text-gray-100" : "text-gray-900";
+  const mutedClass = isDark ? "text-gray-400" : "text-gray-600";
+
+  const errorClass = isDark
+    ? "rounded-xl border border-red-700 bg-red-900/30 p-3 text-sm text-red-200"
+    : "rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700";
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">Create account</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Register to start receiving matches.
+    <main className={containerClass}>
+      <div className={cardClass}>
+        <h1 className={`text-2xl font-bold ${textClass}`}>Créer un compte</h1>
+        <p className={`text-sm ${mutedClass} mt-1`}>
+          Inscris-toi pour recevoir des offres personnalisées.
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="text-sm font-medium">Email</label>
+            <label className={`text-sm font-medium ${textClass}`}>Email</label>
             <input
-              className="mt-1 w-full rounded-xl border px-3 py-2"
+              className={inputClass}
               type="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="vous@exemple.com"
               required
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium">Password</label>
+            <label className={`text-sm font-medium ${textClass}`}>Mot de passe</label>
             <input
-              className="mt-1 w-full rounded-xl border px-3 py-2"
+              className={inputClass}
               type="password"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Votre mot de passe"
               required
-              minLength={6}
+              minLength={8}
             />
-            <p className="text-xs text-gray-500 mt-1">Min 6 characters.</p>
+            <p className={`text-xs ${mutedClass} mt-1`}>8 caractères minimum.</p>
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className={errorClass}>
               {error}
             </div>
           )}
 
           <button
-            className="w-full rounded-xl border px-4 py-2 font-medium hover:bg-gray-50 disabled:opacity-50"
+            className={buttonClass}
             disabled={loading}
             type="submit"
           >
-            {loading ? "Creating..." : "Register"}
+            {loading ? "Création..." : "S'inscrire"}
           </button>
 
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="w-full rounded-xl px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            className={secondaryButtonClass}
           >
-            I already have an account → Login
+            Déjà un compte ? Se connecter
           </button>
         </form>
       </div>

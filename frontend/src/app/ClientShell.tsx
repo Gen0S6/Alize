@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faA } from "@fortawesome/free-solid-svg-icons";
 import ThemeProvider, { useTheme } from "./ThemeProvider";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -105,7 +106,9 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <ShellFrame>{children}</ShellFrame>
+      <ErrorBoundary>
+        <ShellFrame>{children}</ShellFrame>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
