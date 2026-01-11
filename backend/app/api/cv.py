@@ -1,4 +1,6 @@
 import io
+import os
+import re
 import time
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -14,6 +16,10 @@ from app.services.matching import clear_all_jobs
 from app.services import storage
 
 router = APIRouter(prefix="/cv", tags=["cv"])
+
+# Max file size: 10 MB (configurable via env var)
+MAX_CV_SIZE_MB = int(os.getenv("MAX_CV_SIZE_MB", "10"))
+MAX_CV_SIZE_BYTES = MAX_CV_SIZE_MB * 1024 * 1024
 
 
 def extract_pdf_text(file_bytes: bytes) -> str:
@@ -34,6 +40,23 @@ def extract_pdf_text(file_bytes: bytes) -> str:
         )
 
 
+def sanitize_filename(filename: str) -> str:
+    """
+    Sanitize filename to prevent path traversal attacks.
+    Only allows alphanumeric, dash, underscore, and dot characters.
+    """
+    if not filename:
+        return "document.pdf"
+    # Remove any path components
+    base_name = os.path.basename(filename)
+    # Only allow safe characters
+    safe_name = re.sub(r"[^a-zA-Z0-9_\-.]", "_", base_name)
+    # Ensure it ends with .pdf
+    if not safe_name.lower().endswith(".pdf"):
+        safe_name += ".pdf"
+    return safe_name[:100]  # Limit filename length
+
+
 @router.post("/upload")
 async def upload_cv(
     file: UploadFile = File(...),
@@ -46,8 +69,26 @@ async def upload_cv(
             detail="Seuls les fichiers PDF sont acceptés pour le moment.",
         )
 
-    safe_name = f"user{user.id}_{int(time.time())}_{file.filename}"
+    # Read file content
     contents = await file.read()
+
+    # Check file size
+    if len(contents) > MAX_CV_SIZE_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Le fichier est trop volumineux. Taille maximum : {MAX_CV_SIZE_MB} Mo.",
+        )
+
+    # Check minimum size (empty or near-empty files)
+    if len(contents) < 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Le fichier semble vide ou invalide.",
+        )
+
+    # Sanitize filename
+    original_name = sanitize_filename(file.filename)
+    safe_name = f"user{user.id}_{int(time.time())}_{original_name}"
 
     # Envoi sur S3 (public-read)
     storage.upload_bytes(safe_name, contents, content_type="application/pdf")
