@@ -11,7 +11,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,8 +50,12 @@ export default function ProfilePage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!profile) return;
-    if (password && password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
+    if (newPassword && newPassword.length < 8) {
+      setError("Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    if (newPassword && !currentPassword) {
+      setError("Veuillez entrer votre mot de passe actuel pour en définir un nouveau.");
       return;
     }
     setSaving(true);
@@ -59,12 +64,14 @@ export default function ProfilePage() {
     try {
       const updated = await updateProfile({
         email,
-        password: password || undefined,
+        current_password: currentPassword || undefined,
+        new_password: newPassword || undefined,
         notifications_enabled: notificationsEnabled,
       });
       setProfile(updated);
       setSuccess("Profil sauvegardé");
-      if (password) setPassword("");
+      setCurrentPassword("");
+      setNewPassword("");
     } catch (err: any) {
       setError(err?.message ?? "Erreur lors de la sauvegarde");
     } finally {
@@ -143,15 +150,25 @@ export default function ProfilePage() {
               />
             </div>
             <div>
+              <label className="text-sm font-medium">Mot de passe actuel</label>
+              <input
+                className={inputClass}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                type="password"
+                placeholder="Requis pour changer de mot de passe"
+              />
+            </div>
+            <div>
               <label className="text-sm font-medium">Nouveau mot de passe</label>
               <input
                 className={inputClass}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 type="password"
                 placeholder="Laisse vide pour ne pas changer"
               />
-              <p className={smallTextClass + " mt-1"}>6 caractères minimum.</p>
+              <p className={smallTextClass + " mt-1"}>8 caractères minimum.</p>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input

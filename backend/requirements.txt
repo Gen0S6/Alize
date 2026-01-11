@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 sqlalchemy
+alembic
 pydantic
 python-dotenv
 python-jose[cryptography]
@@ -13,3 +14,7 @@ python-multipart
 email-validator
 boto3
 psycopg2-binary
+slowapi
+pytest
+pytest-asyncio
+httpx

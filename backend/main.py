@@ -4,10 +4,12 @@ from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Charger l'env avant tout import interne qui lit os.getenv
 load_dotenv()
@@ -17,18 +19,24 @@ from app.api.auth import router as auth_router
 from app.api.cv import router as cv_router
 from app.api.matches import router as matches_router
 from app.api.notify import router as notify_router
+from app.api.password_reset import router as password_reset_router
 from app.api.preferences import router as preferences_router
 from app.api.profile import router as profile_router
 from app.db import Base, SessionLocal, engine
 from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user
 from app.services.notifications import notify_all_users
 from app.services.preferences import get_or_create_pref
+from app.rate_limit import limiter, rate_limit_exceeded_handler
 
 Base.metadata.create_all(bind=engine)
 
 SWAGGER_FAVICON_URL = "/static/swagger-favicon.svg"
 
 app = FastAPI(title="Alizè", docs_url=None, redoc_url=None)
+
+# Setup rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 log = logging.getLogger("alize")
 logging.basicConfig(level=logging.INFO)
 
@@ -54,8 +62,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
@@ -63,6 +71,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Routes
 app.include_router(auth_router)
+app.include_router(password_reset_router)
 app.include_router(matches_router)
 app.include_router(ai_router)
 app.include_router(cv_router)

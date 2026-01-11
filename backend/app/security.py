@@ -1,11 +1,22 @@
 import os
+import logging
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from jose import jwt
 
+log = logging.getLogger("alize.security")
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")
+# JWT Configuration - MUST be set in production
+_jwt_secret = os.getenv("JWT_SECRET")
+if not _jwt_secret:
+    if os.getenv("ENVIRONMENT", "development") == "production":
+        raise RuntimeError("JWT_SECRET environment variable is required in production!")
+    log.warning("JWT_SECRET not set - using insecure default. DO NOT USE IN PRODUCTION!")
+    _jwt_secret = "dev-secret-change-me-immediately"
+
+JWT_SECRET = _jwt_secret
 JWT_ALG = "HS256"
 JWT_EXPIRES_MIN = int(os.getenv("JWT_EXPIRES_MIN", "10080"))  # 7 jours
 

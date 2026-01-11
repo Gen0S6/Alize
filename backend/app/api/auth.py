@@ -1,15 +1,15 @@
 import os
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-import re
 
 from app.auth import get_current_user
 from app.deps import get_db
 from app.models import User
 from app.schemas import RegisterIn, LoginIn, TokenOut, ProfileOut
 from app.security import hash_password, verify_password, create_access_token
+from app.rate_limit import limiter, AUTH_RATE_LIMIT
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,18 +20,39 @@ ADMIN_EMAILS = [
 
 
 def _sanitize_password(pwd: str) -> str:
+    """
+    Validate password strength following NIST guidelines.
+    - Minimum 8 characters (recommended for security)
+    - Maximum 128 characters
+    - Allow all printable characters including special chars
+    - Check against common weak passwords
+    """
     cleaned = (pwd or "").strip()
-    if len(cleaned) < 6:
-        raise HTTPException(status_code=400, detail="Mot de passe trop court (6 caractères minimum)")
+    if len(cleaned) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Mot de passe trop court (8 caractères minimum)"
+        )
     if len(cleaned) > 128:
         raise HTTPException(status_code=400, detail="Mot de passe trop long")
-    if not re.fullmatch(r"[A-Za-z0-9]+", cleaned):
-        raise HTTPException(status_code=400, detail="Le mot de passe doit contenir uniquement des lettres et chiffres.")
+
+    # Check for common weak passwords
+    weak_passwords = {
+        "password", "12345678", "123456789", "qwerty123", "azerty123",
+        "motdepasse", "password1", "admin123", "user1234", "welcome1"
+    }
+    if cleaned.lower() in weak_passwords:
+        raise HTTPException(
+            status_code=400,
+            detail="Ce mot de passe est trop courant. Choisissez-en un plus sécurisé."
+        )
+
     return cleaned
 
 
 @router.post("/register", response_model=TokenOut)
-def register(payload: RegisterIn, db: Session = Depends(get_db)):
+@limiter.limit(AUTH_RATE_LIMIT)
+def register(request: Request, payload: RegisterIn, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -52,7 +73,8 @@ def register(payload: RegisterIn, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-def login(payload: LoginIn, db: Session = Depends(get_db)):
+@limiter.limit(AUTH_RATE_LIMIT)
+def login(request: Request, payload: LoginIn, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         raise HTTPException(
