@@ -167,7 +167,7 @@ def request_password_reset(
         # Invalidate any existing tokens for this user
         db.query(PasswordResetToken).filter(
             PasswordResetToken.user_id == user.id,
-            PasswordResetToken.used == False,
+            PasswordResetToken.used.is_(False),
         ).update({"used": True})
 
         # Create new token
@@ -211,7 +211,7 @@ def confirm_password_reset(
     """
     reset_token = db.query(PasswordResetToken).filter(
         PasswordResetToken.token == payload.token,
-        PasswordResetToken.used == False,
+        PasswordResetToken.used.is_(False),
     ).first()
 
     if not reset_token:
@@ -268,7 +268,7 @@ def request_email_verification(
     # Invalidate any existing tokens for this user
     db.query(EmailVerificationToken).filter(
         EmailVerificationToken.user_id == user.id,
-        EmailVerificationToken.used == False,
+        EmailVerificationToken.used.is_(False),
     ).update({"used": True})
 
     # Create new token
@@ -309,7 +309,7 @@ def confirm_email_verification(
     """
     verify_token = db.query(EmailVerificationToken).filter(
         EmailVerificationToken.token == payload.token,
-        EmailVerificationToken.used == False,
+        EmailVerificationToken.used.is_(False),
     ).first()
 
     if not verify_token:
