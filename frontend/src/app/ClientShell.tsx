@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faA } from "@fortawesome/free-solid-svg-icons";
 import ThemeProvider, { useTheme } from "./ThemeProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { useEffect } from "react";
+import { ToastProvider } from "../components/Toast";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { getToken } from "../lib/auth";
 
 function ShellFrame({ children }: { children: React.ReactNode }) {
@@ -15,8 +15,9 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   const isDark = theme === "dark";
   const pathname = usePathname();
   const [isAuthed, setIsAuthed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register");
+  const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register") || pathname?.startsWith("/reset-password") || pathname?.startsWith("/verify-email");
   const isHomePage = pathname === "/";
 
   useEffect(() => {
@@ -34,6 +35,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        setMobileMenuOpen(false);
         const active = document.activeElement as HTMLElement | null;
         if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) {
           active.blur();
@@ -43,6 +45,11 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const headerClass = isDark
     ? "border-b border-gray-800 bg-[#0f1116]"
