@@ -49,11 +49,16 @@ SWAGGER_FAVICON_URL = "/static/swagger-favicon.svg"
 
 app = FastAPI(title="Alizè", docs_url=None, redoc_url=None)
 
+# Log startup configuration
+log = logging.getLogger("alize")
+logging.basicConfig(level=logging.INFO)
+log.info("Starting Alizè API...")
+log.info("Database URL: %s", os.getenv("DATABASE_URL", "sqlite:///./app.db")[:20] + "...")
+log.info("Frontend URL: %s", os.getenv("FRONTEND_URL", "not set"))
+
 # Setup rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-log = logging.getLogger("alize")
-logging.basicConfig(level=logging.INFO)
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -139,20 +144,23 @@ SCHEDULER_INTERVAL_MINUTES = int(os.getenv("SCHEDULER_INTERVAL_MINUTES", "60"))
 
 
 def refresh_jobs_task():
-    with SessionLocal() as db:
-        ensure_linkedin_sample(db)
-        log.info("Jobs refresh task executed")
-        if NOTIFY_ENABLED:
-            notify_all_users(
-                db,
-                matches_func=lambda u, db_: list_matches_for_user(
-                    db_,
-                    u.id,
-                    get_or_create_pref(u, db_),
-                    cv_keywords(db_, u.id),
-                ),
-                refresh=True,
-            )
+    try:
+        with SessionLocal() as db:
+            ensure_linkedin_sample(db)
+            log.info("Jobs refresh task executed")
+            if NOTIFY_ENABLED:
+                notify_all_users(
+                    db,
+                    matches_func=lambda u, db_: list_matches_for_user(
+                        db_,
+                        u.id,
+                        get_or_create_pref(u, db_),
+                        cv_keywords(db_, u.id),
+                    ),
+                    refresh=True,
+                )
+    except Exception as e:
+        log.error("Scheduler task failed: %s", e, exc_info=True)
 
 
 if SCHEDULER_ENABLED:
