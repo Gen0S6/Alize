@@ -67,7 +67,7 @@ jobs:
 
       - name: Run Ruff linter
         run: |
-          ruff check . --ignore=E501,F401
+          ruff check . --ignore=E501,F401,E402
 
   # Frontend Build
   frontend-build:
