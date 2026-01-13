@@ -38,7 +38,7 @@ from app.api.password_reset import router as password_reset_router
 from app.api.preferences import router as preferences_router
 from app.api.profile import router as profile_router
 from app.db import Base, SessionLocal, engine
-from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user
+from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user, cleanup_old_jobs
 from app.services.notifications import notify_all_users
 from app.services.preferences import get_or_create_pref
 from app.rate_limit import limiter, rate_limit_exceeded_handler
@@ -146,6 +146,11 @@ SCHEDULER_INTERVAL_MINUTES = int(os.getenv("SCHEDULER_INTERVAL_MINUTES", "60"))
 def refresh_jobs_task():
     try:
         with SessionLocal() as db:
+            # Cleanup old jobs (older than 90 days)
+            cleaned = cleanup_old_jobs(db)
+            if cleaned:
+                log.info("Cleaned up %d old job listings", cleaned)
+
             ensure_linkedin_sample(db)
             log.info("Jobs refresh task executed")
             if NOTIFY_ENABLED:

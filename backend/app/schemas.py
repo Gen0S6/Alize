@@ -59,6 +59,7 @@ class MatchesPage(BaseModel):
     page: int
     page_size: int
     available_sources: List[str] = []
+    new_count: int = 0  # Total count of new offers (for badge)
 
 
 class AnalysisOut(BaseModel):
