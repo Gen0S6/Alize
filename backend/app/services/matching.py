@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Literal
 from urllib import request as urlrequest, error as urlerror
 
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ from app.models import CV, JobListing, UserPreference, UserJobBlacklist
 from app.schemas import JobOut
 
 NEW_BADGE_DAYS = 3
+OLD_JOB_DAYS = 90  # Auto-delete jobs older than 90 days
 
 
 def norm_list(raw: Optional[str]) -> list[str]:
@@ -79,6 +80,18 @@ def clear_all_jobs(db: Session):
     db.commit()
 
 
+def cleanup_old_jobs(db: Session) -> int:
+    """Delete jobs older than OLD_JOB_DAYS (90 days by default)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=OLD_JOB_DAYS)
+    old_jobs = db.query(JobListing).filter(JobListing.created_at < cutoff).all()
+    count = len(old_jobs)
+    for job in old_jobs:
+        db.delete(job)
+    if count:
+        db.commit()
+    return count
+
+
 def is_job_url_alive(url: str, timeout: float = 3.0) -> bool:
     """
     Vérifie si une offre est encore en ligne.
@@ -139,6 +152,9 @@ def _job_to_jobout(job: JobListing, pref: UserPreference, user_cv: set[str]) -> 
     )
 
 
+SortOption = Literal["newest", "score", "new_first"]
+
+
 def list_matches_for_user(
     db: Session,
     user_id: int,
@@ -147,6 +163,7 @@ def list_matches_for_user(
     cleanup_dead_links: bool = False,
     page: Optional[int] = None,
     page_size: Optional[int] = None,
+    sort_by: SortOption = "new_first",
 ) -> list[JobOut]:
     blacklisted_ids = {
         row[0]
@@ -167,7 +184,21 @@ def list_matches_for_user(
             result.append(job_out)
     if removed:
         db.commit()
-    result.sort(key=lambda j: j.score or 0, reverse=True)
+
+    # Sort based on option
+    if sort_by == "newest":
+        # Sort by date only (newest first)
+        result.sort(key=lambda j: j.created_at or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    elif sort_by == "score":
+        # Sort by score only (highest first)
+        result.sort(key=lambda j: j.score or 0, reverse=True)
+    else:  # "new_first" - default
+        # New offers first, then by score
+        result.sort(key=lambda j: (
+            0 if j.is_new else 1,  # New offers first
+            -(j.score or 0),  # Then by score (descending)
+            -(j.created_at or datetime.min.replace(tzinfo=timezone.utc)).timestamp()  # Then by date
+        ))
 
     if page and page_size:
         start = max(0, (page - 1) * page_size)

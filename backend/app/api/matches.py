@@ -35,12 +35,17 @@ def matches(
     filter_text: Optional[str] = Query(None, alias="filter_text"),
     min_score: int = Query(0, ge=0, le=10),
     source: str = Query("all"),
+    sort_by: str = Query("new_first"),
+    new_only: bool = Query(False),
 ):
     ensure_linkedin_sample(db)
     pref = get_or_create_pref(user, db)
     user_cv = cv_keywords(db, user.id)
+    # Validate sort_by
+    if sort_by not in ("newest", "score", "new_first"):
+        sort_by = "new_first"
     all_matches = list_matches_for_user(
-        db, user.id, pref, user_cv, cleanup_dead_links=False, page=None, page_size=None
+        db, user.id, pref, user_cv, cleanup_dead_links=False, page=None, page_size=None, sort_by=sort_by
     )
     # filtrage côté backend pour couvrir tous les résultats
     filtered = []
@@ -49,7 +54,12 @@ def matches(
     available_sources = sorted(
         list({m.source or "" for m in all_matches if m.source})
     )
+    new_count = 0
     for m in all_matches:
+        if m.is_new:
+            new_count += 1
+        if new_only and not m.is_new:
+            continue
         if src != "all" and (m.source or "").lower() != src.lower():
             continue
         if min_score and (m.score or 0) < min_score:
@@ -63,7 +73,7 @@ def matches(
     start = max(0, (page - 1) * page_size)
     end = start + page_size
     items = filtered[start:end]
-    return MatchesPage(items=items, total=total, page=page, page_size=page_size, available_sources=available_sources)
+    return MatchesPage(items=items, total=total, page=page, page_size=page_size, available_sources=available_sources, new_count=new_count)
 
 
 @router.delete("/matches/{job_id}", status_code=200)
