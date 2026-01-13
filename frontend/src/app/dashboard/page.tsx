@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearToken, getToken } from "../../lib/auth";
 import { useTheme } from "../ThemeProvider";
+import { useToast } from "../../components/Toast";
+import { DashboardSkeleton, TableRowSkeleton } from "../../components/Skeleton";
 import {
   getAnalysis,
   getMatches,
@@ -26,6 +28,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const { addToast } = useToast();
   const [matchesPage, setMatchesPage] = useState<MatchesPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +97,11 @@ export default function DashboardPage() {
     try {
       const res = await runJobSearch();
       setSearchResult(res);
+      if (res.inserted > 0) {
+        addToast(`${res.inserted} nouvelles offres trouvées !`, "success");
+      } else {
+        addToast("Recherche terminée - aucune nouvelle offre", "info");
+      }
       await load(1);
       await loadRuns();
     } catch (err: any) {
@@ -102,6 +110,7 @@ export default function DashboardPage() {
           ? "Session expirée. Reconnecte-toi."
           : err?.message ?? "Impossible de lancer la recherche IA";
       setSearchError(message);
+      addToast(message, "error");
     } finally {
       setSearching(false);
     }
@@ -196,8 +205,9 @@ export default function DashboardPage() {
       setMatchesPage((prev) =>
         prev ? { ...prev, items: prev.items.filter((m) => m.id !== id), total: Math.max(0, prev.total - 1) } : prev
       );
+      addToast("Offre supprimée avec succès", "success");
     } catch (err: any) {
-      alert(err?.message ?? "Impossible de supprimer l'offre.");
+      addToast(err?.message ?? "Impossible de supprimer l'offre.", "error");
     } finally {
       setDeleting(null);
       setConfirmTarget(null);
@@ -582,7 +592,21 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          {loading && <p className={isDark ? "text-sm text-gray-400" : "text-sm text-gray-600"}>Chargement...</p>}
+          {loading && !matchesPage && (
+            <div className="mt-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={`py-3 border-b ${isDark ? "border-gray-800" : "border-gray-200"} animate-pulse`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`h-4 w-1/4 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-4 w-1/6 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-4 w-1/6 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-4 w-12 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {loading && matchesPage && <p className={isDark ? "text-sm text-gray-400" : "text-sm text-gray-600"}>Chargement...</p>}
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">

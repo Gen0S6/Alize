@@ -77,7 +77,9 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
             <Link href="/" className={`flex items-center gap-2 text-lg font-semibold ${linkClass}`}>
               <span>Alizè</span>
             </Link>
-            <nav className={navClass}>
+
+            {/* Desktop Navigation */}
+            <nav className={`hidden md:flex ${navClass}`}>
               {(!isHomePage || isAuthed) && (
                 <>
                   <Link href="/dashboard" className={linkClass}>
@@ -95,7 +97,49 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                 Profil
               </Link>
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              className={`md:hidden p-2 rounded-lg ${linkClass}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className={`md:hidden border-t ${isDark ? "border-gray-800 bg-[#0f1116]" : "border-gray-200 bg-white"}`}>
+              <nav className="flex flex-col px-6 py-4 space-y-3">
+                {(!isHomePage || isAuthed) && (
+                  <>
+                    <Link href="/dashboard" className={`${linkClass} py-2`}>
+                      Tableau de bord
+                    </Link>
+                    <Link href="/preferences" className={`${linkClass} py-2`}>
+                      Préférences
+                    </Link>
+                    <Link href="/cv" className={`${linkClass} py-2`}>
+                      CV
+                    </Link>
+                  </>
+                )}
+                <Link href="/profile" className={`${linkClass} py-2`}>
+                  Profil
+                </Link>
+              </nav>
+            </div>
+          )}
         </header>
       )}
       <main className="flex-1">{children}</main>
@@ -114,7 +158,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   return (
     <ThemeProvider>
       <ErrorBoundary>
-        <ShellFrame>{children}</ShellFrame>
+        <ToastProvider>
+          <ShellFrame>{children}</ShellFrame>
+        </ToastProvider>
       </ErrorBoundary>
     </ThemeProvider>
   );
