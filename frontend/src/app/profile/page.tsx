@@ -6,6 +6,7 @@ import { getProfile, updateProfile, deleteProfile, type Profile } from "../../li
 import { clearToken, getToken, clearTokenAndRedirectHome } from "../../lib/auth";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../ThemeProvider";
+import { useToast } from "../../components/Toast";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -21,6 +22,12 @@ export default function ProfilePage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
+  const { addToast } = useToast();
+
+  function logout() {
+    clearToken();
+    router.push("/");
+  }
 
   useEffect(() => {
     const token = getToken();
@@ -70,10 +77,12 @@ export default function ProfilePage() {
       });
       setProfile(updated);
       setSuccess("Profil sauvegardé");
+      addToast("Profil sauvegardé avec succès", "success");
       setCurrentPassword("");
       setNewPassword("");
     } catch (err: any) {
       setError(err?.message ?? "Erreur lors de la sauvegarde");
+      addToast(err?.message ?? "Erreur lors de la sauvegarde", "error");
     } finally {
       setSaving(false);
     }
@@ -99,14 +108,15 @@ export default function ProfilePage() {
   return (
     <main className={isDark ? "min-h-screen p-6 bg-[#0b0c10] text-gray-100 theme-hover" : "min-h-screen p-6 bg-white text-gray-900 theme-hover"}>
       <div className="mx-auto max-w-3xl">
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Profil</h1>
             <p className={isDark ? "text-sm text-gray-300 mt-1" : "text-sm text-gray-600 mt-1"}>
-              Met à jour ton email, mot de passe et notifications.
+              Gère ton compte, tes préférences et ta sécurité.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={toggle}
@@ -116,18 +126,29 @@ export default function ProfilePage() {
                   : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 bg-white text-gray-800"
               }
             >
-              {isDark ? "Mode clair" : "Mode sombre"}
+              {isDark ? "☀️ Clair" : "🌙 Sombre"}
             </button>
             <Link
               href="/dashboard"
               className={
                 isDark
-                  ? "rounded-xl border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800"
-                  : "rounded-xl border px-4 py-2 text-sm hover:bg-gray-100"
+                  ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
+                  : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
               }
             >
-              ← Retour dashboard
+              ← Dashboard
             </Link>
+            <button
+              type="button"
+              onClick={logout}
+              className={
+                isDark
+                  ? "rounded-xl border border-red-700/50 bg-red-900/20 px-3 py-2 text-sm text-red-300 hover:bg-red-900/40"
+                  : "rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 hover:bg-red-100"
+              }
+            >
+              Déconnexion
+            </button>
           </div>
         </div>
 

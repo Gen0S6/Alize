@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { clearToken, getToken } from "../../lib/auth";
+import { getToken } from "../../lib/auth";
 import { useTheme } from "../ThemeProvider";
 import { useToast } from "../../components/Toast";
 import { DashboardSkeleton, TableRowSkeleton } from "../../components/Skeleton";
@@ -174,11 +174,6 @@ export default function DashboardPage() {
     }
   }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
 
-  function logout() {
-    clearToken();
-    router.push("/");
-  }
-
   function requestDelete(match?: Match) {
     if (!match?.id) return;
     setConfirmTarget(match);
@@ -272,21 +267,21 @@ export default function DashboardPage() {
   return (
     <main className={isDark ? "min-h-screen p-6 bg-[#0b0c10] text-gray-100 theme-hover" : "min-h-screen p-6 bg-white text-gray-900 theme-hover"}>
       <div className="mx-auto max-w-4xl">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-            <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-            <p className={isDark ? "text-sm text-gray-400 mt-1" : "text-sm text-gray-600 mt-1"}>
-              Tes dernières opportunités proposées.
-            </p>
-          </div>
+              <h1 className="text-2xl font-semibold">Tableau de bord</h1>
+              <p className={isDark ? "text-sm text-gray-400 mt-1" : "text-sm text-gray-600 mt-1"}>
+                Tes dernières opportunités proposées.
+              </p>
+            </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Link
                 href="/preferences"
                 className={
                   isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
+                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 text-center"
+                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 text-center"
                 }
               >
                 Préférences
@@ -295,8 +290,8 @@ export default function DashboardPage() {
                 href="/cv"
                 className={
                   isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
+                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 text-center"
+                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 text-center"
                 }
               >
                 CV
@@ -305,23 +300,13 @@ export default function DashboardPage() {
                 href="/profile"
                 className={
                   isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
+                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 text-center"
+                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 text-center"
                 }
               >
                 Profil
               </Link>
-              <button
-                onClick={logout}
-                className={
-                  isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
-                }
-              >
-                Déconnexion
-              </button>
-          </div>
+            </div>
           </div>
 
         <div
