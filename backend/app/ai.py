@@ -789,8 +789,27 @@ def extract_tech_skills(text: str) -> List[str]:
     # Then check single-word skills
     # Create word boundaries pattern to avoid partial matches
     words = set(re.findall(r'\b[a-z0-9#+.]+\b', text_lower))
+
+    # Single-letter skills need special context validation to avoid false positives
+    single_letter_contexts = {
+        "r": [
+            "langage r", "language r", "r studio", "rstudio", "r programming",
+            "programmation r", "statistiques r", "r statistics", "cran",
+            "tidyverse", "ggplot", "dplyr", "r markdown"
+        ],
+        "c": [
+            "langage c", "language c", "c programming", "programmation c",
+            "ansi c", "c89", "c99", "c11", "gcc", "clang"
+        ],
+    }
+
     for skill in TECH_SKILLS:
         if " " not in skill and skill in words:
+            # For single-letter skills, require context validation
+            if len(skill) == 1:
+                contexts = single_letter_contexts.get(skill, [])
+                if contexts and not any(ctx in text_lower for ctx in contexts):
+                    continue  # Skip if no valid context found
             if skill not in found_skills:
                 found_skills.append(skill)
 
@@ -1064,7 +1083,8 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     tokens = tokenize(cv_text) if cv_text else []
 
     # Combine tech skills with top frequent tokens (prioritize tech skills)
-    top_tokens = [w for w, _ in Counter(tokens).most_common(20)]
+    # Filter out single-letter tokens to avoid false positives like "r"
+    top_tokens = [w for w, _ in Counter(tokens).most_common(20) if len(w) > 1]
     # Tech skills first, then other frequent keywords not already in tech_skills
     top_keywords = tech_skills[:15] + [t for t in top_tokens if t not in tech_skills][:5]
     top_keywords = top_keywords[:15]  # Limit to 15
@@ -1089,7 +1109,8 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     ]
 
     # Local analysis (always performed, serves as fallback)
-    local_top_keywords = [w for w, _ in Counter(tokens).most_common(15)]
+    # Filter out single-letter tokens to avoid false positives
+    local_top_keywords = [w for w, _ in Counter(tokens).most_common(15) if len(w) > 1]
     local_roles = infer_roles(cv_text, cleaned_role)
     hits, missing = extract_must_hits(tokens, must_keywords)
 
@@ -1139,7 +1160,11 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
 
             llm_competences = llm_result.get("competences_cles", [])
             if isinstance(llm_competences, list) and llm_competences:
-                top_keywords = [c for c in llm_competences if isinstance(c, str)][:15]
+                # Filter out single-letter skills that are likely false positives
+                top_keywords = [
+                    c for c in llm_competences
+                    if isinstance(c, str) and len(c.strip()) > 1
+                ][:15]
 
             llm_tech = llm_result.get("competences_techniques", [])
             if isinstance(llm_tech, list) and llm_tech:
