@@ -284,7 +284,6 @@ export async function deleteProfile() {
 // OAuth APIs
 export type OAuthProviders = {
   google: boolean;
-  apple: boolean;
 };
 
 export async function getOAuthProviders() {
@@ -293,8 +292,4 @@ export async function getOAuthProviders() {
 
 export function getGoogleOAuthUrl() {
   return `${API_BASE}/auth/oauth/google`;
-}
-
-export function getAppleOAuthUrl() {
-  return `${API_BASE}/auth/oauth/apple`;
 }
