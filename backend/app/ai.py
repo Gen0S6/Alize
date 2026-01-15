@@ -684,7 +684,7 @@ def categorize_skills(skills: List[str]) -> Dict[str, List[str]]:
 
         # === JURIDIQUE ===
         "droit des affaires": "juridique", "droit commercial": "juridique",
-        "droit du travail": "juridique", "contentieux": "juridique",
+        "contentieux": "juridique", "litigation": "juridique",
         "propriété intellectuelle": "juridique", "rgpd": "juridique", "gdpr": "juridique",
         "contrats": "juridique", "compliance": "juridique", "conformité": "juridique",
 

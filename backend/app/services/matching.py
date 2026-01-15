@@ -110,8 +110,8 @@ def score_job(job: JobListing, pref: UserPreference, user_cv: set[str]) -> Optio
     # === Location matching (up to +20) ===
     if loc:
         loc_words = [w.strip() for w in loc.split(",")]
-        location_match = any(l in location_lower for l in loc_words if l)
-        remote_wanted = any(r in loc.lower() for r in ["remote", "télétravail", "hybride"])
+        location_match = any(word in location_lower for word in loc_words if word)
+        remote_wanted = any(term in loc.lower() for term in ["remote", "télétravail", "hybride"])
         remote_offered = "remote" in text or "télétravail" in text or "hybride" in text
 
         if location_match:
