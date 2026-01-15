@@ -37,6 +37,7 @@ from app.api.notify import router as notify_router
 from app.api.password_reset import router as password_reset_router
 from app.api.preferences import router as preferences_router
 from app.api.profile import router as profile_router
+from app.oauth import router as oauth_router
 from app.db import Base, SessionLocal, engine
 from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user, cleanup_old_jobs
 from app.services.notifications import notify_all_users
@@ -109,6 +110,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Routes
 app.include_router(auth_router)
+app.include_router(oauth_router)
 app.include_router(password_reset_router)
 app.include_router(matches_router)
 app.include_router(ai_router)

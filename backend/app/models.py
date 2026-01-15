@@ -8,9 +8,12 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)  # Nullable for OAuth users
     notifications_enabled = Column(Boolean, default=True, nullable=False)
     email_verified = Column(Boolean, default=False, nullable=False)
+    # OAuth fields
+    oauth_provider = Column(String(20), nullable=True, index=True)  # "google", "apple", or null
+    oauth_id = Column(String(255), nullable=True, index=True)  # Provider's unique user ID
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
 

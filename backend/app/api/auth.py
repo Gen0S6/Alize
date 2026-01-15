@@ -82,6 +82,13 @@ def login(request: Request, payload: LoginIn, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
+    # Check if user is OAuth-only (no password set)
+    if user.password_hash is None:
+        provider = user.oauth_provider or "social"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ce compte utilise la connexion {provider.title()}. Utilisez le bouton correspondant.",
+        )
     try:
         safe_pwd = _sanitize_password(payload.password)
     except HTTPException:
