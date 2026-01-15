@@ -280,3 +280,21 @@ export async function deleteProfile() {
     method: "DELETE",
   }) as Promise<{ deleted: boolean }>;
 }
+
+// OAuth APIs
+export type OAuthProviders = {
+  google: boolean;
+  apple: boolean;
+};
+
+export async function getOAuthProviders() {
+  return http<OAuthProviders>("/auth/oauth/providers", { method: "GET" });
+}
+
+export function getGoogleOAuthUrl() {
+  return `${API_BASE}/auth/oauth/google`;
+}
+
+export function getAppleOAuthUrl() {
+  return `${API_BASE}/auth/oauth/apple`;
+}
