@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { setToken } from "../../../lib/auth";
 import { useTheme } from "../../ThemeProvider";
 
-export default function OAuthCallbackPage() {
+function OAuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme } = useTheme();
@@ -37,10 +37,6 @@ export default function OAuthCallbackPage() {
     }
   }, [searchParams, router]);
 
-  const containerClass = isDark
-    ? "min-h-screen flex items-center justify-center p-6 bg-[#0b0c10]"
-    : "min-h-screen flex items-center justify-center p-6 bg-gray-50";
-
   const cardClass = isDark
     ? "w-full max-w-md rounded-2xl border border-gray-700 bg-[#0f1116] p-8 shadow-xl text-center"
     : "w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl text-center";
@@ -50,24 +46,37 @@ export default function OAuthCallbackPage() {
 
   if (error) {
     return (
-      <main className={containerClass}>
-        <div className={cardClass}>
-          <div className="text-red-500 text-4xl mb-4">!</div>
-          <h1 className={`text-xl font-bold ${textClass}`}>Erreur de connexion</h1>
-          <p className={`text-sm ${mutedClass} mt-2`}>{error}</p>
-          <p className={`text-xs ${mutedClass} mt-4`}>Redirection vers la page de connexion...</p>
-        </div>
-      </main>
+      <div className={cardClass}>
+        <div className="text-red-500 text-4xl mb-4">!</div>
+        <h1 className={`text-xl font-bold ${textClass}`}>Erreur de connexion</h1>
+        <p className={`text-sm ${mutedClass} mt-2`}>{error}</p>
+        <p className={`text-xs ${mutedClass} mt-4`}>Redirection vers la page de connexion...</p>
+      </div>
     );
   }
 
   return (
+    <div className={cardClass}>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <h1 className={`text-xl font-bold ${textClass} mt-4`}>Connexion en cours...</h1>
+      <p className={`text-sm ${mutedClass} mt-2`}>Veuillez patienter</p>
+    </div>
+  );
+}
+
+export default function OAuthCallbackPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const containerClass = isDark
+    ? "min-h-screen flex items-center justify-center p-6 bg-[#0b0c10]"
+    : "min-h-screen flex items-center justify-center p-6 bg-gray-50";
+
+  return (
     <main className={containerClass}>
-      <div className={cardClass}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-        <h1 className={`text-xl font-bold ${textClass} mt-4`}>Connexion en cours...</h1>
-        <p className={`text-sm ${mutedClass} mt-2`}>Veuillez patienter</p>
-      </div>
+      <Suspense fallback={<div className="text-center">Chargement...</div>}>
+        <OAuthCallbackContent />
+      </Suspense>
     </main>
   );
 }
