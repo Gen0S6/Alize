@@ -99,6 +99,15 @@ export type Analysis = {
   missing_must: string[];
   summary: string;
   llm_used?: boolean;
+  // Enhanced fields
+  titre_poste_cible?: string | null;
+  niveau_experience?: string;
+  competences_techniques?: string[];
+  competences_transversales?: string[];
+  langues?: string[];
+  formation?: string;
+  secteurs_cibles?: string[];
+  skills_by_category?: Record<string, string[]>;
   // Enhanced CV analysis fields
   experience_level?: string | null;
   skill_categories?: Record<string, string[]>;

@@ -362,6 +362,7 @@ export default function DashboardPage() {
 
           {analysis && (
             <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {/* Left column: Profile summary and queries */}
               <div
                 className={
                   isDark
@@ -370,12 +371,52 @@ export default function DashboardPage() {
                 }
               >
                 <p className={isDark ? "text-sm text-gray-100" : "text-sm text-gray-800"}>{analysis.summary}</p>
+
+                {/* Experience level and target role badges */}
+                {(analysis.niveau_experience || analysis.titre_poste_cible) && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {analysis.niveau_experience && (
+                      <span className={
+                        isDark
+                          ? "rounded-full px-2 py-1 text-xs font-medium " +
+                            (analysis.niveau_experience === "senior" ? "bg-purple-900/50 text-purple-300 border border-purple-700" :
+                             analysis.niveau_experience === "confirme" ? "bg-blue-900/50 text-blue-300 border border-blue-700" :
+                             "bg-green-900/50 text-green-300 border border-green-700")
+                          : "rounded-full px-2 py-1 text-xs font-medium " +
+                            (analysis.niveau_experience === "senior" ? "bg-purple-100 text-purple-800" :
+                             analysis.niveau_experience === "confirme" ? "bg-blue-100 text-blue-800" :
+                             "bg-green-100 text-green-800")
+                      }>
+                        {analysis.niveau_experience === "senior" ? "👤 Senior" :
+                         analysis.niveau_experience === "confirme" ? "👤 Confirmé" : "👤 Junior"}
+                      </span>
+                    )}
+                    {analysis.titre_poste_cible && (
+                      <span className={
+                        isDark
+                          ? "rounded-full bg-[#111621] px-2 py-1 text-xs text-gray-100 border border-gray-600"
+                          : "rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-800"
+                      }>
+                        🎯 {analysis.titre_poste_cible}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Formation */}
+                {analysis.formation && (
+                  <p className={isDark ? "mt-2 text-xs text-gray-400" : "mt-2 text-xs text-gray-600"}>
+                    🎓 {analysis.formation}
+                  </p>
+                )}
+
                 {analysis.llm_used ? (
-                  <p className={isDark ? "mt-1 text-xs text-green-300" : "mt-1 text-xs text-green-700"}>
-                    Résumé et requêtes enrichis par OpenAI.
+                  <p className={isDark ? "mt-2 text-xs text-green-300" : "mt-2 text-xs text-green-700"}>
+                    ✨ Analyse enrichie par IA
                   </p>
                 ) : null}
-                <div className="mt-2">
+
+                <div className="mt-3">
                   <p className={isDark ? "text-xs uppercase text-gray-400" : "text-xs uppercase text-gray-500"}>Requêtes IA</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {analysis.suggested_queries.length === 0 && (
@@ -397,7 +438,30 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Target sectors */}
+                {analysis.secteurs_cibles && analysis.secteurs_cibles.length > 0 && (
+                  <div className="mt-3">
+                    <p className={isDark ? "text-xs uppercase text-gray-400" : "text-xs uppercase text-gray-500"}>Secteurs cibles</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {analysis.secteurs_cibles.map((s: string) => (
+                        <span
+                          key={s}
+                          className={
+                            isDark
+                              ? "rounded-full bg-[#111621] px-2 py-1 text-xs text-gray-300 border border-gray-700"
+                              : "rounded-full bg-gray-50 px-2 py-1 text-xs text-gray-600 border"
+                          }
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Right column: Skills */}
               <div
                 className={
                   isDark
@@ -406,7 +470,7 @@ export default function DashboardPage() {
                 }
               >
                 <p className={isDark ? "text-xs uppercase text-gray-400" : "text-xs uppercase text-gray-500"}>
-                  Compétences détectées
+                  Compétences clés
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {analysis.top_keywords.slice(0, 10).map((kw) => (
@@ -427,17 +491,88 @@ export default function DashboardPage() {
                     </span>
                   )}
                 </div>
+
+                {/* Technical skills */}
+                {analysis.competences_techniques && analysis.competences_techniques.length > 0 && (
+                  <div className="mt-3">
+                    <p className={isDark ? "text-xs uppercase text-gray-400" : "text-xs uppercase text-gray-500"}>
+                      💻 Compétences techniques
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {analysis.competences_techniques.map((skill: string) => (
+                        <span
+                          key={skill}
+                          className={
+                            isDark
+                              ? "rounded-full bg-blue-900/30 px-2 py-1 text-xs text-blue-300 border border-blue-800"
+                              : "rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-700"
+                          }
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Soft skills */}
+                {analysis.competences_transversales && analysis.competences_transversales.length > 0 && (
+                  <div className="mt-3">
+                    <p className={isDark ? "text-xs uppercase text-gray-400" : "text-xs uppercase text-gray-500"}>
+                      🤝 Soft skills
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {analysis.competences_transversales.map((skill: string) => (
+                        <span
+                          key={skill}
+                          className={
+                            isDark
+                              ? "rounded-full bg-amber-900/30 px-2 py-1 text-xs text-amber-300 border border-amber-800"
+                              : "rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700"
+                          }
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Languages */}
+                {analysis.langues && analysis.langues.length > 0 && (
+                  <div className="mt-3">
+                    <p className={isDark ? "text-xs uppercase text-gray-400" : "text-xs uppercase text-gray-500"}>
+                      🌍 Langues
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {analysis.langues.map((lang: string) => (
+                        <span
+                          key={lang}
+                          className={
+                            isDark
+                              ? "rounded-full bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300 border border-emerald-800"
+                              : "rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-700"
+                          }
+                        >
+                          {lang}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Must keywords hits/missing */}
                 {(analysis.must_hits.length > 0 || analysis.missing_must.length > 0) && (
                   <div
                     className={
                       isDark
-                        ? "mt-2 grid grid-cols-1 gap-2 text-xs text-gray-300 md:grid-cols-2"
-                        : "mt-2 grid grid-cols-1 gap-2 text-xs text-gray-700 md:grid-cols-2"
+                        ? "mt-3 grid grid-cols-1 gap-2 text-xs text-gray-300 md:grid-cols-2"
+                        : "mt-3 grid grid-cols-1 gap-2 text-xs text-gray-700 md:grid-cols-2"
                     }
                   >
                     <div>
                       <p className={isDark ? "font-semibold text-green-400" : "font-semibold text-green-700"}>
-                        Trouvés
+                        ✓ Mots-clés trouvés
                       </p>
                       <ul className="list-disc list-inside">
                         {analysis.must_hits.length === 0 && <li>—</li>}
@@ -448,7 +583,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className={isDark ? "font-semibold text-orange-400" : "font-semibold text-orange-700"}>
-                        Manquants
+                        ✗ À compléter
                       </p>
                       <ul className="list-disc list-inside">
                         {analysis.missing_must.length === 0 && <li>—</li>}
