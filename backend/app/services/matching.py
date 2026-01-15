@@ -4,7 +4,14 @@ from urllib import request as urlrequest, error as urlerror
 
 from sqlalchemy.orm import Session
 
-from app.models import CV, JobListing, UserPreference, UserJobBlacklist
+from app.models import (
+    CV,
+    JobListing,
+    UserPreference,
+    UserJobBlacklist,
+    UserJobNotification,
+    UserJobVisit,
+)
 from app.schemas import JobOut
 
 NEW_BADGE_DAYS = 3
@@ -75,6 +82,10 @@ def ensure_linkedin_sample(db: Session):
 
 
 def clear_all_jobs(db: Session):
+    # Delete dependent records first to avoid FK violations
+    db.query(UserJobNotification).delete()
+    db.query(UserJobVisit).delete()
+    db.query(UserJobBlacklist).delete()
     db.query(JobListing).delete()
     db.commit()
 
