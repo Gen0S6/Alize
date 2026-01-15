@@ -56,12 +56,202 @@ STOPWORDS = {
     "est",
     "sont",
     "string",  # ignore placeholder extractions
+    "plus",
+    "cette",
+    "ces",
+    "ses",
+    "son",
+    "mon",
+    "mes",
+    "notre",
+    "nos",
+    "leur",
+    "leurs",
+    "tout",
+    "tous",
+    "toute",
+    "toutes",
+    "aussi",
+    "ainsi",
+    "comme",
+    "mais",
+    "donc",
+    "car",
+    "etc",
+    "ans",
+    "annee",
+    "annees",
+    "mois",
+    "jour",
+    "jours",
 }
 
 PLACEHOLDER_VALUES = {"string", "-", "--", "n/a", "na"}
 
+# Comprehensive French job market skills dictionary
+SKILL_CATEGORIES = {
+    "langages_programmation": {
+        "python", "java", "javascript", "typescript", "php", "ruby", "golang", "go",
+        "rust", "scala", "kotlin", "swift", "objective-c", "c++", "c#", "csharp",
+        "sql", "nosql", "r", "matlab", "perl", "bash", "shell", "powershell",
+    },
+    "frameworks_web": {
+        "react", "reactjs", "angular", "vue", "vuejs", "nextjs", "nuxt", "svelte",
+        "django", "flask", "fastapi", "express", "nestjs", "spring", "springboot",
+        "laravel", "symfony", "rails", "asp.net", "dotnet", ".net",
+    },
+    "data_ml": {
+        "tensorflow", "pytorch", "keras", "scikit-learn", "sklearn", "pandas",
+        "numpy", "spark", "hadoop", "airflow", "kafka", "databricks", "mlflow",
+        "jupyter", "tableau", "powerbi", "looker", "metabase",
+    },
+    "cloud_devops": {
+        "aws", "azure", "gcp", "docker", "kubernetes", "k8s", "terraform",
+        "ansible", "jenkins", "gitlab", "github", "ci/cd", "cicd", "linux",
+        "nginx", "apache", "redis", "elasticsearch", "mongodb", "postgresql",
+        "mysql", "oracle", "prometheus", "grafana",
+    },
+    "outils_design": {
+        "figma", "sketch", "adobe", "photoshop", "illustrator", "indesign",
+        "premiere", "aftereffects", "canva", "xd", "invision",
+    },
+    "communication_media": {
+        "redaction", "journalisme", "communication", "editorial", "presse",
+        "media", "medias", "audiovisuel", "video", "photo", "photographie",
+        "reportage", "interview", "podcast", "reseaux sociaux", "community management",
+        "seo", "sem", "content", "copywriting", "storytelling",
+    },
+    "marketing_commerce": {
+        "marketing", "digital", "crm", "salesforce", "hubspot", "mailchimp",
+        "analytics", "adwords", "facebook ads", "linkedin ads", "e-commerce",
+        "b2b", "b2c", "growth", "acquisition", "conversion", "kpi",
+    },
+    "gestion_projet": {
+        "agile", "scrum", "kanban", "jira", "trello", "asana", "notion",
+        "confluence", "monday", "ms project", "prince2", "pmp", "lean",
+    },
+    "soft_skills": {
+        "autonomie", "rigueur", "organisation", "communication", "teamwork",
+        "leadership", "creativite", "adaptabilite", "proactivite", "curiosite",
+        "esprit d'equipe", "gestion du stress", "resolution de problemes",
+    },
+    "langues": {
+        "francais", "anglais", "espagnol", "allemand", "italien", "portugais",
+        "chinois", "mandarin", "japonais", "arabe", "russe", "neerlandais",
+        "bilingue", "courant", "professionnel", "natif", "toeic", "toefl", "ielts",
+    },
+}
 
-def _call_openai(prompt: str) -> Optional[dict]:
+# Flatten skills for quick lookup
+ALL_SKILLS = set()
+for category_skills in SKILL_CATEGORIES.values():
+    ALL_SKILLS.update(category_skills)
+
+# Extended role hints for French job market
+ROLE_HINTS = [
+    # Tech
+    "data scientist",
+    "data analyst",
+    "data engineer",
+    "machine learning",
+    "ml engineer",
+    "backend",
+    "frontend",
+    "fullstack",
+    "full stack",
+    "devops",
+    "software engineer",
+    "web developer",
+    "mobile developer",
+    "developpeur",
+    "ingenieur",
+    "architecte",
+    "tech lead",
+    "cto",
+    # Product & Project
+    "product manager",
+    "product owner",
+    "project manager",
+    "chef de projet",
+    "scrum master",
+    # Marketing & Communication
+    "community manager",
+    "social media manager",
+    "content manager",
+    "seo manager",
+    "growth hacker",
+    "charge de communication",
+    "responsable marketing",
+    "directeur marketing",
+    # Media & Journalisme
+    "journaliste",
+    "redacteur",
+    "redactrice",
+    "reporter",
+    "editeur",
+    "charge de presse",
+    "attache de presse",
+    "responsable editorial",
+    # Design
+    "designer",
+    "ux designer",
+    "ui designer",
+    "graphic designer",
+    "directeur artistique",
+    # Commerce & Business
+    "commercial",
+    "business developer",
+    "account manager",
+    "sales",
+    "charge d'affaires",
+    "responsable commercial",
+    # RH & Admin
+    "rh",
+    "ressources humaines",
+    "recruteur",
+    "assistant",
+    "assistante",
+    "office manager",
+    # Finance
+    "comptable",
+    "controleur de gestion",
+    "analyste financier",
+    "auditeur",
+]
+
+# Experience level indicators
+EXPERIENCE_LEVELS = {
+    "junior": ["junior", "debutant", "stage", "stagiaire", "alternance", "alternant", "apprenti", "apprentissage", "1ere experience", "premiere experience", "0-2 ans"],
+    "confirme": ["confirme", "2-5 ans", "3 ans", "4 ans", "5 ans", "intermediaire"],
+    "senior": ["senior", "expert", "lead", "principal", "5+ ans", "10 ans", "15 ans", "manager", "directeur", "responsable", "chef"],
+}
+
+# Education keywords
+EDUCATION_KEYWORDS = {
+    "ecoles": [
+        "hec", "essec", "escp", "edhec", "em lyon", "kedge", "skema", "neoma",
+        "polytechnique", "centrale", "mines", "ponts", "enpc", "ensae", "ensai",
+        "sciences po", "iep", "celsa", "cfj", "esj", "ipj", "ejt", "isj", "isfj",
+        "epitech", "42", "epita", "supinfo", "esiea", "efrei",
+        "dauphine", "sorbonne", "pantheon", "assas", "nanterre",
+        "universite", "faculte", "iut", "bts", "dut",
+    ],
+    "diplomes": [
+        "bac", "baccalaureat", "licence", "bachelor", "master", "mastere",
+        "mba", "doctorat", "phd", "ingenieur", "dess", "dea",
+        "bts", "dut", "deug", "cap", "bep",
+    ],
+}
+
+
+def strip_accents(value: str) -> str:
+    """Remove accents from a string for accent-insensitive matching."""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn"
+    )
+
+
+def _call_openai(prompt: str, max_tokens: int = 600) -> Optional[dict]:
     """
     Appel OpenAI facultatif (désactivé si OPENAI_API_KEY absent ou lib non installée).
     Retourne un dict déjà parsé ou None en cas d'erreur.
@@ -83,12 +273,16 @@ def _call_openai(prompt: str) -> Optional[dict]:
                 messages=[
                     {
                         "role": "system",
-                        "content": "Tu es un assistant recrutement français. Réponds strictement en JSON.",
+                        "content": (
+                            "Tu es un expert en recrutement et analyse de CV français. "
+                            "Tu analyses les CV pour extraire des informations structurées et pertinentes. "
+                            "Réponds UNIQUEMENT en JSON valide, sans texte avant ou après."
+                        ),
                     },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.3,
-                max_tokens=300,
+                temperature=0.2,
+                max_tokens=max_tokens,
             )
             content = resp.choices[0].message.content if resp and resp.choices else ""
         except ImportError:
@@ -100,12 +294,16 @@ def _call_openai(prompt: str) -> Optional[dict]:
                 messages=[
                     {
                         "role": "system",
-                        "content": "Tu es un assistant recrutement français. Réponds strictement en JSON.",
+                        "content": (
+                            "Tu es un expert en recrutement et analyse de CV français. "
+                            "Tu analyses les CV pour extraire des informations structurées et pertinentes. "
+                            "Réponds UNIQUEMENT en JSON valide, sans texte avant ou après."
+                        ),
                     },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.3,
-                max_tokens=300,
+                temperature=0.2,
+                max_tokens=max_tokens,
             )
             content = resp.choices[0].message.get("content", "") if resp and resp.choices else ""
 
@@ -124,28 +322,95 @@ def _call_openai(prompt: str) -> Optional[dict]:
     return None
 
 
-def strip_accents(value: str) -> str:
-    return "".join(
-        c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn"
-    )
+def extract_skills_from_text(text: str) -> Dict[str, List[str]]:
+    """
+    Extract skills from CV text and categorize them.
+    Returns a dict with skill categories as keys and found skills as values.
+    """
+    text_lower = strip_accents(text.lower())
+    found_skills: Dict[str, List[str]] = {}
 
-ROLE_HINTS = [
-    "data scientist",
-    "data analyst",
-    "data engineer",
-    "machine learning",
-    "ml engineer",
-    "backend",
-    "frontend",
-    "fullstack",
-    "full stack",
-    "devops",
-    "product manager",
-    "project manager",
-    "software engineer",
-    "web developer",
-    "mobile developer",
-]
+    for category, skills in SKILL_CATEGORIES.items():
+        category_matches = []
+        for skill in skills:
+            skill_normalized = strip_accents(skill.lower())
+            # Check for word boundaries to avoid false positives
+            if re.search(rf'\b{re.escape(skill_normalized)}\b', text_lower):
+                category_matches.append(skill)
+        if category_matches:
+            found_skills[category] = category_matches
+
+    return found_skills
+
+
+def detect_experience_level(text: str) -> str:
+    """
+    Detect experience level from CV text.
+    Returns: 'junior', 'confirme', or 'senior'
+    """
+    text_lower = strip_accents(text.lower())
+
+    # Count indicators for each level
+    level_scores = {"junior": 0, "confirme": 0, "senior": 0}
+
+    for level, indicators in EXPERIENCE_LEVELS.items():
+        for indicator in indicators:
+            indicator_normalized = strip_accents(indicator.lower())
+            if indicator_normalized in text_lower:
+                level_scores[level] += 1
+
+    # Return the level with highest score, default to junior
+    max_level = max(level_scores, key=level_scores.get)
+    return max_level if level_scores[max_level] > 0 else "junior"
+
+
+def extract_education(text: str) -> Dict[str, List[str]]:
+    """
+    Extract education information from CV text.
+    Returns dict with 'ecoles' and 'diplomes' keys.
+    """
+    text_lower = strip_accents(text.lower())
+    found_education: Dict[str, List[str]] = {"ecoles": [], "diplomes": []}
+
+    for edu_type, keywords in EDUCATION_KEYWORDS.items():
+        for kw in keywords:
+            kw_normalized = strip_accents(kw.lower())
+            if kw_normalized in text_lower:
+                if kw not in found_education[edu_type]:
+                    found_education[edu_type].append(kw)
+
+    return found_education
+
+
+def build_enhanced_prompt(cv_text: str, pref_role: Optional[str], pref_location: Optional[str], must_keywords: List[str]) -> str:
+    """Build an enhanced prompt for OpenAI CV analysis."""
+    return f"""Analyse ce CV français et extrais les informations suivantes de manière structurée.
+
+CV (texte extrait):
+---
+{cv_text[:2500]}
+---
+
+Préférences utilisateur:
+- Rôle recherché: {pref_role or 'Non spécifié'}
+- Localisation: {pref_location or 'France'}
+- Mots-clés obligatoires: {', '.join(must_keywords) if must_keywords else 'Aucun'}
+
+Réponds en JSON avec cette structure exacte:
+{{
+    "profil_resume": "Résumé du profil en 2-3 phrases maximum, incluant le niveau (étudiant/junior/confirmé/senior), le domaine et les points forts",
+    "titre_poste_cible": "Le titre de poste le plus adapté au profil",
+    "competences_cles": ["compétence1", "compétence2", "compétence3", "compétence4", "compétence5"],
+    "competences_techniques": ["tech1", "tech2", "tech3"],
+    "competences_transversales": ["soft1", "soft2"],
+    "langues": ["langue1 (niveau)", "langue2 (niveau)"],
+    "formation": "Diplôme principal et école/université",
+    "niveau_experience": "junior|confirme|senior",
+    "secteurs_cibles": ["secteur1", "secteur2"],
+    "requetes_recherche": ["requête optimisée 1", "requête optimisée 2", "requête optimisée 3", "requête optimisée 4", "requête optimisée 5"]
+}}
+
+Les requêtes de recherche doivent être optimisées pour les sites d'emploi français (France Travail, LinkedIn, Indeed) et inclure la localisation si pertinente."""
 
 
 def tokenize(text: str) -> List[str]:
@@ -345,14 +610,17 @@ def extract_must_hits(cv_tokens: List[str], must_keywords: List[str]) -> Tuple[L
 
 
 def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
+    """
+    Analyse complète du profil utilisateur basée sur son CV et ses préférences.
+    Combine extraction locale de compétences et enrichissement OpenAI.
+    """
     cv = latest_cv(db, user_id)
     cv_text = cv.text or "" if cv else ""
     tokens = tokenize(cv_text) if cv_text else []
-    top_keywords = [w for w, _ in Counter(tokens).most_common(15)]
     cleaned_role = clean_field(pref.role)
     cleaned_location = clean_field(pref.location)
-    roles = infer_roles(cv_text, cleaned_role)
 
+    # Parse must keywords from preferences
     must_keywords_raw = [
         kw for kw in (pref.must_keywords or "").split(",") if kw.strip()
     ]
@@ -361,45 +629,107 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
         for kw in must_keywords_raw
         if kw.strip() and kw.strip().lower() not in PLACEHOLDER_VALUES
     ]
+
+    # Local analysis (always performed, serves as fallback)
+    local_top_keywords = [w for w, _ in Counter(tokens).most_common(15)]
+    local_roles = infer_roles(cv_text, cleaned_role)
     hits, missing = extract_must_hits(tokens, must_keywords)
 
-    queries = build_queries(roles, must_keywords, top_keywords, cleaned_location)
-    summary_parts = []
-    llm_used = False
+    # Enhanced local analysis
+    extracted_skills = extract_skills_from_text(cv_text) if cv_text else {}
+    experience_level = detect_experience_level(cv_text) if cv_text else "junior"
+    education = extract_education(cv_text) if cv_text else {"ecoles": [], "diplomes": []}
 
-    # Optionnel : enrichir avec OpenAI si dispo
-    llm_enriched = None
-    if cv_text or pref.must_keywords or pref.role or pref.location:
-        prompt = (
-            "Analyse ce CV et ces préférences et propose des requêtes d'emploi pour la France.\n"
-            f"Rôle souhaité: {cleaned_role or 'non précisé'}\n"
-            f"Localisation: {cleaned_location or 'France'}\n"
-            f"Mots-clés obligatoires: {', '.join(must_keywords) or '—'}\n"
-            f"Texte CV (tronqué): {cv_text[:1500]}\n"
-            'Réponds en JSON: {"queries": ["..."], "resume": "1-2 phrases", "tags": ["tag1","tag2","tag3"]}'
-        )
-        llm_enriched = _call_openai(prompt)
-    if llm_enriched:
-        llm_used = True
-        llm_queries = [q for q in llm_enriched.get("queries", []) if isinstance(q, str)]
-        if llm_queries:
-            queries = llm_queries[:5]
-        llm_summary = llm_enriched.get("resume")
-        if isinstance(llm_summary, str) and llm_summary.strip():
-            summary_parts = [llm_summary.strip()]
-        llm_tags = [t for t in llm_enriched.get("tags", []) if isinstance(t, str)]
-        if llm_tags:
-            top_keywords = llm_tags[:15]
-    if roles:
-        summary_parts.append(f"Rôle cible: {roles[0]}")
-    if top_keywords:
-        summary_parts.append(f"Compétences fortes: {', '.join(top_keywords[:5])}")
-    if hits:
-        summary_parts.append(f"Mots-clés obligatoires présents: {', '.join(hits)}")
-    if missing:
-        summary_parts.append(f"A compléter: {', '.join(missing)}")
-    if not summary_parts:
-        summary_parts.append("Ajoute un CV et des préférences pour une analyse plus fine.")
+    # Flatten extracted skills for display
+    all_extracted_skills = []
+    for category, skills in extracted_skills.items():
+        all_extracted_skills.extend(skills)
+
+    # Build initial queries from local analysis
+    queries = build_queries(local_roles, must_keywords, local_top_keywords, cleaned_location)
+
+    # Initialize result with local analysis
+    llm_used = False
+    summary = ""
+    top_keywords = all_extracted_skills[:15] if all_extracted_skills else local_top_keywords
+    roles = local_roles
+    titre_poste = local_roles[0] if local_roles else None
+    competences_techniques = extracted_skills.get("langages_programmation", []) + extracted_skills.get("frameworks_web", [])
+    competences_transversales = extracted_skills.get("soft_skills", [])
+    langues = extracted_skills.get("langues", [])
+    formation = ", ".join(education.get("diplomes", [])[:2] + education.get("ecoles", [])[:1])
+    secteurs = []
+
+    # OpenAI enrichment (optional, provides better results when available)
+    if cv_text:
+        prompt = build_enhanced_prompt(cv_text, cleaned_role, cleaned_location, must_keywords)
+        llm_result = _call_openai(prompt, max_tokens=700)
+
+        if llm_result:
+            llm_used = True
+
+            # Extract LLM results with fallbacks
+            llm_summary = llm_result.get("profil_resume", "")
+            if isinstance(llm_summary, str) and llm_summary.strip():
+                summary = llm_summary.strip()
+
+            llm_titre = llm_result.get("titre_poste_cible", "")
+            if isinstance(llm_titre, str) and llm_titre.strip():
+                titre_poste = llm_titre.strip()
+                if titre_poste.lower() not in [r.lower() for r in roles]:
+                    roles = [titre_poste] + roles[:2]
+
+            llm_competences = llm_result.get("competences_cles", [])
+            if isinstance(llm_competences, list) and llm_competences:
+                top_keywords = [c for c in llm_competences if isinstance(c, str)][:15]
+
+            llm_tech = llm_result.get("competences_techniques", [])
+            if isinstance(llm_tech, list) and llm_tech:
+                competences_techniques = [c for c in llm_tech if isinstance(c, str)]
+
+            llm_soft = llm_result.get("competences_transversales", [])
+            if isinstance(llm_soft, list) and llm_soft:
+                competences_transversales = [c for c in llm_soft if isinstance(c, str)]
+
+            llm_langues = llm_result.get("langues", [])
+            if isinstance(llm_langues, list) and llm_langues:
+                langues = [l for l in llm_langues if isinstance(l, str)]
+
+            llm_formation = llm_result.get("formation", "")
+            if isinstance(llm_formation, str) and llm_formation.strip():
+                formation = llm_formation.strip()
+
+            llm_niveau = llm_result.get("niveau_experience", "")
+            if isinstance(llm_niveau, str) and llm_niveau.strip() in ["junior", "confirme", "senior"]:
+                experience_level = llm_niveau.strip()
+
+            llm_secteurs = llm_result.get("secteurs_cibles", [])
+            if isinstance(llm_secteurs, list) and llm_secteurs:
+                secteurs = [s for s in llm_secteurs if isinstance(s, str)]
+
+            llm_queries = llm_result.get("requetes_recherche", [])
+            if isinstance(llm_queries, list) and llm_queries:
+                queries = [q for q in llm_queries if isinstance(q, str)][:5]
+
+    # Build summary if not from LLM
+    if not summary:
+        summary_parts = []
+        if titre_poste:
+            summary_parts.append(f"Profil {experience_level} en {titre_poste}")
+        if formation:
+            summary_parts.append(f"Formation: {formation}")
+        if top_keywords:
+            summary_parts.append(f"Compétences: {', '.join(top_keywords[:5])}")
+        if not summary_parts:
+            summary_parts.append("Ajoute un CV pour une analyse détaillée de ton profil.")
+        summary = " | ".join(summary_parts)
+
+    # Ensure queries have location if specified
+    if cleaned_location and queries:
+        queries = [
+            q if cleaned_location.lower() in q.lower() else f"{q} {cleaned_location}"
+            for q in queries
+        ][:5]
 
     return {
         "cv_present": bool(cv),
@@ -408,9 +738,20 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
         "suggested_queries": queries,
         "must_hits": hits,
         "missing_must": missing,
-        "summary": " | ".join(summary_parts),
+        "summary": summary,
         "llm_used": llm_used,
+        # Enhanced fields
+        "titre_poste_cible": titre_poste,
+        "niveau_experience": experience_level,
+        "competences_techniques": competences_techniques[:10],
+        "competences_transversales": competences_transversales[:5],
+        "langues": langues[:5],
+        "formation": formation,
+        "secteurs_cibles": secteurs[:5],
+        "skills_by_category": extracted_skills,
     }
+
+
 def search_jobs_for_user(
     db: Session,
     user_id: int,
