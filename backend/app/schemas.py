@@ -71,6 +71,10 @@ class AnalysisOut(BaseModel):
     missing_must: list[str]
     summary: str
     llm_used: bool = False
+    # Enhanced CV analysis fields
+    experience_level: Optional[str] = None
+    skill_categories: dict[str, list[str]] = {}
+    tech_skills_count: int = 0
 
 
 class JobSearchOut(BaseModel):

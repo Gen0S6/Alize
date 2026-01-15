@@ -99,6 +99,10 @@ export type Analysis = {
   missing_must: string[];
   summary: string;
   llm_used?: boolean;
+  // Enhanced CV analysis fields
+  experience_level?: string | null;
+  skill_categories?: Record<string, string[]>;
+  tech_skills_count?: number;
 };
 
 export type JobSearchResult = {

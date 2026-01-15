@@ -129,23 +129,80 @@ def strip_accents(value: str) -> str:
         c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn"
     )
 
+# Expanded role detection
 ROLE_HINTS = [
-    "data scientist",
-    "data analyst",
-    "data engineer",
-    "machine learning",
-    "ml engineer",
-    "backend",
-    "frontend",
-    "fullstack",
-    "full stack",
-    "devops",
-    "product manager",
-    "project manager",
-    "software engineer",
-    "web developer",
-    "mobile developer",
+    # Data & AI
+    "data scientist", "data analyst", "data engineer", "machine learning", "ml engineer",
+    "ai engineer", "deep learning", "nlp engineer", "computer vision",
+    # Development
+    "backend", "frontend", "fullstack", "full stack", "full-stack",
+    "software engineer", "software developer", "web developer", "mobile developer",
+    "ios developer", "android developer", "react developer", "python developer",
+    "java developer", "node developer", ".net developer", "php developer",
+    # DevOps & Infrastructure
+    "devops", "sre", "site reliability", "cloud engineer", "platform engineer",
+    "infrastructure", "system administrator", "sysadmin", "network engineer",
+    # Management & Product
+    "product manager", "project manager", "tech lead", "team lead", "engineering manager",
+    "cto", "vp engineering", "scrum master", "agile coach", "product owner",
+    # Design & UX
+    "ux designer", "ui designer", "product designer", "ux researcher",
+    # Security
+    "security engineer", "cybersecurity", "pentester", "security analyst",
+    # QA
+    "qa engineer", "test engineer", "quality assurance", "sdet",
+    # Other tech roles
+    "consultant", "architect", "solutions architect", "technical writer",
+    "support engineer", "customer success",
 ]
+
+# Technical skills to detect in CV (weighted higher than common words)
+TECH_SKILLS = {
+    # Programming Languages
+    "python", "javascript", "typescript", "java", "c++", "c#", "ruby", "go", "golang",
+    "rust", "swift", "kotlin", "scala", "php", "perl", "r", "matlab", "julia",
+    "objective-c", "dart", "elixir", "clojure", "haskell", "lua", "shell", "bash",
+    # Frontend
+    "react", "reactjs", "vue", "vuejs", "angular", "svelte", "nextjs", "next.js",
+    "nuxt", "gatsby", "html", "css", "sass", "scss", "less", "tailwind", "bootstrap",
+    "webpack", "vite", "redux", "mobx", "graphql", "apollo", "jquery",
+    # Backend
+    "nodejs", "node.js", "express", "fastapi", "django", "flask", "spring",
+    "springboot", "rails", "laravel", "symfony", "asp.net", "nestjs", "koa",
+    "fastify", "gin", "echo", "fiber",
+    # Databases
+    "sql", "mysql", "postgresql", "postgres", "mongodb", "redis", "elasticsearch",
+    "cassandra", "dynamodb", "sqlite", "oracle", "mariadb", "neo4j", "couchdb",
+    "firestore", "supabase", "prisma", "sequelize", "typeorm", "sqlalchemy",
+    # Cloud & DevOps
+    "aws", "azure", "gcp", "google cloud", "docker", "kubernetes", "k8s",
+    "terraform", "ansible", "jenkins", "gitlab", "github actions", "circleci",
+    "travis", "nginx", "apache", "linux", "ubuntu", "debian", "centos",
+    "prometheus", "grafana", "datadog", "splunk", "elk", "cloudflare",
+    # Data & ML
+    "pandas", "numpy", "scipy", "scikit-learn", "sklearn", "tensorflow", "pytorch",
+    "keras", "spark", "hadoop", "airflow", "kafka", "rabbitmq", "celery",
+    "jupyter", "tableau", "powerbi", "looker", "dbt", "snowflake", "bigquery",
+    "databricks", "mlflow", "kubeflow", "sagemaker", "huggingface", "langchain",
+    "openai", "gpt", "llm", "nlp", "opencv", "yolo",
+    # Mobile
+    "react native", "flutter", "ionic", "xamarin", "swiftui", "jetpack compose",
+    # Tools & Practices
+    "git", "jira", "confluence", "slack", "figma", "sketch", "adobe xd",
+    "postman", "swagger", "openapi", "rest", "restful", "api", "microservices",
+    "agile", "scrum", "kanban", "ci/cd", "cicd", "tdd", "bdd", "solid",
+    # Security
+    "oauth", "jwt", "ssl", "tls", "https", "encryption", "penetration testing",
+    "owasp", "sso", "ldap", "saml",
+}
+
+# Experience level indicators
+EXPERIENCE_INDICATORS = {
+    "junior": ["junior", "débutant", "entry level", "graduate", "stagiaire", "alternant", "0-2 ans"],
+    "mid": ["confirmé", "intermédiaire", "2-5 ans", "3-5 ans", "mid-level"],
+    "senior": ["senior", "expérimenté", "5+ ans", "7+ ans", "10+ ans", "lead", "principal", "staff"],
+    "management": ["manager", "directeur", "head of", "vp", "cto", "cio", "chief"],
+}
 
 
 def tokenize(text: str) -> List[str]:
@@ -269,15 +326,77 @@ def latest_cv(db: Session, user_id: int) -> Optional[CV]:
     )
 
 
+def extract_tech_skills(text: str) -> List[str]:
+    """
+    Extract technical skills from text, prioritizing known tech terms.
+    Returns skills sorted by relevance (exact matches first).
+    """
+    text_lower = text.lower()
+    found_skills = []
+
+    # Check for multi-word skills first (e.g., "react native", "machine learning")
+    for skill in TECH_SKILLS:
+        if " " in skill and skill in text_lower:
+            found_skills.append(skill)
+
+    # Then check single-word skills
+    # Create word boundaries pattern to avoid partial matches
+    words = set(re.findall(r'\b[a-z0-9#+.]+\b', text_lower))
+    for skill in TECH_SKILLS:
+        if " " not in skill and skill in words:
+            if skill not in found_skills:
+                found_skills.append(skill)
+
+    return found_skills
+
+
+def detect_experience_level(text: str) -> Optional[str]:
+    """Detect experience level from CV text."""
+    text_lower = text.lower()
+
+    # Check from most senior to junior
+    for level in ["management", "senior", "mid", "junior"]:
+        indicators = EXPERIENCE_INDICATORS.get(level, [])
+        if any(ind in text_lower for ind in indicators):
+            return level
+
+    # Try to detect from years of experience mentioned
+    years_match = re.search(r'(\d+)\s*(?:ans?|years?)\s*(?:d\'?expérience|experience|exp)', text_lower)
+    if years_match:
+        years = int(years_match.group(1))
+        if years >= 8:
+            return "senior"
+        elif years >= 3:
+            return "mid"
+        else:
+            return "junior"
+
+    return None
+
+
 def infer_roles(cv_text: str, pref_role: Optional[str]) -> List[str]:
+    """Infer potential job roles from CV text and preferences."""
     roles: List[str] = []
     if pref_role:
         roles.append(pref_role.lower())
+
     text = cv_text.lower()
+
+    # Score each role hint based on how well it matches the CV
+    role_scores: Dict[str, int] = {}
     for hint in ROLE_HINTS:
         if hint in text:
-            roles.append(hint)
-    # deduplicate en conservant l'ordre
+            # Count occurrences for ranking
+            count = text.count(hint)
+            role_scores[hint] = count
+
+    # Sort by score and add to roles
+    sorted_roles = sorted(role_scores.items(), key=lambda x: x[1], reverse=True)
+    for role, _ in sorted_roles[:5]:  # Top 5 roles
+        if role not in roles:
+            roles.append(role)
+
+    # Deduplicate while preserving order
     seen = set()
     ordered = []
     for r in roles:
@@ -285,6 +404,64 @@ def infer_roles(cv_text: str, pref_role: Optional[str]) -> List[str]:
             ordered.append(r)
             seen.add(r)
     return ordered
+
+
+def categorize_skills(skills: List[str]) -> Dict[str, List[str]]:
+    """Categorize detected skills into groups."""
+    categories = {
+        "languages": [],
+        "frontend": [],
+        "backend": [],
+        "databases": [],
+        "cloud_devops": [],
+        "data_ml": [],
+        "mobile": [],
+        "tools": [],
+    }
+
+    skill_categories = {
+        # Languages
+        "python": "languages", "javascript": "languages", "typescript": "languages",
+        "java": "languages", "c++": "languages", "c#": "languages", "ruby": "languages",
+        "go": "languages", "golang": "languages", "rust": "languages", "swift": "languages",
+        "kotlin": "languages", "scala": "languages", "php": "languages", "r": "languages",
+        # Frontend
+        "react": "frontend", "reactjs": "frontend", "vue": "frontend", "vuejs": "frontend",
+        "angular": "frontend", "svelte": "frontend", "nextjs": "frontend", "next.js": "frontend",
+        "html": "frontend", "css": "frontend", "tailwind": "frontend", "bootstrap": "frontend",
+        "webpack": "frontend", "vite": "frontend", "redux": "frontend",
+        # Backend
+        "nodejs": "backend", "node.js": "backend", "express": "backend", "fastapi": "backend",
+        "django": "backend", "flask": "backend", "spring": "backend", "rails": "backend",
+        "laravel": "backend", "nestjs": "backend", "graphql": "backend",
+        # Databases
+        "sql": "databases", "mysql": "databases", "postgresql": "databases", "postgres": "databases",
+        "mongodb": "databases", "redis": "databases", "elasticsearch": "databases",
+        "dynamodb": "databases", "sqlite": "databases", "prisma": "databases",
+        # Cloud & DevOps
+        "aws": "cloud_devops", "azure": "cloud_devops", "gcp": "cloud_devops",
+        "docker": "cloud_devops", "kubernetes": "cloud_devops", "k8s": "cloud_devops",
+        "terraform": "cloud_devops", "jenkins": "cloud_devops", "gitlab": "cloud_devops",
+        "linux": "cloud_devops", "nginx": "cloud_devops", "ci/cd": "cloud_devops",
+        # Data & ML
+        "pandas": "data_ml", "numpy": "data_ml", "tensorflow": "data_ml", "pytorch": "data_ml",
+        "scikit-learn": "data_ml", "sklearn": "data_ml", "spark": "data_ml", "kafka": "data_ml",
+        "airflow": "data_ml", "jupyter": "data_ml", "tableau": "data_ml", "powerbi": "data_ml",
+        "llm": "data_ml", "nlp": "data_ml", "opencv": "data_ml", "huggingface": "data_ml",
+        # Mobile
+        "react native": "mobile", "flutter": "mobile", "ionic": "mobile", "swiftui": "mobile",
+        # Tools
+        "git": "tools", "jira": "tools", "figma": "tools", "postman": "tools",
+        "agile": "tools", "scrum": "tools", "api": "tools", "rest": "tools",
+    }
+
+    for skill in skills:
+        category = skill_categories.get(skill, "tools")
+        if skill not in categories[category]:
+            categories[category].append(skill)
+
+    # Remove empty categories
+    return {k: v for k, v in categories.items() if v}
 
 
 def build_queries(
@@ -345,10 +522,31 @@ def extract_must_hits(cv_tokens: List[str], must_keywords: List[str]) -> Tuple[L
 
 
 def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
+    """
+    Comprehensive CV and profile analysis.
+    Returns detected skills, roles, experience level, and search queries.
+    """
     cv = latest_cv(db, user_id)
     cv_text = cv.text or "" if cv else ""
+
+    # Extract technical skills first (more accurate than generic tokenization)
+    tech_skills = extract_tech_skills(cv_text) if cv_text else []
+
+    # Also get general tokens for frequency analysis
     tokens = tokenize(cv_text) if cv_text else []
-    top_keywords = [w for w, _ in Counter(tokens).most_common(15)]
+
+    # Combine tech skills with top frequent tokens (prioritize tech skills)
+    top_tokens = [w for w, _ in Counter(tokens).most_common(20)]
+    # Tech skills first, then other frequent keywords not already in tech_skills
+    top_keywords = tech_skills[:15] + [t for t in top_tokens if t not in tech_skills][:5]
+    top_keywords = top_keywords[:15]  # Limit to 15
+
+    # Detect experience level
+    experience_level = detect_experience_level(cv_text) if cv_text else None
+
+    # Categorize skills for better display
+    skill_categories = categorize_skills(tech_skills) if tech_skills else {}
+
     cleaned_role = clean_field(pref.role)
     cleaned_location = clean_field(pref.location)
     roles = infer_roles(cv_text, cleaned_role)
@@ -370,15 +568,20 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     # Optionnel : enrichir avec OpenAI si dispo
     llm_enriched = None
     if cv_text or pref.must_keywords or pref.role or pref.location:
+        # Include detected skills in prompt for better context
+        skills_context = ", ".join(tech_skills[:20]) if tech_skills else "non détectées"
         prompt = (
             "Analyse ce CV et ces préférences et propose des requêtes d'emploi pour la France.\n"
             f"Rôle souhaité: {cleaned_role or 'non précisé'}\n"
             f"Localisation: {cleaned_location or 'France'}\n"
+            f"Niveau détecté: {experience_level or 'non détecté'}\n"
+            f"Compétences techniques détectées: {skills_context}\n"
             f"Mots-clés obligatoires: {', '.join(must_keywords) or '—'}\n"
             f"Texte CV (tronqué): {cv_text[:1500]}\n"
             'Réponds en JSON: {"queries": ["..."], "resume": "1-2 phrases", "tags": ["tag1","tag2","tag3"]}'
         )
         llm_enriched = _call_openai(prompt)
+
     if llm_enriched:
         llm_used = True
         llm_queries = [q for q in llm_enriched.get("queries", []) if isinstance(q, str)]
@@ -389,15 +592,33 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
             summary_parts = [llm_summary.strip()]
         llm_tags = [t for t in llm_enriched.get("tags", []) if isinstance(t, str)]
         if llm_tags:
-            top_keywords = llm_tags[:15]
+            # Merge LLM tags with detected tech skills
+            merged = tech_skills[:10] + [t for t in llm_tags if t not in tech_skills]
+            top_keywords = merged[:15]
+
+    # Build summary
+    if experience_level:
+        level_labels = {
+            "junior": "Junior / Débutant",
+            "mid": "Confirmé (3-5 ans)",
+            "senior": "Senior / Expert",
+            "management": "Manager / Direction"
+        }
+        summary_parts.append(f"Niveau: {level_labels.get(experience_level, experience_level)}")
+
     if roles:
         summary_parts.append(f"Rôle cible: {roles[0]}")
-    if top_keywords:
-        summary_parts.append(f"Compétences fortes: {', '.join(top_keywords[:5])}")
+
+    if tech_skills:
+        # Show categorized skills in summary
+        main_skills = tech_skills[:5]
+        summary_parts.append(f"Compétences clés: {', '.join(main_skills)}")
+
     if hits:
-        summary_parts.append(f"Mots-clés obligatoires présents: {', '.join(hits)}")
+        summary_parts.append(f"Mots-clés trouvés: {', '.join(hits)}")
     if missing:
-        summary_parts.append(f"A compléter: {', '.join(missing)}")
+        summary_parts.append(f"À renforcer: {', '.join(missing)}")
+
     if not summary_parts:
         summary_parts.append("Ajoute un CV et des préférences pour une analyse plus fine.")
 
@@ -410,6 +631,10 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
         "missing_must": missing,
         "summary": " | ".join(summary_parts),
         "llm_used": llm_used,
+        # New fields for enhanced analysis
+        "experience_level": experience_level,
+        "skill_categories": skill_categories,
+        "tech_skills_count": len(tech_skills),
     }
 def search_jobs_for_user(
     db: Session,
