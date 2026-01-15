@@ -129,8 +129,9 @@ def strip_accents(value: str) -> str:
         c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn"
     )
 
-# Expanded role detection
+# Expanded role detection (all domains)
 ROLE_HINTS = [
+    # === TECH / IT ===
     # Data & AI
     "data scientist", "data analyst", "data engineer", "machine learning", "ml engineer",
     "ai engineer", "deep learning", "nlp engineer", "computer vision",
@@ -142,59 +143,244 @@ ROLE_HINTS = [
     # DevOps & Infrastructure
     "devops", "sre", "site reliability", "cloud engineer", "platform engineer",
     "infrastructure", "system administrator", "sysadmin", "network engineer",
-    # Management & Product
-    "product manager", "project manager", "tech lead", "team lead", "engineering manager",
-    "cto", "vp engineering", "scrum master", "agile coach", "product owner",
     # Design & UX
     "ux designer", "ui designer", "product designer", "ux researcher",
     # Security
     "security engineer", "cybersecurity", "pentester", "security analyst",
     # QA
     "qa engineer", "test engineer", "quality assurance", "sdet",
-    # Other tech roles
-    "consultant", "architect", "solutions architect", "technical writer",
-    "support engineer", "customer success",
+
+    # === MARKETING / COMMUNICATION ===
+    "chef de projet marketing", "responsable marketing", "directeur marketing",
+    "community manager", "social media manager", "content manager",
+    "chargé de communication", "responsable communication", "directeur communication",
+    "chef de produit", "product manager", "brand manager",
+    "traffic manager", "growth manager", "acquisition manager",
+    "seo manager", "sea manager", "responsable digital",
+    "attaché de presse", "relations presse", "relations publiques",
+
+    # === FINANCE / COMPTABILITÉ ===
+    "comptable", "expert comptable", "aide comptable",
+    "contrôleur de gestion", "directeur financier", "daf", "cfo",
+    "analyste financier", "auditeur", "audit interne", "audit externe",
+    "trésorier", "credit manager", "responsable recouvrement",
+    "responsable paie", "gestionnaire paie", "fiscaliste",
+
+    # === RESSOURCES HUMAINES ===
+    "chargé de recrutement", "responsable recrutement", "talent acquisition",
+    "responsable rh", "directeur rh", "drh", "hr manager", "hr business partner",
+    "gestionnaire rh", "assistant rh", "chargé rh",
+    "responsable formation", "chargé de formation", "ingénieur formation",
+    "responsable paie", "gestionnaire paie",
+    "responsable relations sociales", "juriste social",
+
+    # === COMMERCIAL / VENTE ===
+    "commercial", "attaché commercial", "technico-commercial",
+    "responsable commercial", "directeur commercial",
+    "business developer", "key account manager", "account manager",
+    "ingénieur commercial", "ingénieur d'affaires",
+    "responsable grands comptes", "chef des ventes", "directeur des ventes",
+    "responsable adv", "assistant commercial",
+
+    # === DESIGN / CRÉATION ===
+    "graphiste", "designer graphique", "infographiste",
+    "directeur artistique", "da", "creative director",
+    "motion designer", "illustrateur", "webdesigner",
+    "photographe", "vidéaste", "réalisateur",
+    "chef de projet créatif", "responsable studio",
+
+    # === JURIDIQUE ===
+    "juriste", "juriste d'entreprise", "juriste droit des affaires",
+    "juriste contrats", "juriste social", "juriste immobilier",
+    "avocat", "notaire", "huissier",
+    "responsable juridique", "directeur juridique",
+    "compliance officer", "responsable conformité",
+
+    # === SANTÉ / MÉDICAL ===
+    "médecin", "infirmier", "infirmière", "aide-soignant",
+    "pharmacien", "préparateur en pharmacie",
+    "kinésithérapeute", "ostéopathe", "sage-femme",
+    "psychologue", "orthophoniste", "ergothérapeute",
+    "cadre de santé", "directeur d'établissement",
+
+    # === INGÉNIERIE / INDUSTRIE ===
+    "ingénieur", "technicien", "chef de projet industriel",
+    "ingénieur mécanique", "ingénieur électrique", "ingénieur process",
+    "ingénieur qualité", "responsable qualité", "qualiticien",
+    "ingénieur méthodes", "ingénieur production", "responsable production",
+    "ingénieur maintenance", "responsable maintenance", "technicien maintenance",
+    "ingénieur hse", "responsable hse", "animateur hse",
+    "chef de chantier", "conducteur de travaux", "ingénieur travaux",
+    "acheteur", "responsable achats", "directeur achats",
+
+    # === LOGISTIQUE / SUPPLY CHAIN ===
+    "responsable logistique", "directeur logistique", "supply chain manager",
+    "responsable entrepôt", "chef d'équipe logistique",
+    "gestionnaire de stock", "approvisionneur", "planificateur",
+    "responsable transport", "affréteur", "déclarant en douane",
+
+    # === ADMINISTRATION / ASSISTANAT ===
+    "assistant", "assistante", "assistant de direction", "assistant administratif",
+    "secrétaire", "secrétaire de direction", "office manager",
+    "standardiste", "hôte d'accueil", "hôtesse d'accueil",
+    "gestionnaire administratif", "agent administratif",
+
+    # === HÔTELLERIE / RESTAURATION ===
+    "chef de cuisine", "chef cuisinier", "sous-chef", "commis de cuisine",
+    "serveur", "chef de rang", "maître d'hôtel",
+    "réceptionniste", "concierge", "directeur d'hôtel",
+    "barman", "sommelier", "pâtissier",
+
+    # === ÉDUCATION / FORMATION ===
+    "enseignant", "professeur", "formateur", "animateur",
+    "responsable pédagogique", "ingénieur pédagogique",
+    "coach", "consultant formation",
+
+    # === MANAGEMENT GÉNÉRAL ===
+    "manager", "responsable", "directeur", "chef de projet",
+    "project manager", "chef d'équipe", "team lead",
+    "scrum master", "agile coach", "product owner",
+    "consultant", "chef de service", "directeur général", "dg", "ceo",
 ]
 
-# Technical skills to detect in CV (weighted higher than common words)
-TECH_SKILLS = {
+# Professional skills to detect in CV (all domains, not just tech)
+PROFESSIONAL_SKILLS = {
+    # === TECH / IT ===
     # Programming Languages
     "python", "javascript", "typescript", "java", "c++", "c#", "ruby", "go", "golang",
     "rust", "swift", "kotlin", "scala", "php", "perl", "r", "matlab", "julia",
     "objective-c", "dart", "elixir", "clojure", "haskell", "lua", "shell", "bash",
     # Frontend
     "react", "reactjs", "vue", "vuejs", "angular", "svelte", "nextjs", "next.js",
-    "nuxt", "gatsby", "html", "css", "sass", "scss", "less", "tailwind", "bootstrap",
-    "webpack", "vite", "redux", "mobx", "graphql", "apollo", "jquery",
+    "nuxt", "gatsby", "html", "css", "sass", "scss", "tailwind", "bootstrap",
+    "webpack", "vite", "redux", "graphql", "jquery",
     # Backend
     "nodejs", "node.js", "express", "fastapi", "django", "flask", "spring",
-    "springboot", "rails", "laravel", "symfony", "asp.net", "nestjs", "koa",
-    "fastify", "gin", "echo", "fiber",
+    "rails", "laravel", "symfony", "asp.net", "nestjs",
     # Databases
-    "sql", "mysql", "postgresql", "postgres", "mongodb", "redis", "elasticsearch",
-    "cassandra", "dynamodb", "sqlite", "oracle", "mariadb", "neo4j", "couchdb",
-    "firestore", "supabase", "prisma", "sequelize", "typeorm", "sqlalchemy",
+    "sql", "mysql", "postgresql", "mongodb", "redis", "elasticsearch",
+    "oracle", "sqlite", "prisma", "sqlalchemy",
     # Cloud & DevOps
-    "aws", "azure", "gcp", "google cloud", "docker", "kubernetes", "k8s",
-    "terraform", "ansible", "jenkins", "gitlab", "github actions", "circleci",
-    "travis", "nginx", "apache", "linux", "ubuntu", "debian", "centos",
-    "prometheus", "grafana", "datadog", "splunk", "elk", "cloudflare",
+    "aws", "azure", "gcp", "docker", "kubernetes", "terraform", "ansible",
+    "jenkins", "gitlab", "linux", "nginx",
     # Data & ML
-    "pandas", "numpy", "scipy", "scikit-learn", "sklearn", "tensorflow", "pytorch",
-    "keras", "spark", "hadoop", "airflow", "kafka", "rabbitmq", "celery",
-    "jupyter", "tableau", "powerbi", "looker", "dbt", "snowflake", "bigquery",
-    "databricks", "mlflow", "kubeflow", "sagemaker", "huggingface", "langchain",
-    "openai", "gpt", "llm", "nlp", "opencv", "yolo",
-    # Mobile
-    "react native", "flutter", "ionic", "xamarin", "swiftui", "jetpack compose",
-    # Tools & Practices
-    "git", "jira", "confluence", "slack", "figma", "sketch", "adobe xd",
-    "postman", "swagger", "openapi", "rest", "restful", "api", "microservices",
-    "agile", "scrum", "kanban", "ci/cd", "cicd", "tdd", "bdd", "solid",
-    # Security
-    "oauth", "jwt", "ssl", "tls", "https", "encryption", "penetration testing",
-    "owasp", "sso", "ldap", "saml",
+    "pandas", "numpy", "tensorflow", "pytorch", "spark", "hadoop", "kafka",
+    "tableau", "powerbi", "jupyter", "machine learning", "deep learning",
+
+    # === MARKETING / COMMUNICATION ===
+    "seo", "sea", "sem", "google ads", "facebook ads", "linkedin ads", "tiktok ads",
+    "google analytics", "analytics", "hubspot", "mailchimp", "sendinblue", "brevo",
+    "crm", "salesforce", "marketing automation", "inbound marketing", "outbound",
+    "community management", "social media", "réseaux sociaux", "content marketing",
+    "copywriting", "storytelling", "branding", "brand management", "e-réputation",
+    "influence marketing", "affiliation", "growth hacking", "acquisition",
+    "emailing", "newsletter", "webmarketing", "marketing digital",
+    "relations presse", "relations publiques", "communication corporate",
+    "communication interne", "événementiel", "sponsoring",
+
+    # === FINANCE / COMPTABILITÉ ===
+    "comptabilité", "accounting", "audit", "contrôle de gestion", "controlling",
+    "finance", "trésorerie", "treasury", "consolidation", "ifrs", "gaap",
+    "fiscalité", "tax", "paie", "payroll", "facturation", "recouvrement",
+    "budget", "budgeting", "forecast", "reporting financier", "kpi",
+    "analyse financière", "financial analysis", "business plan", "valorisation",
+    "excel", "vba", "sap", "sage", "cegid", "quadra", "ebp",
+    "credit management", "risk management", "compliance", "kyc", "aml",
+
+    # === RESSOURCES HUMAINES ===
+    "recrutement", "recruitment", "sourcing", "chasse de têtes", "headhunting",
+    "entretien", "onboarding", "offboarding", "sirh", "hris", "workday", "talentsoft",
+    "formation", "training", "développement rh", "gpec", "gepp",
+    "paie", "administration du personnel", "droit social", "droit du travail",
+    "relations sociales", "cse", "négociation collective", "accord d'entreprise",
+    "marque employeur", "employer branding", "qvt", "qualité de vie au travail",
+    "diversité", "inclusion", "handicap", "rse",
+
+    # === COMMERCIAL / VENTE ===
+    "vente", "sales", "négociation", "prospection", "closing", "upselling",
+    "cross-selling", "account management", "key account", "grands comptes",
+    "business development", "développement commercial", "b2b", "b2c",
+    "pipeline", "crm", "salesforce", "hubspot", "pipedrive",
+    "objectifs commerciaux", "kpi", "chiffre d'affaires", "marge",
+    "relation client", "fidélisation", "satisfaction client", "nps",
+    "retail", "grande distribution", "e-commerce", "marketplace",
+
+    # === DESIGN / CRÉATION ===
+    "photoshop", "illustrator", "indesign", "after effects", "premiere pro",
+    "figma", "sketch", "adobe xd", "invision", "zeplin", "canva",
+    "ui design", "ux design", "ui/ux", "webdesign", "web design",
+    "design graphique", "graphic design", "direction artistique", "da",
+    "motion design", "animation", "3d", "blender", "cinema 4d", "maya",
+    "branding", "identité visuelle", "logo", "charte graphique",
+    "packaging", "print", "édition", "mise en page", "typography",
+
+    # === JURIDIQUE ===
+    "droit des affaires", "droit commercial", "droit des sociétés",
+    "droit du travail", "droit social", "contentieux", "litigation",
+    "propriété intellectuelle", "pi", "marques", "brevets", "rgpd", "gdpr",
+    "contrats", "contract management", "négociation", "due diligence",
+    "conformité", "compliance", "réglementation", "veille juridique",
+    "droit immobilier", "droit fiscal", "droit pénal", "droit public",
+
+    # === SANTÉ / MÉDICAL ===
+    "médecin", "infirmier", "infirmière", "aide-soignant", "pharmacien",
+    "kinésithérapeute", "sage-femme", "psychologue", "orthophoniste",
+    "laboratoire", "analyses", "imagerie médicale", "radiologie",
+    "bloc opératoire", "urgences", "réanimation", "soins intensifs",
+    "ehpad", "hôpital", "clinique", "cabinet médical",
+    "recherche clinique", "essais cliniques", "pharmacovigilance",
+    "dispositifs médicaux", "réglementation sanitaire", "has", "ansm",
+
+    # === INGÉNIERIE / INDUSTRIE ===
+    "autocad", "solidworks", "catia", "revit", "bim", "cao", "dao",
+    "génie civil", "bâtiment", "construction", "travaux publics", "tp",
+    "mécanique", "électrique", "électronique", "automatisme", "plc",
+    "maintenance", "gmao", "lean", "six sigma", "kaizen", "5s",
+    "qualité", "iso 9001", "iso 14001", "qhse", "hse", "sécurité",
+    "production", "industrialisation", "méthodes", "process",
+    "supply chain", "logistique", "approvisionnement", "achats", "procurement",
+    "erp", "sap", "oracle", "gpao", "mes",
+
+    # === ÉDUCATION / FORMATION ===
+    "enseignement", "pédagogie", "formation", "e-learning", "mooc",
+    "ingénierie pédagogique", "conception pédagogique", "lms", "moodle",
+    "animation", "facilitation", "coaching", "mentorat", "tutorat",
+    "évaluation", "certification", "diplôme", "compétences",
+
+    # === HÔTELLERIE / RESTAURATION / TOURISME ===
+    "hôtellerie", "restauration", "cuisine", "chef", "commis", "serveur",
+    "réception", "conciergerie", "housekeeping", "room service",
+    "revenue management", "yield management", "booking", "réservation",
+    "tourisme", "agence de voyage", "tour operator", "guide",
+    "événementiel", "banquet", "traiteur", "catering",
+
+    # === LOGISTIQUE / TRANSPORT ===
+    "logistique", "logistics", "supply chain", "approvisionnement",
+    "entreposage", "warehouse", "wms", "préparation de commandes", "picking",
+    "transport", "affrètement", "douane", "import", "export", "incoterms",
+    "livraison", "dernier kilomètre", "last mile", "fleet management",
+    "caces", "chariot élévateur", "manutention",
+
+    # === ADMINISTRATION / ASSISTANAT ===
+    "assistanat", "secrétariat", "accueil", "standard", "téléphonique",
+    "gestion administrative", "classement", "archivage", "courrier",
+    "agenda", "planning", "organisation", "coordination",
+    "word", "excel", "powerpoint", "outlook", "office 365", "google workspace",
+    "saisie", "frappe", "rédaction", "compte-rendu", "pv",
+
+    # === COMPÉTENCES TRANSVERSALES ===
+    "management", "leadership", "gestion d'équipe", "encadrement",
+    "gestion de projet", "project management", "pmo", "prince2", "pmp",
+    "agile", "scrum", "kanban", "lean", "amélioration continue",
+    "communication", "présentation", "prise de parole", "rédaction",
+    "analyse", "synthèse", "résolution de problèmes", "problem solving",
+    "négociation", "persuasion", "influence", "diplomatie",
+    "anglais", "english", "espagnol", "allemand", "italien", "chinois",
+    "bilingue", "trilingue", "toeic", "toefl", "ielts", "bulats",
 }
+
+# Alias pour compatibilité
+TECH_SKILLS = PROFESSIONAL_SKILLS
 
 # Experience level indicators
 EXPERIENCE_INDICATORS = {
@@ -407,24 +593,36 @@ def infer_roles(cv_text: str, pref_role: Optional[str]) -> List[str]:
 
 
 def categorize_skills(skills: List[str]) -> Dict[str, List[str]]:
-    """Categorize detected skills into groups."""
+    """Categorize detected skills into groups (all domains)."""
     categories = {
-        "languages": [],
+        # Tech
+        "langages_prog": [],
         "frontend": [],
         "backend": [],
         "databases": [],
         "cloud_devops": [],
         "data_ml": [],
-        "mobile": [],
-        "tools": [],
+        # Business
+        "marketing": [],
+        "finance": [],
+        "rh": [],
+        "commercial": [],
+        "design": [],
+        "juridique": [],
+        "sante": [],
+        "industrie": [],
+        "logistique": [],
+        "langues": [],
+        "outils": [],
     }
 
     skill_categories = {
-        # Languages
-        "python": "languages", "javascript": "languages", "typescript": "languages",
-        "java": "languages", "c++": "languages", "c#": "languages", "ruby": "languages",
-        "go": "languages", "golang": "languages", "rust": "languages", "swift": "languages",
-        "kotlin": "languages", "scala": "languages", "php": "languages", "r": "languages",
+        # === TECH ===
+        # Programming Languages
+        "python": "langages_prog", "javascript": "langages_prog", "typescript": "langages_prog",
+        "java": "langages_prog", "c++": "langages_prog", "c#": "langages_prog", "ruby": "langages_prog",
+        "go": "langages_prog", "golang": "langages_prog", "rust": "langages_prog", "swift": "langages_prog",
+        "kotlin": "langages_prog", "scala": "langages_prog", "php": "langages_prog", "r": "langages_prog",
         # Frontend
         "react": "frontend", "reactjs": "frontend", "vue": "frontend", "vuejs": "frontend",
         "angular": "frontend", "svelte": "frontend", "nextjs": "frontend", "next.js": "frontend",
@@ -437,26 +635,93 @@ def categorize_skills(skills: List[str]) -> Dict[str, List[str]]:
         # Databases
         "sql": "databases", "mysql": "databases", "postgresql": "databases", "postgres": "databases",
         "mongodb": "databases", "redis": "databases", "elasticsearch": "databases",
-        "dynamodb": "databases", "sqlite": "databases", "prisma": "databases",
+        "oracle": "databases", "sqlite": "databases", "prisma": "databases",
         # Cloud & DevOps
         "aws": "cloud_devops", "azure": "cloud_devops", "gcp": "cloud_devops",
-        "docker": "cloud_devops", "kubernetes": "cloud_devops", "k8s": "cloud_devops",
-        "terraform": "cloud_devops", "jenkins": "cloud_devops", "gitlab": "cloud_devops",
-        "linux": "cloud_devops", "nginx": "cloud_devops", "ci/cd": "cloud_devops",
+        "docker": "cloud_devops", "kubernetes": "cloud_devops", "terraform": "cloud_devops",
+        "jenkins": "cloud_devops", "gitlab": "cloud_devops", "linux": "cloud_devops", "nginx": "cloud_devops",
         # Data & ML
         "pandas": "data_ml", "numpy": "data_ml", "tensorflow": "data_ml", "pytorch": "data_ml",
-        "scikit-learn": "data_ml", "sklearn": "data_ml", "spark": "data_ml", "kafka": "data_ml",
-        "airflow": "data_ml", "jupyter": "data_ml", "tableau": "data_ml", "powerbi": "data_ml",
-        "llm": "data_ml", "nlp": "data_ml", "opencv": "data_ml", "huggingface": "data_ml",
-        # Mobile
-        "react native": "mobile", "flutter": "mobile", "ionic": "mobile", "swiftui": "mobile",
-        # Tools
-        "git": "tools", "jira": "tools", "figma": "tools", "postman": "tools",
-        "agile": "tools", "scrum": "tools", "api": "tools", "rest": "tools",
+        "spark": "data_ml", "kafka": "data_ml", "tableau": "data_ml", "powerbi": "data_ml",
+        "machine learning": "data_ml", "deep learning": "data_ml", "jupyter": "data_ml",
+
+        # === MARKETING / COMMUNICATION ===
+        "seo": "marketing", "sea": "marketing", "sem": "marketing", "google ads": "marketing",
+        "facebook ads": "marketing", "linkedin ads": "marketing", "google analytics": "marketing",
+        "hubspot": "marketing", "mailchimp": "marketing", "sendinblue": "marketing",
+        "crm": "marketing", "salesforce": "marketing", "marketing automation": "marketing",
+        "community management": "marketing", "social media": "marketing", "content marketing": "marketing",
+        "copywriting": "marketing", "storytelling": "marketing", "branding": "marketing",
+        "growth hacking": "marketing", "emailing": "marketing", "newsletter": "marketing",
+
+        # === FINANCE / COMPTABILITÉ ===
+        "comptabilité": "finance", "accounting": "finance", "audit": "finance",
+        "contrôle de gestion": "finance", "finance": "finance", "trésorerie": "finance",
+        "consolidation": "finance", "ifrs": "finance", "gaap": "finance",
+        "fiscalité": "finance", "paie": "finance", "payroll": "finance",
+        "excel": "finance", "vba": "finance", "sap": "finance", "sage": "finance",
+        "cegid": "finance", "budget": "finance", "forecast": "finance",
+
+        # === RESSOURCES HUMAINES ===
+        "recrutement": "rh", "recruitment": "rh", "sourcing": "rh",
+        "sirh": "rh", "hris": "rh", "workday": "rh", "talentsoft": "rh",
+        "formation": "rh", "training": "rh", "gpec": "rh", "gepp": "rh",
+        "droit social": "rh", "droit du travail": "rh", "marque employeur": "rh",
+        "qvt": "rh", "diversité": "rh", "inclusion": "rh",
+
+        # === COMMERCIAL / VENTE ===
+        "vente": "commercial", "sales": "commercial", "négociation": "commercial",
+        "prospection": "commercial", "closing": "commercial", "b2b": "commercial", "b2c": "commercial",
+        "business development": "commercial", "account management": "commercial",
+        "pipedrive": "commercial", "retail": "commercial", "e-commerce": "commercial",
+
+        # === DESIGN / CRÉATION ===
+        "photoshop": "design", "illustrator": "design", "indesign": "design",
+        "after effects": "design", "premiere pro": "design", "figma": "design",
+        "sketch": "design", "adobe xd": "design", "canva": "design",
+        "ui design": "design", "ux design": "design", "ui/ux": "design",
+        "motion design": "design", "3d": "design", "blender": "design",
+
+        # === JURIDIQUE ===
+        "droit des affaires": "juridique", "droit commercial": "juridique",
+        "droit du travail": "juridique", "contentieux": "juridique",
+        "propriété intellectuelle": "juridique", "rgpd": "juridique", "gdpr": "juridique",
+        "contrats": "juridique", "compliance": "juridique", "conformité": "juridique",
+
+        # === SANTÉ / MÉDICAL ===
+        "médecin": "sante", "infirmier": "sante", "pharmacien": "sante",
+        "kinésithérapeute": "sante", "psychologue": "sante",
+        "recherche clinique": "sante", "pharmacovigilance": "sante",
+
+        # === INGÉNIERIE / INDUSTRIE ===
+        "autocad": "industrie", "solidworks": "industrie", "catia": "industrie",
+        "revit": "industrie", "bim": "industrie", "cao": "industrie",
+        "lean": "industrie", "six sigma": "industrie", "kaizen": "industrie",
+        "qualité": "industrie", "iso 9001": "industrie", "qhse": "industrie", "hse": "industrie",
+        "maintenance": "industrie", "gmao": "industrie", "erp": "industrie",
+
+        # === LOGISTIQUE / SUPPLY CHAIN ===
+        "logistique": "logistique", "supply chain": "logistique",
+        "warehouse": "logistique", "wms": "logistique",
+        "transport": "logistique", "douane": "logistique", "incoterms": "logistique",
+        "caces": "logistique",
+
+        # === LANGUES ===
+        "anglais": "langues", "english": "langues", "espagnol": "langues",
+        "allemand": "langues", "italien": "langues", "chinois": "langues",
+        "bilingue": "langues", "trilingue": "langues",
+        "toeic": "langues", "toefl": "langues", "ielts": "langues",
+
+        # === OUTILS TRANSVERSAUX ===
+        "git": "outils", "jira": "outils", "confluence": "outils",
+        "word": "outils", "powerpoint": "outils", "outlook": "outils",
+        "office 365": "outils", "google workspace": "outils",
+        "agile": "outils", "scrum": "outils", "kanban": "outils",
+        "management": "outils", "gestion de projet": "outils", "project management": "outils",
     }
 
     for skill in skills:
-        category = skill_categories.get(skill, "tools")
+        category = skill_categories.get(skill, "outils")
         if skill not in categories[category]:
             categories[category].append(skill)
 
