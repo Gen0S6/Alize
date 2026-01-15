@@ -12,7 +12,7 @@ from app.auth import get_current_user
 from app.deps import get_db
 from app.models import CV, User
 from app.schemas import CVOut
-from app.services.matching import clear_all_jobs
+from app.services.matching import clear_user_job_data
 from app.services import storage
 
 router = APIRouter(prefix="/cv", tags=["cv"])
@@ -106,7 +106,8 @@ async def upload_cv(
     db.add(cv)
     db.commit()
     db.refresh(cv)
-    clear_all_jobs(db)
+    # Clear user's job data so they see jobs as "new" after CV update
+    clear_user_job_data(db, user.id)
 
     return {"id": cv.id, "filename": cv.filename, "url": storage.presigned_url(cv.filename)}
 
