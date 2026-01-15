@@ -343,27 +343,6 @@ def extract_skills_from_text(text: str) -> Dict[str, List[str]]:
     return found_skills
 
 
-def detect_experience_level(text: str) -> str:
-    """
-    Detect experience level from CV text.
-    Returns: 'junior', 'confirme', or 'senior'
-    """
-    text_lower = strip_accents(text.lower())
-
-    # Count indicators for each level
-    level_scores = {"junior": 0, "confirme": 0, "senior": 0}
-
-    for level, indicators in EXPERIENCE_LEVELS.items():
-        for indicator in indicators:
-            indicator_normalized = strip_accents(indicator.lower())
-            if indicator_normalized in text_lower:
-                level_scores[level] += 1
-
-    # Return the level with highest score, default to junior
-    max_level = max(level_scores, key=level_scores.get)
-    return max_level if level_scores[max_level] > 0 else "junior"
-
-
 def extract_education(text: str) -> Dict[str, List[str]]:
     """
     Extract education information from CV text.
@@ -1172,7 +1151,7 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
 
             llm_langues = llm_result.get("langues", [])
             if isinstance(llm_langues, list) and llm_langues:
-                langues = [l for l in llm_langues if isinstance(l, str)]
+                langues = [lang for lang in llm_langues if isinstance(lang, str)]
 
             llm_formation = llm_result.get("formation", "")
             if isinstance(llm_formation, str) and llm_formation.strip():
