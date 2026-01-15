@@ -8,8 +8,23 @@ from fastapi import FastAPI, Request
 from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return response
 
 # Charger l'env avant tout import interne qui lit os.getenv
 load_dotenv()
@@ -22,8 +37,9 @@ from app.api.notify import router as notify_router
 from app.api.password_reset import router as password_reset_router
 from app.api.preferences import router as preferences_router
 from app.api.profile import router as profile_router
+from app.oauth import router as oauth_router
 from app.db import Base, SessionLocal, engine
-from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user
+from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user, cleanup_old_jobs
 from app.services.notifications import notify_all_users
 from app.services.preferences import get_or_create_pref
 from app.rate_limit import limiter, rate_limit_exceeded_handler
@@ -34,11 +50,16 @@ SWAGGER_FAVICON_URL = "/static/swagger-favicon.svg"
 
 app = FastAPI(title="Alizè", docs_url=None, redoc_url=None)
 
+# Log startup configuration
+log = logging.getLogger("alize")
+logging.basicConfig(level=logging.INFO)
+log.info("Starting Alizè API...")
+log.info("Database URL: %s", os.getenv("DATABASE_URL", "sqlite:///./app.db")[:20] + "...")
+log.info("Frontend URL: %s", os.getenv("FRONTEND_URL", "not set"))
+
 # Setup rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-log = logging.getLogger("alize")
-logging.basicConfig(level=logging.INFO)
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -58,6 +79,21 @@ ALLOWED_ORIGINS = [
     "https://www.alizejobfinder.com",
 ]
 
+# Add additional origins from environment variable (comma-separated)
+extra_origins = os.getenv("CORS_ORIGINS", "")
+if extra_origins:
+    ALLOWED_ORIGINS.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+
+# Also allow Vercel preview deployments
+vercel_url = os.getenv("VERCEL_URL")
+if vercel_url:
+    ALLOWED_ORIGINS.append(f"https://{vercel_url}")
+
+# Allow frontend URL from env
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    ALLOWED_ORIGINS.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -66,11 +102,15 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
+# Security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Routes
 app.include_router(auth_router)
+app.include_router(oauth_router)
 app.include_router(password_reset_router)
 app.include_router(matches_router)
 app.include_router(ai_router)
@@ -106,20 +146,28 @@ SCHEDULER_INTERVAL_MINUTES = int(os.getenv("SCHEDULER_INTERVAL_MINUTES", "60"))
 
 
 def refresh_jobs_task():
-    with SessionLocal() as db:
-        ensure_linkedin_sample(db)
-        log.info("Jobs refresh task executed")
-        if NOTIFY_ENABLED:
-            notify_all_users(
-                db,
-                matches_func=lambda u, db_: list_matches_for_user(
-                    db_,
-                    u.id,
-                    get_or_create_pref(u, db_),
-                    cv_keywords(db_, u.id),
-                ),
-                refresh=True,
-            )
+    try:
+        with SessionLocal() as db:
+            # Cleanup old jobs (older than 90 days)
+            cleaned = cleanup_old_jobs(db)
+            if cleaned:
+                log.info("Cleaned up %d old job listings", cleaned)
+
+            ensure_linkedin_sample(db)
+            log.info("Jobs refresh task executed")
+            if NOTIFY_ENABLED:
+                notify_all_users(
+                    db,
+                    matches_func=lambda u, db_: list_matches_for_user(
+                        db_,
+                        u.id,
+                        get_or_create_pref(u, db_),
+                        cv_keywords(db_, u.id),
+                    ),
+                    refresh=True,
+                )
+    except Exception as e:
+        log.error("Scheduler task failed: %s", e, exc_info=True)
 
 
 if SCHEDULER_ENABLED:

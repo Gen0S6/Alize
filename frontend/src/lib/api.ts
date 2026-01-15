@@ -108,6 +108,10 @@ export type Analysis = {
   formation?: string;
   secteurs_cibles?: string[];
   skills_by_category?: Record<string, string[]>;
+  // Enhanced CV analysis fields
+  experience_level?: string | null;
+  skill_categories?: Record<string, string[]>;
+  tech_skills_count?: number;
 };
 
 export type JobSearchResult = {
@@ -123,7 +127,10 @@ export type MatchesPage = {
   page: number;
   page_size: number;
   available_sources?: string[];
+  new_count?: number;
 };
+
+export type SortOption = "new_first" | "newest" | "score";
 
 export type JobRun = {
   id: number;
@@ -185,14 +192,24 @@ export async function login(email: string, password: string) {
   });
 }
 
-export async function getMatches(page = 1, pageSize = 20, filterText = "", minScore = 0, source = "all") {
+export async function getMatches(
+  page = 1,
+  pageSize = 20,
+  filterText = "",
+  minScore = 0,
+  source = "all",
+  sortBy: SortOption = "new_first",
+  newOnly = false
+) {
   const params = new URLSearchParams({
     page: String(page),
     page_size: String(pageSize),
+    sort_by: sortBy,
   });
   if (filterText) params.set("filter_text", filterText);
   if (minScore) params.set("min_score", String(minScore));
   if (source && source !== "all") params.set("source", source);
+  if (newOnly) params.set("new_only", "true");
   return apiFetch(`/matches?${params.toString()}`, { method: "GET" }) as Promise<MatchesPage>;
 }
 
@@ -275,4 +292,17 @@ export async function deleteProfile() {
   return apiFetch("/profile", {
     method: "DELETE",
   }) as Promise<{ deleted: boolean }>;
+}
+
+// OAuth APIs
+export type OAuthProviders = {
+  google: boolean;
+};
+
+export async function getOAuthProviders() {
+  return http<OAuthProviders>("/auth/oauth/providers", { method: "GET" });
+}
+
+export function getGoogleOAuthUrl() {
+  return `${API_BASE}/auth/oauth/google`;
 }

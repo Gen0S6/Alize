@@ -59,6 +59,7 @@ class MatchesPage(BaseModel):
     page: int
     page_size: int
     available_sources: List[str] = []
+    new_count: int = 0  # Total count of new offers (for badge)
 
 
 class AnalysisOut(BaseModel):
@@ -70,6 +71,10 @@ class AnalysisOut(BaseModel):
     missing_must: list[str]
     summary: str
     llm_used: bool = False
+    # Enhanced CV analysis fields
+    experience_level: Optional[str] = None
+    skill_categories: dict[str, list[str]] = {}
+    tech_skills_count: int = 0
 
 
 class JobSearchOut(BaseModel):

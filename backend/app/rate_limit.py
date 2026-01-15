@@ -25,8 +25,11 @@ def get_client_ip(request: Request) -> str:
 AUTH_RATE_LIMIT = os.getenv("AUTH_RATE_LIMIT", "5/minute")
 API_RATE_LIMIT = os.getenv("API_RATE_LIMIT", "60/minute")
 
+# Disable rate limiting in test environment
+IS_TESTING = os.getenv("ENVIRONMENT") == "test"
+
 # Create the limiter instance
-limiter = Limiter(key_func=get_client_ip)
+limiter = Limiter(key_func=get_client_ip, enabled=not IS_TESTING)
 
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):

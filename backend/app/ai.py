@@ -411,6 +411,266 @@ Réponds en JSON avec cette structure exacte:
 }}
 
 Les requêtes de recherche doivent être optimisées pour les sites d'emploi français (France Travail, LinkedIn, Indeed) et inclure la localisation si pertinente."""
+# Expanded role detection (all domains)
+ROLE_HINTS = [
+    # === TECH / IT ===
+    # Data & AI
+    "data scientist", "data analyst", "data engineer", "machine learning", "ml engineer",
+    "ai engineer", "deep learning", "nlp engineer", "computer vision",
+    # Development
+    "backend", "frontend", "fullstack", "full stack", "full-stack",
+    "software engineer", "software developer", "web developer", "mobile developer",
+    "ios developer", "android developer", "react developer", "python developer",
+    "java developer", "node developer", ".net developer", "php developer",
+    # DevOps & Infrastructure
+    "devops", "sre", "site reliability", "cloud engineer", "platform engineer",
+    "infrastructure", "system administrator", "sysadmin", "network engineer",
+    # Design & UX
+    "ux designer", "ui designer", "product designer", "ux researcher",
+    # Security
+    "security engineer", "cybersecurity", "pentester", "security analyst",
+    # QA
+    "qa engineer", "test engineer", "quality assurance", "sdet",
+
+    # === MARKETING / COMMUNICATION ===
+    "chef de projet marketing", "responsable marketing", "directeur marketing",
+    "community manager", "social media manager", "content manager",
+    "chargé de communication", "responsable communication", "directeur communication",
+    "chef de produit", "product manager", "brand manager",
+    "traffic manager", "growth manager", "acquisition manager",
+    "seo manager", "sea manager", "responsable digital",
+    "attaché de presse", "relations presse", "relations publiques",
+
+    # === FINANCE / COMPTABILITÉ ===
+    "comptable", "expert comptable", "aide comptable",
+    "contrôleur de gestion", "directeur financier", "daf", "cfo",
+    "analyste financier", "auditeur", "audit interne", "audit externe",
+    "trésorier", "credit manager", "responsable recouvrement",
+    "responsable paie", "gestionnaire paie", "fiscaliste",
+
+    # === RESSOURCES HUMAINES ===
+    "chargé de recrutement", "responsable recrutement", "talent acquisition",
+    "responsable rh", "directeur rh", "drh", "hr manager", "hr business partner",
+    "gestionnaire rh", "assistant rh", "chargé rh",
+    "responsable formation", "chargé de formation", "ingénieur formation",
+    "responsable paie", "gestionnaire paie",
+    "responsable relations sociales", "juriste social",
+
+    # === COMMERCIAL / VENTE ===
+    "commercial", "attaché commercial", "technico-commercial",
+    "responsable commercial", "directeur commercial",
+    "business developer", "key account manager", "account manager",
+    "ingénieur commercial", "ingénieur d'affaires",
+    "responsable grands comptes", "chef des ventes", "directeur des ventes",
+    "responsable adv", "assistant commercial",
+
+    # === DESIGN / CRÉATION ===
+    "graphiste", "designer graphique", "infographiste",
+    "directeur artistique", "da", "creative director",
+    "motion designer", "illustrateur", "webdesigner",
+    "photographe", "vidéaste", "réalisateur",
+    "chef de projet créatif", "responsable studio",
+
+    # === JURIDIQUE ===
+    "juriste", "juriste d'entreprise", "juriste droit des affaires",
+    "juriste contrats", "juriste social", "juriste immobilier",
+    "avocat", "notaire", "huissier",
+    "responsable juridique", "directeur juridique",
+    "compliance officer", "responsable conformité",
+
+    # === SANTÉ / MÉDICAL ===
+    "médecin", "infirmier", "infirmière", "aide-soignant",
+    "pharmacien", "préparateur en pharmacie",
+    "kinésithérapeute", "ostéopathe", "sage-femme",
+    "psychologue", "orthophoniste", "ergothérapeute",
+    "cadre de santé", "directeur d'établissement",
+
+    # === INGÉNIERIE / INDUSTRIE ===
+    "ingénieur", "technicien", "chef de projet industriel",
+    "ingénieur mécanique", "ingénieur électrique", "ingénieur process",
+    "ingénieur qualité", "responsable qualité", "qualiticien",
+    "ingénieur méthodes", "ingénieur production", "responsable production",
+    "ingénieur maintenance", "responsable maintenance", "technicien maintenance",
+    "ingénieur hse", "responsable hse", "animateur hse",
+    "chef de chantier", "conducteur de travaux", "ingénieur travaux",
+    "acheteur", "responsable achats", "directeur achats",
+
+    # === LOGISTIQUE / SUPPLY CHAIN ===
+    "responsable logistique", "directeur logistique", "supply chain manager",
+    "responsable entrepôt", "chef d'équipe logistique",
+    "gestionnaire de stock", "approvisionneur", "planificateur",
+    "responsable transport", "affréteur", "déclarant en douane",
+
+    # === ADMINISTRATION / ASSISTANAT ===
+    "assistant", "assistante", "assistant de direction", "assistant administratif",
+    "secrétaire", "secrétaire de direction", "office manager",
+    "standardiste", "hôte d'accueil", "hôtesse d'accueil",
+    "gestionnaire administratif", "agent administratif",
+
+    # === HÔTELLERIE / RESTAURATION ===
+    "chef de cuisine", "chef cuisinier", "sous-chef", "commis de cuisine",
+    "serveur", "chef de rang", "maître d'hôtel",
+    "réceptionniste", "concierge", "directeur d'hôtel",
+    "barman", "sommelier", "pâtissier",
+
+    # === ÉDUCATION / FORMATION ===
+    "enseignant", "professeur", "formateur", "animateur",
+    "responsable pédagogique", "ingénieur pédagogique",
+    "coach", "consultant formation",
+
+    # === MANAGEMENT GÉNÉRAL ===
+    "manager", "responsable", "directeur", "chef de projet",
+    "project manager", "chef d'équipe", "team lead",
+    "scrum master", "agile coach", "product owner",
+    "consultant", "chef de service", "directeur général", "dg", "ceo",
+]
+
+# Professional skills to detect in CV (all domains, not just tech)
+PROFESSIONAL_SKILLS = {
+    # === TECH / IT ===
+    # Programming Languages
+    "python", "javascript", "typescript", "java", "c++", "c#", "ruby", "go", "golang",
+    "rust", "swift", "kotlin", "scala", "php", "perl", "r", "matlab", "julia",
+    "objective-c", "dart", "elixir", "clojure", "haskell", "lua", "shell", "bash",
+    # Frontend
+    "react", "reactjs", "vue", "vuejs", "angular", "svelte", "nextjs", "next.js",
+    "nuxt", "gatsby", "html", "css", "sass", "scss", "tailwind", "bootstrap",
+    "webpack", "vite", "redux", "graphql", "jquery",
+    # Backend
+    "nodejs", "node.js", "express", "fastapi", "django", "flask", "spring",
+    "rails", "laravel", "symfony", "asp.net", "nestjs",
+    # Databases
+    "sql", "mysql", "postgresql", "mongodb", "redis", "elasticsearch",
+    "oracle", "sqlite", "prisma", "sqlalchemy",
+    # Cloud & DevOps
+    "aws", "azure", "gcp", "docker", "kubernetes", "terraform", "ansible",
+    "jenkins", "gitlab", "linux", "nginx",
+    # Data & ML
+    "pandas", "numpy", "tensorflow", "pytorch", "spark", "hadoop", "kafka",
+    "tableau", "powerbi", "jupyter", "machine learning", "deep learning",
+
+    # === MARKETING / COMMUNICATION ===
+    "seo", "sea", "sem", "google ads", "facebook ads", "linkedin ads", "tiktok ads",
+    "google analytics", "analytics", "hubspot", "mailchimp", "sendinblue", "brevo",
+    "crm", "salesforce", "marketing automation", "inbound marketing", "outbound",
+    "community management", "social media", "réseaux sociaux", "content marketing",
+    "copywriting", "storytelling", "branding", "brand management", "e-réputation",
+    "influence marketing", "affiliation", "growth hacking", "acquisition",
+    "emailing", "newsletter", "webmarketing", "marketing digital",
+    "relations presse", "relations publiques", "communication corporate",
+    "communication interne", "événementiel", "sponsoring",
+
+    # === FINANCE / COMPTABILITÉ ===
+    "comptabilité", "accounting", "audit", "contrôle de gestion", "controlling",
+    "finance", "trésorerie", "treasury", "consolidation", "ifrs", "gaap",
+    "fiscalité", "tax", "paie", "payroll", "facturation", "recouvrement",
+    "budget", "budgeting", "forecast", "reporting financier", "kpi",
+    "analyse financière", "financial analysis", "business plan", "valorisation",
+    "excel", "vba", "sap", "sage", "cegid", "quadra", "ebp",
+    "credit management", "risk management", "compliance", "kyc", "aml",
+
+    # === RESSOURCES HUMAINES ===
+    "recrutement", "recruitment", "sourcing", "chasse de têtes", "headhunting",
+    "entretien", "onboarding", "offboarding", "sirh", "hris", "workday", "talentsoft",
+    "formation", "training", "développement rh", "gpec", "gepp",
+    "paie", "administration du personnel", "droit social", "droit du travail",
+    "relations sociales", "cse", "négociation collective", "accord d'entreprise",
+    "marque employeur", "employer branding", "qvt", "qualité de vie au travail",
+    "diversité", "inclusion", "handicap", "rse",
+
+    # === COMMERCIAL / VENTE ===
+    "vente", "sales", "négociation", "prospection", "closing", "upselling",
+    "cross-selling", "account management", "key account", "grands comptes",
+    "business development", "développement commercial", "b2b", "b2c",
+    "pipeline", "crm", "salesforce", "hubspot", "pipedrive",
+    "objectifs commerciaux", "kpi", "chiffre d'affaires", "marge",
+    "relation client", "fidélisation", "satisfaction client", "nps",
+    "retail", "grande distribution", "e-commerce", "marketplace",
+
+    # === DESIGN / CRÉATION ===
+    "photoshop", "illustrator", "indesign", "after effects", "premiere pro",
+    "figma", "sketch", "adobe xd", "invision", "zeplin", "canva",
+    "ui design", "ux design", "ui/ux", "webdesign", "web design",
+    "design graphique", "graphic design", "direction artistique", "da",
+    "motion design", "animation", "3d", "blender", "cinema 4d", "maya",
+    "branding", "identité visuelle", "logo", "charte graphique",
+    "packaging", "print", "édition", "mise en page", "typography",
+
+    # === JURIDIQUE ===
+    "droit des affaires", "droit commercial", "droit des sociétés",
+    "droit du travail", "droit social", "contentieux", "litigation",
+    "propriété intellectuelle", "pi", "marques", "brevets", "rgpd", "gdpr",
+    "contrats", "contract management", "négociation", "due diligence",
+    "conformité", "compliance", "réglementation", "veille juridique",
+    "droit immobilier", "droit fiscal", "droit pénal", "droit public",
+
+    # === SANTÉ / MÉDICAL ===
+    "médecin", "infirmier", "infirmière", "aide-soignant", "pharmacien",
+    "kinésithérapeute", "sage-femme", "psychologue", "orthophoniste",
+    "laboratoire", "analyses", "imagerie médicale", "radiologie",
+    "bloc opératoire", "urgences", "réanimation", "soins intensifs",
+    "ehpad", "hôpital", "clinique", "cabinet médical",
+    "recherche clinique", "essais cliniques", "pharmacovigilance",
+    "dispositifs médicaux", "réglementation sanitaire", "has", "ansm",
+
+    # === INGÉNIERIE / INDUSTRIE ===
+    "autocad", "solidworks", "catia", "revit", "bim", "cao", "dao",
+    "génie civil", "bâtiment", "construction", "travaux publics", "tp",
+    "mécanique", "électrique", "électronique", "automatisme", "plc",
+    "maintenance", "gmao", "lean", "six sigma", "kaizen", "5s",
+    "qualité", "iso 9001", "iso 14001", "qhse", "hse", "sécurité",
+    "production", "industrialisation", "méthodes", "process",
+    "supply chain", "logistique", "approvisionnement", "achats", "procurement",
+    "erp", "sap", "oracle", "gpao", "mes",
+
+    # === ÉDUCATION / FORMATION ===
+    "enseignement", "pédagogie", "formation", "e-learning", "mooc",
+    "ingénierie pédagogique", "conception pédagogique", "lms", "moodle",
+    "animation", "facilitation", "coaching", "mentorat", "tutorat",
+    "évaluation", "certification", "diplôme", "compétences",
+
+    # === HÔTELLERIE / RESTAURATION / TOURISME ===
+    "hôtellerie", "restauration", "cuisine", "chef", "commis", "serveur",
+    "réception", "conciergerie", "housekeeping", "room service",
+    "revenue management", "yield management", "booking", "réservation",
+    "tourisme", "agence de voyage", "tour operator", "guide",
+    "événementiel", "banquet", "traiteur", "catering",
+
+    # === LOGISTIQUE / TRANSPORT ===
+    "logistique", "logistics", "supply chain", "approvisionnement",
+    "entreposage", "warehouse", "wms", "préparation de commandes", "picking",
+    "transport", "affrètement", "douane", "import", "export", "incoterms",
+    "livraison", "dernier kilomètre", "last mile", "fleet management",
+    "caces", "chariot élévateur", "manutention",
+
+    # === ADMINISTRATION / ASSISTANAT ===
+    "assistanat", "secrétariat", "accueil", "standard", "téléphonique",
+    "gestion administrative", "classement", "archivage", "courrier",
+    "agenda", "planning", "organisation", "coordination",
+    "word", "excel", "powerpoint", "outlook", "office 365", "google workspace",
+    "saisie", "frappe", "rédaction", "compte-rendu", "pv",
+
+    # === COMPÉTENCES TRANSVERSALES ===
+    "management", "leadership", "gestion d'équipe", "encadrement",
+    "gestion de projet", "project management", "pmo", "prince2", "pmp",
+    "agile", "scrum", "kanban", "lean", "amélioration continue",
+    "communication", "présentation", "prise de parole", "rédaction",
+    "analyse", "synthèse", "résolution de problèmes", "problem solving",
+    "négociation", "persuasion", "influence", "diplomatie",
+    "anglais", "english", "espagnol", "allemand", "italien", "chinois",
+    "bilingue", "trilingue", "toeic", "toefl", "ielts", "bulats",
+}
+
+# Alias pour compatibilité
+TECH_SKILLS = PROFESSIONAL_SKILLS
+
+# Experience level indicators
+EXPERIENCE_INDICATORS = {
+    "junior": ["junior", "débutant", "entry level", "graduate", "stagiaire", "alternant", "0-2 ans"],
+    "mid": ["confirmé", "intermédiaire", "2-5 ans", "3-5 ans", "mid-level"],
+    "senior": ["senior", "expérimenté", "5+ ans", "7+ ans", "10+ ans", "lead", "principal", "staff"],
+    "management": ["manager", "directeur", "head of", "vp", "cto", "cio", "chief"],
+}
 
 
 def tokenize(text: str) -> List[str]:
@@ -534,15 +794,77 @@ def latest_cv(db: Session, user_id: int) -> Optional[CV]:
     )
 
 
+def extract_tech_skills(text: str) -> List[str]:
+    """
+    Extract technical skills from text, prioritizing known tech terms.
+    Returns skills sorted by relevance (exact matches first).
+    """
+    text_lower = text.lower()
+    found_skills = []
+
+    # Check for multi-word skills first (e.g., "react native", "machine learning")
+    for skill in TECH_SKILLS:
+        if " " in skill and skill in text_lower:
+            found_skills.append(skill)
+
+    # Then check single-word skills
+    # Create word boundaries pattern to avoid partial matches
+    words = set(re.findall(r'\b[a-z0-9#+.]+\b', text_lower))
+    for skill in TECH_SKILLS:
+        if " " not in skill and skill in words:
+            if skill not in found_skills:
+                found_skills.append(skill)
+
+    return found_skills
+
+
+def detect_experience_level(text: str) -> Optional[str]:
+    """Detect experience level from CV text."""
+    text_lower = text.lower()
+
+    # Check from most senior to junior
+    for level in ["management", "senior", "mid", "junior"]:
+        indicators = EXPERIENCE_INDICATORS.get(level, [])
+        if any(ind in text_lower for ind in indicators):
+            return level
+
+    # Try to detect from years of experience mentioned
+    years_match = re.search(r'(\d+)\s*(?:ans?|years?)\s*(?:d\'?expérience|experience|exp)', text_lower)
+    if years_match:
+        years = int(years_match.group(1))
+        if years >= 8:
+            return "senior"
+        elif years >= 3:
+            return "mid"
+        else:
+            return "junior"
+
+    return None
+
+
 def infer_roles(cv_text: str, pref_role: Optional[str]) -> List[str]:
+    """Infer potential job roles from CV text and preferences."""
     roles: List[str] = []
     if pref_role:
         roles.append(pref_role.lower())
+
     text = cv_text.lower()
+
+    # Score each role hint based on how well it matches the CV
+    role_scores: Dict[str, int] = {}
     for hint in ROLE_HINTS:
         if hint in text:
-            roles.append(hint)
-    # deduplicate en conservant l'ordre
+            # Count occurrences for ranking
+            count = text.count(hint)
+            role_scores[hint] = count
+
+    # Sort by score and add to roles
+    sorted_roles = sorted(role_scores.items(), key=lambda x: x[1], reverse=True)
+    for role, _ in sorted_roles[:5]:  # Top 5 roles
+        if role not in roles:
+            roles.append(role)
+
+    # Deduplicate while preserving order
     seen = set()
     ordered = []
     for r in roles:
@@ -550,6 +872,143 @@ def infer_roles(cv_text: str, pref_role: Optional[str]) -> List[str]:
             ordered.append(r)
             seen.add(r)
     return ordered
+
+
+def categorize_skills(skills: List[str]) -> Dict[str, List[str]]:
+    """Categorize detected skills into groups (all domains)."""
+    categories = {
+        # Tech
+        "langages_prog": [],
+        "frontend": [],
+        "backend": [],
+        "databases": [],
+        "cloud_devops": [],
+        "data_ml": [],
+        # Business
+        "marketing": [],
+        "finance": [],
+        "rh": [],
+        "commercial": [],
+        "design": [],
+        "juridique": [],
+        "sante": [],
+        "industrie": [],
+        "logistique": [],
+        "langues": [],
+        "outils": [],
+    }
+
+    skill_categories = {
+        # === TECH ===
+        # Programming Languages
+        "python": "langages_prog", "javascript": "langages_prog", "typescript": "langages_prog",
+        "java": "langages_prog", "c++": "langages_prog", "c#": "langages_prog", "ruby": "langages_prog",
+        "go": "langages_prog", "golang": "langages_prog", "rust": "langages_prog", "swift": "langages_prog",
+        "kotlin": "langages_prog", "scala": "langages_prog", "php": "langages_prog", "r": "langages_prog",
+        # Frontend
+        "react": "frontend", "reactjs": "frontend", "vue": "frontend", "vuejs": "frontend",
+        "angular": "frontend", "svelte": "frontend", "nextjs": "frontend", "next.js": "frontend",
+        "html": "frontend", "css": "frontend", "tailwind": "frontend", "bootstrap": "frontend",
+        "webpack": "frontend", "vite": "frontend", "redux": "frontend",
+        # Backend
+        "nodejs": "backend", "node.js": "backend", "express": "backend", "fastapi": "backend",
+        "django": "backend", "flask": "backend", "spring": "backend", "rails": "backend",
+        "laravel": "backend", "nestjs": "backend", "graphql": "backend",
+        # Databases
+        "sql": "databases", "mysql": "databases", "postgresql": "databases", "postgres": "databases",
+        "mongodb": "databases", "redis": "databases", "elasticsearch": "databases",
+        "oracle": "databases", "sqlite": "databases", "prisma": "databases",
+        # Cloud & DevOps
+        "aws": "cloud_devops", "azure": "cloud_devops", "gcp": "cloud_devops",
+        "docker": "cloud_devops", "kubernetes": "cloud_devops", "terraform": "cloud_devops",
+        "jenkins": "cloud_devops", "gitlab": "cloud_devops", "linux": "cloud_devops", "nginx": "cloud_devops",
+        # Data & ML
+        "pandas": "data_ml", "numpy": "data_ml", "tensorflow": "data_ml", "pytorch": "data_ml",
+        "spark": "data_ml", "kafka": "data_ml", "tableau": "data_ml", "powerbi": "data_ml",
+        "machine learning": "data_ml", "deep learning": "data_ml", "jupyter": "data_ml",
+
+        # === MARKETING / COMMUNICATION ===
+        "seo": "marketing", "sea": "marketing", "sem": "marketing", "google ads": "marketing",
+        "facebook ads": "marketing", "linkedin ads": "marketing", "google analytics": "marketing",
+        "hubspot": "marketing", "mailchimp": "marketing", "sendinblue": "marketing",
+        "crm": "marketing", "salesforce": "marketing", "marketing automation": "marketing",
+        "community management": "marketing", "social media": "marketing", "content marketing": "marketing",
+        "copywriting": "marketing", "storytelling": "marketing", "branding": "marketing",
+        "growth hacking": "marketing", "emailing": "marketing", "newsletter": "marketing",
+
+        # === FINANCE / COMPTABILITÉ ===
+        "comptabilité": "finance", "accounting": "finance", "audit": "finance",
+        "contrôle de gestion": "finance", "finance": "finance", "trésorerie": "finance",
+        "consolidation": "finance", "ifrs": "finance", "gaap": "finance",
+        "fiscalité": "finance", "paie": "finance", "payroll": "finance",
+        "excel": "finance", "vba": "finance", "sap": "finance", "sage": "finance",
+        "cegid": "finance", "budget": "finance", "forecast": "finance",
+
+        # === RESSOURCES HUMAINES ===
+        "recrutement": "rh", "recruitment": "rh", "sourcing": "rh",
+        "sirh": "rh", "hris": "rh", "workday": "rh", "talentsoft": "rh",
+        "formation": "rh", "training": "rh", "gpec": "rh", "gepp": "rh",
+        "droit social": "rh", "droit du travail": "rh", "marque employeur": "rh",
+        "qvt": "rh", "diversité": "rh", "inclusion": "rh",
+
+        # === COMMERCIAL / VENTE ===
+        "vente": "commercial", "sales": "commercial", "négociation": "commercial",
+        "prospection": "commercial", "closing": "commercial", "b2b": "commercial", "b2c": "commercial",
+        "business development": "commercial", "account management": "commercial",
+        "pipedrive": "commercial", "retail": "commercial", "e-commerce": "commercial",
+
+        # === DESIGN / CRÉATION ===
+        "photoshop": "design", "illustrator": "design", "indesign": "design",
+        "after effects": "design", "premiere pro": "design", "figma": "design",
+        "sketch": "design", "adobe xd": "design", "canva": "design",
+        "ui design": "design", "ux design": "design", "ui/ux": "design",
+        "motion design": "design", "3d": "design", "blender": "design",
+
+        # === JURIDIQUE ===
+        "droit des affaires": "juridique", "droit commercial": "juridique",
+        "contentieux": "juridique", "litigation": "juridique",
+        "propriété intellectuelle": "juridique", "rgpd": "juridique", "gdpr": "juridique",
+        "contrats": "juridique", "compliance": "juridique", "conformité": "juridique",
+
+        # === SANTÉ / MÉDICAL ===
+        "médecin": "sante", "infirmier": "sante", "pharmacien": "sante",
+        "kinésithérapeute": "sante", "psychologue": "sante",
+        "recherche clinique": "sante", "pharmacovigilance": "sante",
+
+        # === INGÉNIERIE / INDUSTRIE ===
+        "autocad": "industrie", "solidworks": "industrie", "catia": "industrie",
+        "revit": "industrie", "bim": "industrie", "cao": "industrie",
+        "lean": "industrie", "six sigma": "industrie", "kaizen": "industrie",
+        "qualité": "industrie", "iso 9001": "industrie", "qhse": "industrie", "hse": "industrie",
+        "maintenance": "industrie", "gmao": "industrie", "erp": "industrie",
+
+        # === LOGISTIQUE / SUPPLY CHAIN ===
+        "logistique": "logistique", "supply chain": "logistique",
+        "warehouse": "logistique", "wms": "logistique",
+        "transport": "logistique", "douane": "logistique", "incoterms": "logistique",
+        "caces": "logistique",
+
+        # === LANGUES ===
+        "anglais": "langues", "english": "langues", "espagnol": "langues",
+        "allemand": "langues", "italien": "langues", "chinois": "langues",
+        "bilingue": "langues", "trilingue": "langues",
+        "toeic": "langues", "toefl": "langues", "ielts": "langues",
+
+        # === OUTILS TRANSVERSAUX ===
+        "git": "outils", "jira": "outils", "confluence": "outils",
+        "word": "outils", "powerpoint": "outils", "outlook": "outils",
+        "office 365": "outils", "google workspace": "outils",
+        "agile": "outils", "scrum": "outils", "kanban": "outils",
+        "management": "outils", "gestion de projet": "outils", "project management": "outils",
+    }
+
+    for skill in skills:
+        category = skill_categories.get(skill, "outils")
+        if skill not in categories[category]:
+            categories[category].append(skill)
+
+    # Remove empty categories
+    return {k: v for k, v in categories.items() if v}
 
 
 def build_queries(
@@ -613,10 +1072,30 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     """
     Analyse complète du profil utilisateur basée sur son CV et ses préférences.
     Combine extraction locale de compétences et enrichissement OpenAI.
+    Comprehensive CV and profile analysis.
+    Returns detected skills, roles, experience level, and search queries.
     """
     cv = latest_cv(db, user_id)
     cv_text = cv.text or "" if cv else ""
+
+    # Extract technical skills first (more accurate than generic tokenization)
+    tech_skills = extract_tech_skills(cv_text) if cv_text else []
+
+    # Also get general tokens for frequency analysis
     tokens = tokenize(cv_text) if cv_text else []
+
+    # Combine tech skills with top frequent tokens (prioritize tech skills)
+    top_tokens = [w for w, _ in Counter(tokens).most_common(20)]
+    # Tech skills first, then other frequent keywords not already in tech_skills
+    top_keywords = tech_skills[:15] + [t for t in top_tokens if t not in tech_skills][:5]
+    top_keywords = top_keywords[:15]  # Limit to 15
+
+    # Detect experience level
+    experience_level = detect_experience_level(cv_text) if cv_text else None
+
+    # Categorize skills for better display
+    skill_categories = categorize_skills(tech_skills) if tech_skills else {}
+
     cleaned_role = clean_field(pref.role)
     cleaned_location = clean_field(pref.location)
 
@@ -730,6 +1209,62 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
             q if cleaned_location.lower() in q.lower() else f"{q} {cleaned_location}"
             for q in queries
         ][:5]
+    # Optionnel : enrichir avec OpenAI si dispo
+    llm_enriched = None
+    if cv_text or pref.must_keywords or pref.role or pref.location:
+        # Include detected skills in prompt for better context
+        skills_context = ", ".join(tech_skills[:20]) if tech_skills else "non détectées"
+        prompt = (
+            "Analyse ce CV et ces préférences et propose des requêtes d'emploi pour la France.\n"
+            f"Rôle souhaité: {cleaned_role or 'non précisé'}\n"
+            f"Localisation: {cleaned_location or 'France'}\n"
+            f"Niveau détecté: {experience_level or 'non détecté'}\n"
+            f"Compétences techniques détectées: {skills_context}\n"
+            f"Mots-clés obligatoires: {', '.join(must_keywords) or '—'}\n"
+            f"Texte CV (tronqué): {cv_text[:1500]}\n"
+            'Réponds en JSON: {"queries": ["..."], "resume": "1-2 phrases", "tags": ["tag1","tag2","tag3"]}'
+        )
+        llm_enriched = _call_openai(prompt)
+
+    if llm_enriched:
+        llm_used = True
+        llm_queries = [q for q in llm_enriched.get("queries", []) if isinstance(q, str)]
+        if llm_queries:
+            queries = llm_queries[:5]
+        llm_summary = llm_enriched.get("resume")
+        if isinstance(llm_summary, str) and llm_summary.strip():
+            summary_parts = [llm_summary.strip()]
+        llm_tags = [t for t in llm_enriched.get("tags", []) if isinstance(t, str)]
+        if llm_tags:
+            # Merge LLM tags with detected tech skills
+            merged = tech_skills[:10] + [t for t in llm_tags if t not in tech_skills]
+            top_keywords = merged[:15]
+
+    # Build summary
+    if experience_level:
+        level_labels = {
+            "junior": "Junior / Débutant",
+            "mid": "Confirmé (3-5 ans)",
+            "senior": "Senior / Expert",
+            "management": "Manager / Direction"
+        }
+        summary_parts.append(f"Niveau: {level_labels.get(experience_level, experience_level)}")
+
+    if roles:
+        summary_parts.append(f"Rôle cible: {roles[0]}")
+
+    if tech_skills:
+        # Show categorized skills in summary
+        main_skills = tech_skills[:5]
+        summary_parts.append(f"Compétences clés: {', '.join(main_skills)}")
+
+    if hits:
+        summary_parts.append(f"Mots-clés trouvés: {', '.join(hits)}")
+    if missing:
+        summary_parts.append(f"À renforcer: {', '.join(missing)}")
+
+    if not summary_parts:
+        summary_parts.append("Ajoute un CV et des préférences pour une analyse plus fine.")
 
     return {
         "cv_present": bool(cv),
@@ -749,6 +1284,10 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
         "formation": formation,
         "secteurs_cibles": secteurs[:5],
         "skills_by_category": extracted_skills,
+        # New fields for enhanced analysis
+        "experience_level": experience_level,
+        "skill_categories": skill_categories,
+        "tech_skills_count": len(tech_skills),
     }
 
 

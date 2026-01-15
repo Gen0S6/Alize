@@ -163,7 +163,7 @@ def send_email_via_resend(
         )
         try:
             with urlrequest.urlopen(req, timeout=15) as resp:  # nosec
-                resp_body = resp.read().decode("utf-8")
+                _ = resp.read()  # consume response
                 log.info("Resend notification sent to %s (status=%s)", to_email, resp.status)
                 return True
         except HTTPError as exc:
@@ -479,7 +479,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                     log.error("Failed to record job search run for user %s: %s", user.email, exc)
             matches_list = matches_func(user, db)
             log.info("Scheduler matches for user=%s count=%s", user.email, len(matches_list))
-            total_before_filter = len(matches_list)
             # retire les offres expirées
             cleaned_matches: list[JobOut] = []
             for m in matches_list:
@@ -491,7 +490,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                     continue
                 cleaned_matches.append(m)
             matches_list = cleaned_matches
-            total_before_filter = len(matches_list)
             # skip already notified offers for this user
             job_ids = [m.id for m in matches_list if m.id]
             if job_ids:

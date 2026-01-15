@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { clearToken, getToken } from "../../lib/auth";
+import { getToken } from "../../lib/auth";
 import { useTheme } from "../ThemeProvider";
+import { useToast } from "../../components/Toast";
+import { DashboardSkeleton, TableRowSkeleton } from "../../components/Skeleton";
 import {
   getAnalysis,
   getMatches,
@@ -17,6 +19,7 @@ import {
   type Match,
   type MatchesPage,
   type JobRun,
+  type SortOption,
 } from "../../lib/api";
 
 const VISITED_STORAGE_KEY = "visitedMatches";
@@ -26,6 +29,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const { addToast } = useToast();
   const [matchesPage, setMatchesPage] = useState<MatchesPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +42,8 @@ export default function DashboardPage() {
   const [filterText, setFilterText] = useState("");
   const [minScore, setMinScore] = useState<number>(0);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("new_first");
+  const [newOnly, setNewOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
@@ -46,7 +52,7 @@ export default function DashboardPage() {
   const autoSearched = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
 
-  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter) {
+  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly) {
     setError(null);
     setLoading(true);
     setPage(p);
@@ -56,7 +62,7 @@ export default function DashboardPage() {
         router.push("/login");
         return;
       }
-      const data = await getMatches(p, pageSize, ft, ms, sf);
+      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no);
       setMatchesPage(data);
       setPage(data.page);
     } catch (err: any) {
@@ -94,6 +100,11 @@ export default function DashboardPage() {
     try {
       const res = await runJobSearch();
       setSearchResult(res);
+      if (res.inserted > 0) {
+        addToast(`${res.inserted} nouvelles offres trouvées !`, "success");
+      } else {
+        addToast("Recherche terminée - aucune nouvelle offre", "info");
+      }
       await load(1);
       await loadRuns();
     } catch (err: any) {
@@ -102,6 +113,7 @@ export default function DashboardPage() {
           ? "Session expirée. Reconnecte-toi."
           : err?.message ?? "Impossible de lancer la recherche IA";
       setSearchError(message);
+      addToast(message, "error");
     } finally {
       setSearching(false);
     }
@@ -124,8 +136,8 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    load(1, filterText, minScore, sourceFilter);
-  }, [filterText, minScore, sourceFilter]);
+    load(1, filterText, minScore, sourceFilter, sortBy, newOnly);
+  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
 
   useEffect(() => {
     try {
@@ -145,6 +157,8 @@ export default function DashboardPage() {
         setFilterText(parsed.filterText ?? "");
         setMinScore(typeof parsed.minScore === "number" ? parsed.minScore : 0);
         setSourceFilter(parsed.sourceFilter ?? "all");
+        setSortBy(parsed.sortBy ?? "new_first");
+        setNewOnly(parsed.newOnly ?? false);
       }
     } catch (_err) {
     }
@@ -154,16 +168,11 @@ export default function DashboardPage() {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ filterText, minScore, sourceFilter })
+        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly })
       );
     } catch (_err) {
     }
-  }, [filterText, minScore, sourceFilter]);
-
-  function logout() {
-    clearToken();
-    router.push("/");
-  }
+  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
 
   function requestDelete(match?: Match) {
     if (!match?.id) return;
@@ -196,8 +205,9 @@ export default function DashboardPage() {
       setMatchesPage((prev) =>
         prev ? { ...prev, items: prev.items.filter((m) => m.id !== id), total: Math.max(0, prev.total - 1) } : prev
       );
+      addToast("Offre supprimée avec succès", "success");
     } catch (err: any) {
-      alert(err?.message ?? "Impossible de supprimer l'offre.");
+      addToast(err?.message ?? "Impossible de supprimer l'offre.", "error");
     } finally {
       setDeleting(null);
       setConfirmTarget(null);
@@ -257,21 +267,21 @@ export default function DashboardPage() {
   return (
     <main className={isDark ? "min-h-screen p-6 bg-[#0b0c10] text-gray-100 theme-hover" : "min-h-screen p-6 bg-white text-gray-900 theme-hover"}>
       <div className="mx-auto max-w-4xl">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-            <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-            <p className={isDark ? "text-sm text-gray-400 mt-1" : "text-sm text-gray-600 mt-1"}>
-              Tes dernières opportunités proposées.
-            </p>
-          </div>
+              <h1 className="text-2xl font-semibold">Tableau de bord</h1>
+              <p className={isDark ? "text-sm text-gray-400 mt-1" : "text-sm text-gray-600 mt-1"}>
+                Tes dernières opportunités proposées.
+              </p>
+            </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Link
                 href="/preferences"
                 className={
                   isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
+                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 text-center"
+                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 text-center"
                 }
               >
                 Préférences
@@ -280,8 +290,8 @@ export default function DashboardPage() {
                 href="/cv"
                 className={
                   isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
+                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 text-center"
+                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 text-center"
                 }
               >
                 CV
@@ -290,23 +300,13 @@ export default function DashboardPage() {
                 href="/profile"
                 className={
                   isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
+                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 text-center"
+                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 text-center"
                 }
               >
                 Profil
               </Link>
-              <button
-                onClick={logout}
-                className={
-                  isDark
-                    ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                    : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
-                }
-              >
-                Déconnexion
-              </button>
-          </div>
+            </div>
           </div>
 
         <div
@@ -700,11 +700,58 @@ export default function DashboardPage() {
                 </select>
               </div>
             </div>
-            <div className="flex items-center justify-between text-xs">
+            {/* Second row of filters: Sort and New Only */}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className={isDark ? "text-xs font-semibold uppercase text-gray-400" : "text-xs font-semibold uppercase text-gray-500"}>
+                  Trier par
+                </label>
+                <select
+                  className={
+                    isDark
+                      ? "rounded-xl border border-gray-700 bg-[#0d1016] px-3 py-2 text-sm text-gray-100"
+                      : "rounded-xl border px-3 py-2 text-sm"
+                  }
+                  value={sortBy}
+                  onChange={(e) => {
+                    setPage(1);
+                    setSortBy(e.target.value as SortOption);
+                  }}
+                >
+                  <option value="new_first">Nouveautés d'abord</option>
+                  <option value="newest">Plus récentes</option>
+                  <option value="score">Meilleur score</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newOnly}
+                  onChange={(e) => {
+                    setPage(1);
+                    setNewOnly(e.target.checked);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={isDark ? "text-sm text-gray-300" : "text-sm text-gray-700"}>
+                  Nouveautés uniquement
+                </span>
+                {(matchesPage?.new_count ?? 0) > 0 && (
+                  <span className={
+                    isDark
+                      ? "rounded-full bg-green-900/40 px-2 py-0.5 text-[11px] font-semibold text-green-200 border border-green-700/60"
+                      : "rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700"
+                  }>
+                    {matchesPage?.new_count}
+                  </span>
+                )}
+              </label>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-xs">
               <p className={isDark ? "text-gray-400" : "text-gray-600"}>
                 {matches.length} résultats sur {totalMatches} (page {page})
               </p>
-              {newOffers.length > 0 && (
+              {newOffers.length > 0 && !newOnly && (
                 <span
                   className={
                     isDark
@@ -717,7 +764,21 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          {loading && <p className={isDark ? "text-sm text-gray-400" : "text-sm text-gray-600"}>Chargement...</p>}
+          {loading && !matchesPage && (
+            <div className="mt-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className={`py-3 border-b ${isDark ? "border-gray-800" : "border-gray-200"} animate-pulse`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`h-4 w-1/4 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-4 w-1/6 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-4 w-1/6 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-4 w-12 rounded ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {loading && matchesPage && <p className={isDark ? "text-sm text-gray-400" : "text-sm text-gray-600"}>Chargement...</p>}
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -813,7 +874,7 @@ export default function DashboardPage() {
                 onClick={() => {
                   const next = Math.max(1, page - 1);
                   setPage(next);
-                  load(next, filterText, minScore, sourceFilter);
+                  load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
                 }}
                     disabled={page <= 1 || loading}
                   >
@@ -833,7 +894,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
-                        load(next, filterText, minScore, sourceFilter);
+                        load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
                       }
                     }}
                     disabled={loading || (matchesPage ? page >= Math.ceil(totalMatches / pageSize) : false)}

@@ -39,7 +39,7 @@ jobs:
         env:
           ENVIRONMENT: test
           JWT_SECRET: test-secret-for-ci
-          DATABASE_URL: sqlite:///:memory:
+          DATABASE_URL: "sqlite:///:memory:"
         run: |
           pytest tests/ -v --tb=short
 
@@ -67,7 +67,7 @@ jobs:
 
       - name: Run Ruff linter
         run: |
-          ruff check . --ignore=E501,F401
+          ruff check . --ignore=E501,F401,E402
 
   # Frontend Build
   frontend-build:

@@ -38,8 +38,9 @@ def _sanitize_password(pwd: str) -> str:
 
     # Check for common weak passwords
     weak_passwords = {
-        "password", "12345678", "123456789", "qwerty123", "azerty123",
-        "motdepasse", "password1", "admin123", "user1234", "welcome1"
+        "password", "password1", "password12", "password123", "password1234",
+        "12345678", "123456789", "1234567890", "qwerty123", "azerty123",
+        "motdepasse", "admin123", "user1234", "welcome1", "letmein1"
     }
     if cleaned.lower() in weak_passwords:
         raise HTTPException(
@@ -80,6 +81,13 @@ def login(request: Request, payload: LoginIn, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
+        )
+    # Check if user is OAuth-only (no password set)
+    if user.password_hash is None:
+        provider = user.oauth_provider or "social"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ce compte utilise la connexion {provider.title()}. Utilisez le bouton correspondant.",
         )
     try:
         safe_pwd = _sanitize_password(payload.password)
