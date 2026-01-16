@@ -14,12 +14,16 @@ import {
   runJobSearch,
   getJobRuns,
   markMatchVisited,
+  saveMatch,
+  unsaveMatch,
+  getDashboardStats,
   type Analysis,
   type JobSearchResult,
   type Match,
   type MatchesPage,
   type JobRun,
   type SortOption,
+  type DashboardStats,
 } from "../../lib/api";
 
 const VISITED_STORAGE_KEY = "visitedMatches";
@@ -51,6 +55,9 @@ export default function DashboardPage() {
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
   const autoSearched = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [saving, setSaving] = useState<number | null>(null);
+  const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
 
   async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly) {
     setError(null);
@@ -130,6 +137,7 @@ export default function DashboardPage() {
       load(1, filterText, minScore, sourceFilter),
       loadAnalysis(),
       loadRuns(),
+      loadStats(),
     ]).catch((err) => {
       console.error("Error loading dashboard data:", err);
     });
@@ -249,6 +257,39 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadStats() {
+    try {
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (_err) {
+    }
+  }
+
+  async function toggleSaveJob(id: number) {
+    if (!id) return;
+    setSaving(id);
+    try {
+      if (savedJobs.has(id)) {
+        await unsaveMatch(id);
+        setSavedJobs((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        addToast("Offre retirée des favoris", "info");
+      } else {
+        await saveMatch(id);
+        setSavedJobs((prev) => new Set(prev).add(id));
+        addToast("Offre sauvegardée", "success");
+      }
+      await loadStats();
+    } catch (err: any) {
+      addToast(err?.message ?? "Erreur", "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
   // Rafraîchit l'historique sans rechargement de page
   useEffect(() => {
     const id = setInterval(() => {
@@ -306,18 +347,30 @@ export default function DashboardPage() {
               >
                 Profil
               </Link>
-              <Link
-                href="/campaigns"
-                className={
-                  isDark
-                    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-2 text-sm text-white text-center"
-                    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-2 text-sm text-white text-center"
-                }
-              >
-                Mes Campagnes
-              </Link>
             </div>
           </div>
+
+        {/* Statistiques simples */}
+        {stats && (
+          <div className={isDark ? "mt-6 grid grid-cols-2 md:grid-cols-4 gap-3" : "mt-6 grid grid-cols-2 md:grid-cols-4 gap-3"}>
+            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+              <div className={isDark ? "text-2xl font-bold text-blue-400" : "text-2xl font-bold text-blue-600"}>{stats.total_jobs}</div>
+              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Total offres</div>
+            </div>
+            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+              <div className={isDark ? "text-2xl font-bold text-green-400" : "text-2xl font-bold text-green-600"}>{stats.new_jobs}</div>
+              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Non consultees</div>
+            </div>
+            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+              <div className={isDark ? "text-2xl font-bold text-gray-300" : "text-2xl font-bold text-gray-700"}>{stats.viewed_jobs}</div>
+              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Consultees</div>
+            </div>
+            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+              <div className={isDark ? "text-2xl font-bold text-amber-400" : "text-2xl font-bold text-amber-600"}>{stats.saved_jobs}</div>
+              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Sauvegardees</div>
+            </div>
+          </div>
+        )}
 
         <div
           className={
@@ -859,14 +912,29 @@ export default function DashboardPage() {
                                 </a>
                               </td>
                               <td className="py-2 pr-4 text-center">
-                                <button
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm hover:bg-gray-50 disabled:opacity-50"
-                  onClick={() => requestDelete(m)}
-                  disabled={deleting === m.id}
-                                  aria-label="Supprimer"
-                                >
-                                  ×
-                                </button>
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm disabled:opacity-50 ${
+                                      savedJobs.has(m.id ?? 0)
+                                        ? isDark ? "bg-amber-900/40 text-amber-300 hover:bg-amber-900/60" : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                        : isDark ? "hover:bg-gray-700" : "hover:bg-gray-50"
+                                    }`}
+                                    onClick={() => m.id && toggleSaveJob(m.id)}
+                                    disabled={saving === m.id}
+                                    aria-label={savedJobs.has(m.id ?? 0) ? "Retirer des favoris" : "Sauvegarder"}
+                                    title={savedJobs.has(m.id ?? 0) ? "Retirer des favoris" : "Sauvegarder"}
+                                  >
+                                    {savedJobs.has(m.id ?? 0) ? "★" : "☆"}
+                                  </button>
+                                  <button
+                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm disabled:opacity-50 ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-50"}`}
+                                    onClick={() => requestDelete(m)}
+                                    disabled={deleting === m.id}
+                                    aria-label="Supprimer"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );

@@ -10,9 +10,7 @@ from app.models import (
     CV,
     JobListing,
     UserPreference,
-    UserJobBlacklist,
-    UserJobNotification,
-    UserJobVisit,
+    UserJob,
 )
 from app.schemas import JobOut
 
@@ -194,9 +192,7 @@ def clear_all_jobs(db: Session):
     Use clear_user_job_data() instead for user-specific cleanup.
     """
     # Delete dependent records first to avoid FK violations
-    db.query(UserJobNotification).delete()
-    db.query(UserJobVisit).delete()
-    db.query(UserJobBlacklist).delete()
+    db.query(UserJob).delete()
     db.query(JobListing).delete()
     db.commit()
 
@@ -204,12 +200,10 @@ def clear_all_jobs(db: Session):
 def clear_user_job_data(db: Session, user_id: int):
     """
     Clear job-related data for a specific user only.
-    This resets notifications and visits so the user sees jobs as "new" again.
+    This resets the user's job list so they can start fresh.
     Does NOT delete the jobs themselves (they're shared across all users).
     """
-    db.query(UserJobNotification).filter(UserJobNotification.user_id == user_id).delete()
-    db.query(UserJobVisit).filter(UserJobVisit.user_id == user_id).delete()
-    # Keep blacklist - user explicitly marked these jobs
+    db.query(UserJob).filter(UserJob.user_id == user_id).delete()
     db.commit()
 
 
@@ -217,7 +211,7 @@ def cleanup_old_jobs(db: Session) -> int:
     """Delete jobs older than OLD_JOB_DAYS (90 days by default).
 
     Uses bulk delete for better performance. Cascading deletes are handled
-    by first removing related records (notifications, visits, blacklist).
+    by first removing related records (user_jobs).
     """
     cutoff = datetime.now(timezone.utc) - timedelta(days=OLD_JOB_DAYS)
 
@@ -230,10 +224,8 @@ def cleanup_old_jobs(db: Session) -> int:
     if not old_job_ids:
         return 0
 
-    # Delete related records first (bulk delete for performance)
-    db.query(UserJobNotification).filter(UserJobNotification.job_id.in_(old_job_ids)).delete(synchronize_session=False)
-    db.query(UserJobVisit).filter(UserJobVisit.job_id.in_(old_job_ids)).delete(synchronize_session=False)
-    db.query(UserJobBlacklist).filter(UserJobBlacklist.job_id.in_(old_job_ids)).delete(synchronize_session=False)
+    # Delete related user_jobs first (bulk delete for performance)
+    db.query(UserJob).filter(UserJob.job_id.in_(old_job_ids)).delete(synchronize_session=False)
 
     # Now bulk delete the jobs themselves
     count = db.query(JobListing).filter(JobListing.id.in_(old_job_ids)).delete(synchronize_session=False)
@@ -315,51 +307,49 @@ def list_matches_for_user(
     page_size: Optional[int] = None,
     sort_by: SortOption = "new_first",
 ) -> list[JobOut]:
-    # Get blacklisted job IDs using a subquery for efficient filtering
-    blacklisted_subquery = (
-        db.query(UserJobBlacklist.job_id)
-        .filter(UserJobBlacklist.user_id == user_id)
-        .subquery()
+    """Liste les offres de l'utilisateur depuis UserJob (dashboard simplifié)."""
+    # Get user's jobs that are not deleted, joined with job listings
+    user_jobs = (
+        db.query(UserJob, JobListing)
+        .join(JobListing, UserJob.job_id == JobListing.id)
+        .filter(UserJob.user_id == user_id)
+        .filter(UserJob.status != "deleted")
+        .order_by(UserJob.created_at.desc())
+        .all()
     )
-
-    # Query jobs excluding blacklisted ones at the database level
-    # Also order by created_at DESC to get newest first (optimization for pagination)
-    jobs_query = (
-        db.query(JobListing)
-        .filter(~JobListing.id.in_(blacklisted_subquery))
-        .order_by(JobListing.created_at.desc())
-    )
-
-    # Fetch jobs in batches to reduce memory usage
-    jobs = jobs_query.all()
 
     result = []
-    removed = 0
-    for job in jobs:
-        # Note: cleanup_dead_links is expensive (HTTP calls), disabled by default
-        if cleanup_dead_links and not is_job_url_alive(job.url):
-            db.delete(job)
-            removed += 1
-            continue
-        job_out = _job_to_jobout(job, pref, user_cv)
-        if job_out:
-            result.append(job_out)
-    if removed:
-        db.commit()
+    for user_job, job in user_jobs:
+        created_at = _normalize_created_at(job.created_at)
+        is_new = user_job.status == "new"
+        is_remote = "remote" in (job.location or "").lower() or "remote" in (job.description or "").lower()
+
+        job_out = JobOut(
+            id=job.id,
+            source=job.source,
+            title=job.title,
+            company=job.company,
+            location=job.location,
+            url=job.url,
+            description=job.description,
+            salary_min=job.salary_min,
+            score=user_job.score,
+            is_remote=is_remote,
+            is_new=is_new,
+            created_at=created_at,
+        )
+        result.append(job_out)
 
     # Sort based on option
     if sort_by == "newest":
-        # Sort by date only (newest first)
         result.sort(key=lambda j: j.created_at or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     elif sort_by == "score":
-        # Sort by score only (highest first)
         result.sort(key=lambda j: j.score or 0, reverse=True)
-    else:  # "new_first" - default
-        # New offers first, then by score
+    else:  # "new_first"
         result.sort(key=lambda j: (
-            0 if j.is_new else 1,  # New offers first
-            -(j.score or 0),  # Then by score (descending)
-            -(j.created_at or datetime.min.replace(tzinfo=timezone.utc)).timestamp()  # Then by date
+            0 if j.is_new else 1,
+            -(j.score or 0),
+            -(j.created_at or datetime.min.replace(tzinfo=timezone.utc)).timestamp()
         ))
 
     if page and page_size:
@@ -368,3 +358,63 @@ def list_matches_for_user(
         return result[start:end]
 
     return result
+
+
+def add_jobs_to_user_dashboard(
+    db: Session,
+    user_id: int,
+    jobs: list[JobListing],
+    pref: UserPreference,
+    user_cv: set[str],
+) -> int:
+    """Ajoute des offres au dashboard de l'utilisateur avec leur score."""
+    added = 0
+    for job in jobs:
+        # Vérifier si l'offre existe déjà pour cet utilisateur
+        existing = (
+            db.query(UserJob)
+            .filter(UserJob.user_id == user_id, UserJob.job_id == job.id)
+            .first()
+        )
+        if existing:
+            continue
+
+        # Calculer le score
+        score = score_job(job, pref, user_cv)
+        if score is None:
+            continue  # Job filtré par les critères
+
+        score_10 = max(0, min(10, round(score / 10)))
+
+        # Créer l'entrée UserJob
+        user_job = UserJob(
+            user_id=user_id,
+            job_id=job.id,
+            score=score_10,
+            status="new",
+        )
+        db.add(user_job)
+        added += 1
+
+    if added > 0:
+        db.commit()
+
+    return added
+
+
+def get_top_unnotified_jobs(
+    db: Session,
+    user_id: int,
+    limit: int = 5,
+) -> list[tuple[UserJob, JobListing]]:
+    """Récupère les meilleures offres non consultées et non notifiées pour l'email."""
+    return (
+        db.query(UserJob, JobListing)
+        .join(JobListing, UserJob.job_id == JobListing.id)
+        .filter(UserJob.user_id == user_id)
+        .filter(UserJob.status == "new")  # Non consultées
+        .filter(UserJob.notified_at.is_(None))  # Non encore notifiées par email
+        .order_by(UserJob.score.desc())
+        .limit(limit)
+        .all()
+    )
