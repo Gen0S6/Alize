@@ -434,7 +434,7 @@ export default function CampaignsPage() {
                       >
                         <i
                           className={`fas fa-${campaign.icon || "briefcase"}`}
-                          style={{ color: campaign.color }}
+                          style={{ color: campaign.color ?? undefined }}
                         />
                       </div>
                       <div>

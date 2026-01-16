@@ -214,7 +214,7 @@ export default function CampaignDetailPage() {
               >
                 <i
                   className={`fas fa-${campaign.icon || "briefcase"} text-xl`}
-                  style={{ color: campaign.color }}
+                  style={{ color: campaign.color ?? undefined }}
                 />
               </div>
               <div>
@@ -400,7 +400,7 @@ export default function CampaignDetailPage() {
                         >
                           {job.title}
                         </a>
-                        {campaignJob.score !== null && (
+                        {campaignJob.score != null && (
                           <span
                             className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
                               campaignJob.score >= 7
