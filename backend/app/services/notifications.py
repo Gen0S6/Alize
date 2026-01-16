@@ -25,6 +25,9 @@ from app.models import (
     UserPreference,
     JobSearchRun,
     UserAnalysisCache,
+    JobSearchCampaign,
+    CampaignJob,
+    CampaignEmailTemplate,
 )
 load_dotenv()
 
@@ -570,3 +573,235 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             db.commit()
         except Exception as exc:
             log.error("Failed to notify user %s: %s", user.email, exc)
+
+
+# ==================== Campaign-specific notifications ====================
+
+
+def build_campaign_notification_body(
+    campaign: JobSearchCampaign,
+    jobs: list[dict],
+    template: CampaignEmailTemplate = None,
+) -> tuple[str, str]:
+    """
+    Build notification body for a specific campaign.
+    Uses custom template if available, otherwise uses default format.
+    """
+    unsubscribe_url = os.getenv("NOTIFY_UNSUBSCRIBE_URL")
+    campaign_name = html.escape(campaign.name)
+    target_role = html.escape(campaign.target_role or "Tous postes")
+    target_location = html.escape(campaign.target_location or "Partout")
+
+    # Sort by score and take top 5
+    top_jobs = sorted(jobs, key=lambda j: j.get("score", 0) or 0, reverse=True)[:5]
+    count = len(jobs)
+
+    # Build text version
+    header = f"Campagne: {campaign.name} - {count} nouvelle(s) offre(s)"
+    text_lines = [header, f"Poste ciblé: {target_role}", f"Localisation: {target_location}", ""]
+    for job in top_jobs:
+        text_lines.append(
+            f"- {job.get('title', 'Sans titre')} @ {job.get('company', 'N/A')} "
+            f"({job.get('location', 'N/A')}) [{job.get('url', '#')}] score {job.get('score', '?')}"
+        )
+    text_body = "\n".join(text_lines)
+    if unsubscribe_url:
+        text_body += f"\n\nSe désinscrire: {unsubscribe_url}"
+
+    # Build HTML version
+    job_cards = []
+    for job in top_jobs:
+        title = html.escape(job.get("title", "Sans titre"))
+        company = html.escape(job.get("company", "N/A"))
+        location = html.escape(job.get("location", "N/A"))
+        url = html.escape(job.get("url", "#"))
+        score = html.escape(str(job.get("score", "?")))
+        job_cards.append(
+            f"""
+            <a href="{url}" style="text-decoration:none;color:#111827;">
+              <div style="border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#FFFFFF;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <div style="font-weight:600;font-size:14px;">{title}</div>
+                  <span style="background:#ECFDF3;color:#16A34A;font-weight:600;font-size:11px;padding:2px 8px;border-radius:999px;">{score}/10</span>
+                </div>
+                <div style="margin-top:4px;color:#4B5563;font-size:13px;">{company} • {location}</div>
+              </div>
+            </a>
+            """
+        )
+
+    # Campaign color for header accent
+    campaign_color = campaign.color or "#3B82F6"
+
+    footer_unsub = (
+        f"<div style='margin-top:12px;'><a href='{html.escape(unsubscribe_url)}' style='color:#6B7280;font-size:11px;'>Se désinscrire</a></div>"
+        if unsubscribe_url
+        else ""
+    )
+
+    html_body = f"""
+    <div style="font-family:Inter,Arial,sans-serif;max-width:720px;margin:0 auto;background:#F3F4F6;padding:20px;">
+      <div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:18px;padding:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:{campaign_color};"></div>
+          <div style="font-weight:700;font-size:16px;color:#111827;">{campaign_name}</div>
+        </div>
+        <div style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:#6B7280;">
+          <span>Poste: {target_role}</span>
+          <span>Lieu: {target_location}</span>
+        </div>
+        <div style="font-size:14px;color:#374151;margin-bottom:12px;">
+          {count} nouvelle(s) offre(s) trouvée(s) pour cette campagne
+        </div>
+        <div style="margin-top:14px;">{"".join(job_cards)}</div>
+        <div style="margin-top:18px;font-size:12px;color:#9CA3AF;">Built by Gen0S7's members</div>
+        {footer_unsub}
+      </div>
+    </div>
+    """
+    return text_body, html_body
+
+
+def notify_campaign_jobs(
+    db: Session,
+    user: User,
+    campaign: JobSearchCampaign,
+    new_jobs: list[dict],
+) -> bool:
+    """
+    Send notification for new jobs in a specific campaign.
+    Respects campaign's email notification settings.
+    """
+    if not campaign.email_notifications:
+        log.debug("Campaign %s has notifications disabled", campaign.id)
+        return False
+
+    if not new_jobs:
+        log.debug("No new jobs to notify for campaign %s", campaign.id)
+        return False
+
+    # Filter jobs by minimum score
+    min_score = campaign.min_score_for_notification
+    qualified_jobs = [j for j in new_jobs if (j.get("score") or 0) >= min_score]
+
+    if not qualified_jobs:
+        log.debug("No jobs meet minimum score %d for campaign %s", min_score, campaign.id)
+        return False
+
+    # Get custom template if exists
+    template = db.query(CampaignEmailTemplate).filter(
+        CampaignEmailTemplate.campaign_id == campaign.id,
+        CampaignEmailTemplate.template_type == "notification",
+        CampaignEmailTemplate.is_active == True,
+    ).first()
+
+    # Build email content
+    text_body, html_body = build_campaign_notification_body(campaign, qualified_jobs, template)
+
+    # Custom subject from template or default
+    subject = f"[{campaign.name}] {len(qualified_jobs)} nouvelle(s) offre(s) d'emploi"
+    if template and template.subject:
+        subject = template.subject.format(
+            campaign_name=campaign.name,
+            job_count=len(qualified_jobs),
+            target_role=campaign.target_role or "N/A",
+        )
+
+    to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
+
+    success = send_email_notification(to_email, subject, text_body, html_body)
+
+    if success:
+        # Mark jobs as notified in the campaign
+        now = datetime.now(timezone.utc)
+        for job in qualified_jobs:
+            job_id = job.get("id")
+            if job_id:
+                campaign_job = db.query(CampaignJob).filter(
+                    CampaignJob.campaign_id == campaign.id,
+                    CampaignJob.job_id == job_id,
+                ).first()
+                if campaign_job:
+                    campaign_job.notified_at = now
+        db.commit()
+        log.info(
+            "Campaign notification sent: campaign=%s user=%s jobs=%d",
+            campaign.name,
+            user.email,
+            len(qualified_jobs),
+        )
+
+    return success
+
+
+def notify_all_campaigns(db: Session):
+    """
+    Send notifications for all active campaigns that have pending notifications.
+    Called by scheduler based on each campaign's email_frequency setting.
+    """
+    from sqlalchemy import func
+
+    now = datetime.now(timezone.utc)
+
+    # Get all active campaigns with notifications enabled
+    campaigns = db.query(JobSearchCampaign).filter(
+        JobSearchCampaign.is_active == True,
+        JobSearchCampaign.email_notifications == True,
+    ).all()
+
+    log.info("Checking %d campaigns for notifications", len(campaigns))
+
+    for campaign in campaigns:
+        try:
+            # Check frequency
+            should_notify = False
+            if campaign.email_frequency == "instant":
+                should_notify = True
+            elif campaign.email_frequency == "daily":
+                # Check if last search was within 24h
+                if campaign.last_search_at:
+                    should_notify = (now - _as_aware(campaign.last_search_at)) >= timedelta(hours=24)
+                else:
+                    should_notify = True
+            elif campaign.email_frequency == "weekly":
+                if campaign.last_search_at:
+                    should_notify = (now - _as_aware(campaign.last_search_at)) >= timedelta(days=7)
+                else:
+                    should_notify = True
+
+            if not should_notify:
+                continue
+
+            # Get user
+            user = db.query(User).filter(User.id == campaign.user_id).first()
+            if not user or not user.notifications_enabled:
+                continue
+
+            # Get new jobs that haven't been notified yet
+            new_jobs = db.query(CampaignJob, JobListing).join(
+                JobListing, CampaignJob.job_id == JobListing.id
+            ).filter(
+                CampaignJob.campaign_id == campaign.id,
+                CampaignJob.notified_at.is_(None),
+                CampaignJob.status == "new",
+            ).all()
+
+            if not new_jobs:
+                continue
+
+            # Convert to dict format
+            jobs_data = []
+            for cj, job in new_jobs:
+                jobs_data.append({
+                    "id": job.id,
+                    "title": job.title,
+                    "company": job.company,
+                    "location": job.location,
+                    "url": job.url,
+                    "score": cj.score,
+                })
+
+            notify_campaign_jobs(db, user, campaign, jobs_data)
+
+        except Exception as exc:
+            log.error("Failed to process campaign %s notifications: %s", campaign.id, exc)
