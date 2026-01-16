@@ -397,7 +397,7 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
     cooldown = timedelta(minutes=NOTIFY_INTERVAL_MINUTES)
 
     # Only fetch users with notifications enabled
-    users = db.query(User).filter(User.notifications_enabled == True).all()  # noqa: E712
+    users = db.query(User).filter(User.notifications_enabled.is_(True)).all()
     if not users:
         log.info("Scheduler notify run: no users with notifications enabled")
         return
@@ -692,7 +692,7 @@ def notify_campaign_jobs(
     template = db.query(CampaignEmailTemplate).filter(
         CampaignEmailTemplate.campaign_id == campaign.id,
         CampaignEmailTemplate.template_type == "notification",
-        CampaignEmailTemplate.is_active == True,
+        CampaignEmailTemplate.is_active.is_(True),
     ).first()
 
     # Build email content
@@ -745,8 +745,8 @@ def notify_all_campaigns(db: Session):
 
     # Get all active campaigns with notifications enabled
     campaigns = db.query(JobSearchCampaign).filter(
-        JobSearchCampaign.is_active == True,
-        JobSearchCampaign.email_notifications == True,
+        JobSearchCampaign.is_active.is_(True),
+        JobSearchCampaign.email_notifications.is_(True),
     ).all()
 
     log.info("Checking %d campaigns for notifications", len(campaigns))
