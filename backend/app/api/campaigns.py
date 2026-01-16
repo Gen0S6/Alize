@@ -88,7 +88,7 @@ def list_campaigns(
     query = db.query(JobSearchCampaign).filter(JobSearchCampaign.user_id == user.id)
 
     if active_only:
-        query = query.filter(JobSearchCampaign.is_active == True)
+        query = query.filter(JobSearchCampaign.is_active.is_(True))
 
     campaigns = query.order_by(JobSearchCampaign.priority.desc(), JobSearchCampaign.created_at.desc()).all()
 
@@ -119,7 +119,7 @@ def create_campaign(
     if is_default:
         db.query(JobSearchCampaign).filter(
             JobSearchCampaign.user_id == user.id,
-            JobSearchCampaign.is_default == True,
+            JobSearchCampaign.is_default.is_(True),
         ).update({"is_default": False})
 
     campaign = JobSearchCampaign(
@@ -191,7 +191,7 @@ def update_campaign(
         db.query(JobSearchCampaign).filter(
             JobSearchCampaign.user_id == user.id,
             JobSearchCampaign.id != campaign_id,
-            JobSearchCampaign.is_default == True,
+            JobSearchCampaign.is_default.is_(True),
         ).update({"is_default": False})
 
     # Update only provided fields
