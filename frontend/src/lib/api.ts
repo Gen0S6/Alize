@@ -155,6 +155,16 @@ export type ProfileUpdatePayload = {
   notifications_enabled?: boolean;
 };
 
+// Statistiques du dashboard simplifié
+export type DashboardStats = {
+  total_jobs: number;
+  new_jobs: number;
+  viewed_jobs: number;
+  saved_jobs: number;
+  last_search_at?: string | null;
+  next_email_at?: string | null;
+};
+
 async function http<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -199,7 +209,8 @@ export async function getMatches(
   minScore = 0,
   source = "all",
   sortBy: SortOption = "new_first",
-  newOnly = false
+  newOnly = false,
+  status?: "new" | "viewed" | "saved"
 ) {
   const params = new URLSearchParams({
     page: String(page),
@@ -210,11 +221,12 @@ export async function getMatches(
   if (minScore) params.set("min_score", String(minScore));
   if (source && source !== "all") params.set("source", source);
   if (newOnly) params.set("new_only", "true");
+  if (status) params.set("status", status);
   return apiFetch(`/matches?${params.toString()}`, { method: "GET" }) as Promise<MatchesPage>;
 }
 
 export async function getMatchesCount() {
-  return apiFetch("/matches/count", { method: "GET" }) as Promise<{ count: number }>;
+  return apiFetch("/matches/count", { method: "GET" }) as Promise<{ count: number; new_count: number }>;
 }
 
 export async function deleteMatch(id: number) {
@@ -223,6 +235,29 @@ export async function deleteMatch(id: number) {
 
 export async function markMatchVisited(id: number) {
   return apiFetch(`/matches/${id}/visit`, { method: "POST" }) as Promise<{ visited: boolean }>;
+}
+
+// Sauvegarder une offre
+export async function saveMatch(id: number) {
+  return apiFetch(`/matches/${id}/save`, { method: "POST" }) as Promise<{ saved: boolean }>;
+}
+
+// Retirer une offre des sauvegardées
+export async function unsaveMatch(id: number) {
+  return apiFetch(`/matches/${id}/unsave`, { method: "POST" }) as Promise<{ unsaved: boolean }>;
+}
+
+// Mettre à jour le statut d'une offre
+export async function updateMatchStatus(id: number, status: "new" | "viewed" | "saved" | "deleted") {
+  return apiFetch(`/matches/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  }) as Promise<{ status: string }>;
+}
+
+// Statistiques du dashboard
+export async function getDashboardStats() {
+  return apiFetch("/dashboard/stats", { method: "GET" }) as Promise<DashboardStats>;
 }
 
 export async function getPreferences() {
@@ -309,290 +344,4 @@ export async function getOAuthProviders() {
 
 export function getGoogleOAuthUrl() {
   return `${API_BASE}/auth/oauth/google`;
-}
-
-// ==================== Campaign Types ====================
-
-export type Campaign = {
-  id: number;
-  user_id: number;
-  name: string;
-  description?: string | null;
-  color?: string | null;
-  icon?: string | null;
-  target_role?: string | null;
-  target_location?: string | null;
-  contract_type?: string | null;
-  salary_min?: number | null;
-  salary_max?: number | null;
-  experience_level?: string | null;
-  remote_preference?: string | null;
-  must_keywords?: string | null;
-  nice_keywords?: string | null;
-  avoid_keywords?: string | null;
-  email_notifications: boolean;
-  email_frequency: "instant" | "daily" | "weekly";
-  min_score_for_notification: number;
-  is_active: boolean;
-  is_default: boolean;
-  priority: number;
-  jobs_found: number;
-  jobs_applied: number;
-  jobs_interviewed: number;
-  last_search_at?: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CampaignCreate = {
-  name: string;
-  description?: string;
-  color?: string;
-  icon?: string;
-  target_role?: string;
-  target_location?: string;
-  contract_type?: string;
-  salary_min?: number;
-  salary_max?: number;
-  experience_level?: string;
-  remote_preference?: string;
-  must_keywords?: string;
-  nice_keywords?: string;
-  avoid_keywords?: string;
-  email_notifications?: boolean;
-  email_frequency?: "instant" | "daily" | "weekly";
-  min_score_for_notification?: number;
-  is_default?: boolean;
-  priority?: number;
-};
-
-export type CampaignUpdate = Partial<CampaignCreate> & {
-  is_active?: boolean;
-};
-
-export type CampaignListResponse = {
-  campaigns: Campaign[];
-  total: number;
-  active_count: number;
-};
-
-export type CampaignJob = {
-  id: number;
-  campaign_id: number;
-  job_id: number;
-  score?: number | null;
-  status: "new" | "saved" | "applied" | "interview" | "rejected" | "hired";
-  notes?: string | null;
-  applied_at?: string | null;
-  interview_date?: string | null;
-  visited_at?: string | null;
-  created_at: string;
-  updated_at: string;
-  job?: Match | null;
-};
-
-export type CampaignJobsPage = {
-  items: CampaignJob[];
-  total: number;
-  page: number;
-  page_size: number;
-  stats: Record<string, number>;
-};
-
-export type CampaignStats = {
-  campaign_id: number;
-  total_jobs: number;
-  new_jobs: number;
-  saved_jobs: number;
-  applied_jobs: number;
-  interviews: number;
-  rejected: number;
-  hired: number;
-  avg_score?: number | null;
-  response_rate?: number | null;
-};
-
-export type DashboardStats = {
-  total_campaigns: number;
-  active_campaigns: number;
-  total_jobs_found: number;
-  total_applications: number;
-  total_interviews: number;
-  campaigns_stats: CampaignStats[];
-  recent_activity: Array<{
-    type: string;
-    job_id: number;
-    job_title: string;
-    company: string;
-    campaign_id: number;
-    campaign_name: string;
-    status: string;
-    updated_at: string | null;
-  }>;
-};
-
-export type DashboardConfig = {
-  id: number;
-  user_id: number;
-  layout?: string | null;
-  default_campaign_id?: number | null;
-  show_stats: boolean;
-  show_recent_jobs: boolean;
-  show_calendar: boolean;
-  show_analytics: boolean;
-  theme: "light" | "dark" | "system";
-  compact_mode: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-export type DashboardConfigUpdate = {
-  layout?: string;
-  default_campaign_id?: number;
-  show_stats?: boolean;
-  show_recent_jobs?: boolean;
-  show_calendar?: boolean;
-  show_analytics?: boolean;
-  theme?: "light" | "dark" | "system";
-  compact_mode?: boolean;
-};
-
-export type EmailTemplate = {
-  id: number;
-  campaign_id: number;
-  template_type: "notification" | "application" | "follow_up";
-  subject?: string | null;
-  body?: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-// ==================== Campaign API Functions ====================
-
-export async function getCampaigns(activeOnly = false) {
-  const params = activeOnly ? "?active_only=true" : "";
-  return apiFetch(`/campaigns${params}`, { method: "GET" }) as Promise<CampaignListResponse>;
-}
-
-export async function getCampaign(campaignId: number) {
-  return apiFetch(`/campaigns/${campaignId}`, { method: "GET" }) as Promise<Campaign>;
-}
-
-export async function createCampaign(payload: CampaignCreate) {
-  return apiFetch("/campaigns", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  }) as Promise<Campaign>;
-}
-
-export async function updateCampaign(campaignId: number, payload: CampaignUpdate) {
-  return apiFetch(`/campaigns/${campaignId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  }) as Promise<Campaign>;
-}
-
-export async function deleteCampaign(campaignId: number) {
-  return apiFetch(`/campaigns/${campaignId}`, { method: "DELETE" });
-}
-
-// Campaign Jobs
-export async function getCampaignJobs(
-  campaignId: number,
-  page = 1,
-  pageSize = 20,
-  status?: string,
-  minScore?: number,
-  search?: string
-) {
-  const params = new URLSearchParams({
-    page: String(page),
-    page_size: String(pageSize),
-  });
-  if (status) params.set("status", status);
-  if (minScore !== undefined) params.set("min_score", String(minScore));
-  if (search) params.set("search", search);
-  return apiFetch(`/campaigns/${campaignId}/jobs?${params.toString()}`, {
-    method: "GET",
-  }) as Promise<CampaignJobsPage>;
-}
-
-export async function addJobToCampaign(
-  campaignId: number,
-  jobId: number,
-  status = "new",
-  notes?: string
-) {
-  return apiFetch(`/campaigns/${campaignId}/jobs`, {
-    method: "POST",
-    body: JSON.stringify({ job_id: jobId, status, notes }),
-  }) as Promise<CampaignJob>;
-}
-
-export async function updateCampaignJob(
-  campaignId: number,
-  jobId: number,
-  payload: { status?: string; notes?: string; applied_at?: string; interview_date?: string }
-) {
-  return apiFetch(`/campaigns/${campaignId}/jobs/${jobId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  }) as Promise<CampaignJob>;
-}
-
-export async function removeJobFromCampaign(campaignId: number, jobId: number) {
-  return apiFetch(`/campaigns/${campaignId}/jobs/${jobId}`, { method: "DELETE" });
-}
-
-// Campaign Stats
-export async function getCampaignStats(campaignId: number) {
-  return apiFetch(`/campaigns/${campaignId}/stats`, { method: "GET" }) as Promise<CampaignStats>;
-}
-
-export async function getDashboardStats() {
-  return apiFetch("/campaigns/dashboard/stats", { method: "GET" }) as Promise<DashboardStats>;
-}
-
-// Dashboard Config
-export async function getDashboardConfig() {
-  return apiFetch("/campaigns/dashboard/config", { method: "GET" }) as Promise<DashboardConfig>;
-}
-
-export async function updateDashboardConfig(payload: DashboardConfigUpdate) {
-  return apiFetch("/campaigns/dashboard/config", {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  }) as Promise<DashboardConfig>;
-}
-
-// Email Templates
-export async function getCampaignTemplates(campaignId: number) {
-  return apiFetch(`/campaigns/${campaignId}/templates`, { method: "GET" }) as Promise<EmailTemplate[]>;
-}
-
-export async function createEmailTemplate(payload: {
-  campaign_id: number;
-  template_type: string;
-  subject?: string;
-  body?: string;
-}) {
-  return apiFetch("/campaigns/templates", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  }) as Promise<EmailTemplate>;
-}
-
-export async function updateEmailTemplate(
-  templateId: number,
-  payload: { subject?: string; body?: string; is_active?: boolean }
-) {
-  return apiFetch(`/campaigns/templates/${templateId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  }) as Promise<EmailTemplate>;
-}
-
-export async function deleteEmailTemplate(templateId: number) {
-  return apiFetch(`/campaigns/templates/${templateId}`, { method: "DELETE" });
 }

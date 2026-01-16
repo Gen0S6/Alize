@@ -142,249 +142,42 @@ class EmailVerificationResponse(BaseModel):
     success: bool = True
 
 
-# ========== Campaign Schemas ==========
+# ========== User Job Schemas (Simplified Dashboard) ==========
 
-class CampaignCreate(BaseModel):
-    """Création d'une nouvelle campagne de recherche"""
-    name: str = Field(min_length=1, max_length=200)
-    description: Optional[str] = None
-    color: Optional[str] = Field(default="#3B82F6", pattern=r"^#[0-9A-Fa-f]{6}$")
-    icon: Optional[str] = Field(default="briefcase", max_length=50)
-
-    # Critères de recherche
-    target_role: Optional[str] = Field(default=None, max_length=200)
-    target_location: Optional[str] = Field(default=None, max_length=200)
-    contract_type: Optional[str] = Field(default=None, max_length=100)
-    salary_min: Optional[int] = Field(default=None, ge=0)
-    salary_max: Optional[int] = Field(default=None, ge=0)
-    experience_level: Optional[str] = Field(default=None, max_length=50)
-    remote_preference: Optional[str] = Field(default=None, max_length=50)
-
-    # Mots-clés
-    must_keywords: Optional[str] = None
-    nice_keywords: Optional[str] = None
-    avoid_keywords: Optional[str] = None
-
-    # Notifications
-    email_notifications: bool = True
-    email_frequency: str = Field(default="daily", pattern=r"^(instant|daily|weekly)$")
-    min_score_for_notification: int = Field(default=6, ge=0, le=10)
-
-    is_default: bool = False
-    priority: int = Field(default=0, ge=0)
+class UserJobUpdate(BaseModel):
+    """Mettre à jour le statut d'une offre"""
+    status: str = Field(pattern=r"^(new|viewed|saved|deleted)$")
 
 
-class CampaignUpdate(BaseModel):
-    """Mise à jour d'une campagne existante"""
-    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    description: Optional[str] = None
-    color: Optional[str] = Field(default=None, pattern=r"^#[0-9A-Fa-f]{6}$")
-    icon: Optional[str] = Field(default=None, max_length=50)
-
-    target_role: Optional[str] = Field(default=None, max_length=200)
-    target_location: Optional[str] = Field(default=None, max_length=200)
-    contract_type: Optional[str] = Field(default=None, max_length=100)
-    salary_min: Optional[int] = Field(default=None, ge=0)
-    salary_max: Optional[int] = Field(default=None, ge=0)
-    experience_level: Optional[str] = Field(default=None, max_length=50)
-    remote_preference: Optional[str] = Field(default=None, max_length=50)
-
-    must_keywords: Optional[str] = None
-    nice_keywords: Optional[str] = None
-    avoid_keywords: Optional[str] = None
-
-    email_notifications: Optional[bool] = None
-    email_frequency: Optional[str] = Field(default=None, pattern=r"^(instant|daily|weekly)$")
-    min_score_for_notification: Optional[int] = Field(default=None, ge=0, le=10)
-
-    is_active: Optional[bool] = None
-    is_default: Optional[bool] = None
-    priority: Optional[int] = Field(default=None, ge=0)
-
-
-class CampaignOut(BaseModel):
-    """Campagne avec toutes ses informations"""
+class UserJobOut(BaseModel):
+    """Offre dans le dashboard de l'utilisateur"""
     id: int
-    user_id: int
-    name: str
-    description: Optional[str] = None
-    color: Optional[str] = None
-    icon: Optional[str] = None
-
-    target_role: Optional[str] = None
-    target_location: Optional[str] = None
-    contract_type: Optional[str] = None
-    salary_min: Optional[int] = None
-    salary_max: Optional[int] = None
-    experience_level: Optional[str] = None
-    remote_preference: Optional[str] = None
-
-    must_keywords: Optional[str] = None
-    nice_keywords: Optional[str] = None
-    avoid_keywords: Optional[str] = None
-
-    email_notifications: bool
-    email_frequency: str
-    min_score_for_notification: int
-
-    is_active: bool
-    is_default: bool
-    priority: int
-
-    jobs_found: int
-    jobs_applied: int
-    jobs_interviewed: int
-    last_search_at: Optional[datetime] = None
-
-    created_at: datetime
-    updated_at: datetime
-
-
-class CampaignListOut(BaseModel):
-    """Liste des campagnes avec stats résumées"""
-    campaigns: List[CampaignOut]
-    total: int
-    active_count: int
-
-
-# ========== Campaign Job Schemas ==========
-
-class CampaignJobCreate(BaseModel):
-    """Associer un job à une campagne"""
-    job_id: int
-    status: str = Field(default="new", pattern=r"^(new|saved|applied|interview|rejected|hired)$")
-    notes: Optional[str] = None
-
-
-class CampaignJobUpdate(BaseModel):
-    """Mettre à jour le statut d'un job dans une campagne"""
-    status: Optional[str] = Field(default=None, pattern=r"^(new|saved|applied|interview|rejected|hired)$")
-    notes: Optional[str] = None
-    applied_at: Optional[datetime] = None
-    interview_date: Optional[datetime] = None
-
-
-class CampaignJobOut(BaseModel):
-    """Job dans une campagne avec son statut"""
-    id: int
-    campaign_id: int
     job_id: int
     score: Optional[int] = None
     status: str
-    notes: Optional[str] = None
-    applied_at: Optional[datetime] = None
-    interview_date: Optional[datetime] = None
-    visited_at: Optional[datetime] = None
     created_at: datetime
-    updated_at: datetime
+    viewed_at: Optional[datetime] = None
 
     # Job info (joined)
     job: Optional[JobOut] = None
 
 
-class CampaignJobsPage(BaseModel):
-    """Page de jobs pour une campagne"""
-    items: List[CampaignJobOut]
+class UserJobsPage(BaseModel):
+    """Page d'offres pour le dashboard"""
+    items: List[UserJobOut]
     total: int
     page: int
     page_size: int
-    stats: dict = {}
-
-
-# ========== Email Template Schemas ==========
-
-class EmailTemplateCreate(BaseModel):
-    """Créer un template d'email pour une campagne"""
-    campaign_id: int
-    template_type: str = Field(pattern=r"^(notification|application|follow_up)$")
-    subject: Optional[str] = Field(default=None, max_length=500)
-    body: Optional[str] = None
-
-
-class EmailTemplateUpdate(BaseModel):
-    """Mettre à jour un template d'email"""
-    subject: Optional[str] = Field(default=None, max_length=500)
-    body: Optional[str] = None
-    is_active: Optional[bool] = None
-
-
-class EmailTemplateOut(BaseModel):
-    """Template d'email"""
-    id: int
-    campaign_id: int
-    template_type: str
-    subject: Optional[str] = None
-    body: Optional[str] = None
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-
-
-# ========== Dashboard Config Schemas ==========
-
-class DashboardConfigUpdate(BaseModel):
-    """Mettre à jour la configuration du dashboard"""
-    layout: Optional[str] = None  # JSON string
-    default_campaign_id: Optional[int] = None
-    show_stats: Optional[bool] = None
-    show_recent_jobs: Optional[bool] = None
-    show_calendar: Optional[bool] = None
-    show_analytics: Optional[bool] = None
-    theme: Optional[str] = Field(default=None, pattern=r"^(light|dark|system)$")
-    compact_mode: Optional[bool] = None
-
-
-class DashboardConfigOut(BaseModel):
-    """Configuration du dashboard"""
-    id: int
-    user_id: int
-    layout: Optional[str] = None
-    default_campaign_id: Optional[int] = None
-    show_stats: bool
-    show_recent_jobs: bool
-    show_calendar: bool
-    show_analytics: bool
-    theme: str
-    compact_mode: bool
-    created_at: datetime
-    updated_at: datetime
-
-
-# ========== Analytics Schemas ==========
-
-class CampaignStatsOut(BaseModel):
-    """Statistiques d'une campagne"""
-    campaign_id: int
-    total_jobs: int
-    new_jobs: int
-    saved_jobs: int
-    applied_jobs: int
-    interviews: int
-    rejected: int
-    hired: int
-    avg_score: Optional[float] = None
-    response_rate: Optional[float] = None
+    new_count: int = 0  # Nombre d'offres non consultées
+    viewed_count: int = 0
+    saved_count: int = 0
 
 
 class DashboardStatsOut(BaseModel):
-    """Statistiques globales du dashboard"""
-    total_campaigns: int
-    active_campaigns: int
-    total_jobs_found: int
-    total_applications: int
-    total_interviews: int
-    campaigns_stats: List[CampaignStatsOut]
-    recent_activity: List[dict] = []
-
-
-class AnalyticsSnapshotOut(BaseModel):
-    """Snapshot des analytics"""
-    id: int
-    campaign_id: int
-    snapshot_date: datetime
+    """Statistiques simples du dashboard"""
     total_jobs: int
     new_jobs: int
-    applied_jobs: int
-    interviews: int
-    avg_score: Optional[int] = None
-    created_at: datetime
+    viewed_jobs: int
+    saved_jobs: int
+    last_search_at: Optional[datetime] = None
+    next_email_at: Optional[datetime] = None

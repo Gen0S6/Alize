@@ -31,7 +31,6 @@ load_dotenv()
 
 from app.api.ai_routes import router as ai_router
 from app.api.auth import router as auth_router
-from app.api.campaigns import router as campaigns_router
 from app.api.cv import router as cv_router
 from app.api.matches import router as matches_router
 from app.api.notify import router as notify_router
@@ -119,7 +118,6 @@ app.include_router(cv_router)
 app.include_router(preferences_router)
 app.include_router(notify_router)
 app.include_router(profile_router)
-app.include_router(campaigns_router)
 
 
 @app.get("/health")
