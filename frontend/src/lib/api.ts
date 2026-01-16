@@ -213,6 +213,10 @@ export async function getMatches(
   return apiFetch(`/matches?${params.toString()}`, { method: "GET" }) as Promise<MatchesPage>;
 }
 
+export async function getMatchesCount() {
+  return apiFetch("/matches/count", { method: "GET" }) as Promise<{ count: number }>;
+}
+
 export async function deleteMatch(id: number) {
   return apiFetch(`/matches/${id}`, { method: "DELETE" }) as Promise<{ deleted: boolean }>;
 }

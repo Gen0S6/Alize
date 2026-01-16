@@ -26,6 +26,26 @@ def refresh_linkedin(
     return {"inserted": True, "source": "LinkedIn"}
 
 
+@router.get("/matches/count")
+def matches_count(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Endpoint léger pour compter rapidement les offres de l'utilisateur."""
+    # Compter les jobs non-blacklistés (requête SQL simple, pas de scoring)
+    blacklisted_ids = (
+        db.query(UserJobBlacklist.job_id)
+        .filter(UserJobBlacklist.user_id == user.id)
+        .subquery()
+    )
+    count = (
+        db.query(JobListing.id)
+        .filter(~JobListing.id.in_(blacklisted_ids))
+        .count()
+    )
+    return {"count": count}
+
+
 @router.get("/matches", response_model=MatchesPage)
 def matches(
     user: User = Depends(get_current_user),
@@ -101,11 +121,13 @@ def mark_visit(
     job_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    check_url: bool = Query(False, description="Vérifier si l'URL est encore valide (lent)"),
 ):
     job = db.query(JobListing).filter(JobListing.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Not found")
-    if not is_job_url_alive(job.url):
+    # Vérification d'URL optionnelle (désactivée par défaut car bloquante ~3s)
+    if check_url and not is_job_url_alive(job.url):
         db.delete(job)
         db.commit()
         raise HTTPException(status_code=410, detail="Offre expirée")

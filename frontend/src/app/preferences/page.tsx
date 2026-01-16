@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   getPreferences,
   updatePreferences,
-  getMatches,
+  getMatchesCount,
   type Preference,
 } from "../../lib/api";
 import { getToken, clearToken } from "../../lib/auth";
@@ -18,9 +18,11 @@ export default function PreferencesPage() {
   const [initialPref, setInitialPref] = useState<Preference | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [hasExistingJobs, setHasExistingJobs] = useState<boolean | null>(null);
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -68,16 +70,28 @@ export default function PreferencesPage() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!pref || !hasChanges()) return;
+
+    // Afficher la popup immédiatement pour éviter le délai
+    // La vérification des offres existantes se fait en arrière-plan
+    setConfirmOpen(true);
+    setChecking(true);
+
     try {
-      const current = await getMatches(1, 1);
-      if (current.items.length > 0) {
-        setConfirmOpen(true);
-        return;
+      // Utiliser l'endpoint rapide /matches/count au lieu de charger les offres
+      const { count } = await getMatchesCount();
+      setHasExistingJobs(count > 0);
+
+      // Si pas d'offres existantes, sauvegarder directement sans confirmation
+      if (count === 0) {
+        setConfirmOpen(false);
+        await doSave();
       }
     } catch (_err) {
-      // on ignore et on sauvegarde quand même
+      // En cas d'erreur, on laisse l'utilisateur décider
+      setHasExistingJobs(null);
+    } finally {
+      setChecking(false);
     }
-    await doSave();
   }
 
   function updateField<K extends keyof Preference>(key: K, value: Preference[K]) {
@@ -229,9 +243,9 @@ export default function PreferencesPage() {
               <button
                 type="submit"
                 className={btnPrimary}
-                disabled={saving || !hasChanges()}
+                disabled={saving || checking || !hasChanges()}
               >
-                {saving ? "Sauvegarde..." : "Sauvegarder"}
+                {saving ? "Sauvegarde..." : checking ? "Vérification..." : "Sauvegarder"}
               </button>
               {success && <span className={isDark ? "text-sm text-green-300" : "text-sm text-green-700"}>{success}</span>}
             </div>
@@ -242,27 +256,43 @@ export default function PreferencesPage() {
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className={isDark ? "w-full max-w-sm rounded-xl bg-[#0f1116] border border-gray-700 p-4 shadow-xl text-gray-100" : "w-full max-w-sm rounded-xl bg-white p-4 shadow-xl"}>
-            <h3 className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>
-              Supprimer les offres existantes ?
-            </h3>
-            <p className={isDark ? "mt-1 text-sm text-gray-300" : "mt-1 text-sm text-gray-600"}>
-              Changer les préférences va vider les offres actuelles.
-            </p>
-            <div className="mt-4 flex justify-end gap-2 text-sm">
-              <button
-                className={isDark ? "rounded-md px-3 py-1.5 text-gray-200 hover:bg-gray-800 border border-gray-700" : "rounded-md px-3 py-1.5 text-gray-600 hover:bg-gray-100"}
-                onClick={() => setConfirmOpen(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className={isDark ? "rounded-md bg-red-900/40 border border-red-700 px-3 py-1.5 text-red-200 hover:bg-red-900/60 disabled:opacity-50" : "rounded-md bg-red-50 px-3 py-1.5 text-red-700 hover:bg-red-100 disabled:opacity-50"}
-                onClick={doSave}
-                disabled={saving}
-              >
-                {saving ? "…" : "Continuer"}
-              </button>
-            </div>
+            {checking ? (
+              <>
+                <h3 className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>
+                  Vérification...
+                </h3>
+                <p className={isDark ? "mt-1 text-sm text-gray-300" : "mt-1 text-sm text-gray-600"}>
+                  Analyse de vos offres en cours.
+                </p>
+                <div className="mt-4 flex justify-center">
+                  <div className={isDark ? "animate-spin h-5 w-5 border-2 border-gray-600 border-t-gray-200 rounded-full" : "animate-spin h-5 w-5 border-2 border-gray-300 border-t-gray-600 rounded-full"}></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>
+                  Supprimer les offres existantes ?
+                </h3>
+                <p className={isDark ? "mt-1 text-sm text-gray-300" : "mt-1 text-sm text-gray-600"}>
+                  Changer les préférences va vider les offres actuelles.
+                </p>
+                <div className="mt-4 flex justify-end gap-2 text-sm">
+                  <button
+                    className={isDark ? "rounded-md px-3 py-1.5 text-gray-200 hover:bg-gray-800 border border-gray-700" : "rounded-md px-3 py-1.5 text-gray-600 hover:bg-gray-100"}
+                    onClick={() => setConfirmOpen(false)}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    className={isDark ? "rounded-md bg-red-900/40 border border-red-700 px-3 py-1.5 text-red-200 hover:bg-red-900/60 disabled:opacity-50" : "rounded-md bg-red-50 px-3 py-1.5 text-red-700 hover:bg-red-100 disabled:opacity-50"}
+                    onClick={doSave}
+                    disabled={saving}
+                  >
+                    {saving ? "…" : "Continuer"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
