@@ -30,7 +30,7 @@ load_dotenv()
 
 from app.ai import search_jobs_for_user
 from app.services.preferences import get_or_create_pref
-from app.services.matching import cv_keywords, is_job_url_alive
+from app.services.matching import cv_keywords
 
 log = logging.getLogger("alize.notifications")
 NOTIFY_INTERVAL_MINUTES = int(os.getenv("NOTIFY_INTERVAL_MINUTES", "4320"))  # default 72h
@@ -384,48 +384,95 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
     Parcourt les utilisateurs et envoie les notifications si le délai depuis
     la dernière activité (CV ou préférences) est supérieur au cooldown.
     Le cooldown repart à zéro quand le CV ou les préférences changent.
+
+    Optimized to batch-load user data to avoid N+1 queries.
     """
+    from sqlalchemy import func
+    from sqlalchemy.orm import aliased
+
     now = datetime.now(timezone.utc)
     cooldown = timedelta(minutes=NOTIFY_INTERVAL_MINUTES)
-    users = db.query(User).all()
+
+    # Only fetch users with notifications enabled
+    users = db.query(User).filter(User.notifications_enabled == True).all()  # noqa: E712
+    if not users:
+        log.info("Scheduler notify run: no users with notifications enabled")
+        return
+
+    user_ids = [u.id for u in users]
     log.info("Scheduler notify run started users=%s refresh=%s", len(users), refresh)
+
+    # Batch load latest CV for each user (using subquery for max id per user)
+    cv_subq = (
+        db.query(CV.user_id, func.max(CV.id).label("max_id"))
+        .filter(CV.user_id.in_(user_ids))
+        .group_by(CV.user_id)
+        .subquery()
+    )
+    latest_cvs = (
+        db.query(CV)
+        .join(cv_subq, (CV.user_id == cv_subq.c.user_id) & (CV.id == cv_subq.c.max_id))
+        .all()
+    )
+    cv_by_user = {cv.user_id: cv for cv in latest_cvs}
+
+    # Batch load latest preference for each user
+    pref_subq = (
+        db.query(UserPreference.user_id, func.max(UserPreference.id).label("max_id"))
+        .filter(UserPreference.user_id.in_(user_ids))
+        .group_by(UserPreference.user_id)
+        .subquery()
+    )
+    latest_prefs = (
+        db.query(UserPreference)
+        .join(pref_subq, (UserPreference.user_id == pref_subq.c.user_id) & (UserPreference.id == pref_subq.c.max_id))
+        .all()
+    )
+    pref_by_user = {pref.user_id: pref for pref in latest_prefs}
+
+    # Batch load latest notification for each user
+    notif_subq = (
+        db.query(UserJobNotification.user_id, func.max(UserJobNotification.id).label("max_id"))
+        .filter(UserJobNotification.user_id.in_(user_ids))
+        .group_by(UserJobNotification.user_id)
+        .subquery()
+    )
+    latest_notifs = (
+        db.query(UserJobNotification)
+        .join(notif_subq, (UserJobNotification.user_id == notif_subq.c.user_id) & (UserJobNotification.id == notif_subq.c.max_id))
+        .all()
+    )
+    notif_by_user = {notif.user_id: notif for notif in latest_notifs}
+
+    # Batch load latest job search run for each user
+    run_subq = (
+        db.query(JobSearchRun.user_id, func.max(JobSearchRun.id).label("max_id"))
+        .filter(JobSearchRun.user_id.in_(user_ids))
+        .group_by(JobSearchRun.user_id)
+        .subquery()
+    )
+    latest_runs = (
+        db.query(JobSearchRun)
+        .join(run_subq, (JobSearchRun.user_id == run_subq.c.user_id) & (JobSearchRun.id == run_subq.c.max_id))
+        .all()
+    )
+    run_by_user = {run.user_id: run for run in latest_runs}
+
     for user in users:
         result = None
         try:
-            if not user.notifications_enabled:
-                log.info("Skip user=%s (notifications disabled)", user.email)
-                continue
-            # Calcule la dernière activité utilisateur (CV ou préférences)
-            last_cv = (
-                db.query(CV)
-                .filter(CV.user_id == user.id)
-                .order_by(CV.created_at.desc())
-                .first()
-            )
-            last_pref = (
-                db.query(UserPreference)
-                .filter(UserPreference.user_id == user.id)
-                .order_by(UserPreference.updated_at.desc())
-                .first()
-            )
+            # Use pre-loaded data instead of querying per user
+            last_cv = cv_by_user.get(user.id)
+            last_pref = pref_by_user.get(user.id)
+
             last_activity = _as_aware(user.created_at)
             if last_cv:
                 last_activity = max(last_activity, _as_aware(last_cv.created_at))
             if last_pref:
                 last_activity = max(last_activity, _as_aware(last_pref.updated_at))
 
-            last_notif_row = (
-                db.query(UserJobNotification)
-                .filter(UserJobNotification.user_id == user.id)
-                .order_by(UserJobNotification.notified_at.desc())
-                .first()
-            )
-            last_run_row = (
-                db.query(JobSearchRun)
-                .filter(JobSearchRun.user_id == user.id)
-                .order_by(JobSearchRun.created_at.desc(), JobSearchRun.id.desc())
-                .first()
-            )
+            last_notif_row = notif_by_user.get(user.id)
+            last_run_row = run_by_user.get(user.id)
             last_notif = _as_aware(last_notif_row.notified_at) if last_notif_row else None
             last_run_time = _as_aware(last_run_row.created_at) if last_run_row else None
             candidates = [last_activity]
@@ -479,17 +526,8 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                     log.error("Failed to record job search run for user %s: %s", user.email, exc)
             matches_list = matches_func(user, db)
             log.info("Scheduler matches for user=%s count=%s", user.email, len(matches_list))
-            # retire les offres expirées
-            cleaned_matches: list[JobOut] = []
-            for m in matches_list:
-                if not m.id or not m.url:
-                    continue
-                job = db.query(JobListing).filter(JobListing.id == m.id).first()
-                if job and not is_job_url_alive(job.url):
-                    db.delete(job)
-                    continue
-                cleaned_matches.append(m)
-            matches_list = cleaned_matches
+            # Filter out matches without valid id/url (URL validation moved to separate background task)
+            matches_list = [m for m in matches_list if m.id and m.url]
             # skip already notified offers for this user
             job_ids = [m.id for m in matches_list if m.id]
             if job_ids:

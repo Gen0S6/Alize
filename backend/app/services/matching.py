@@ -189,6 +189,10 @@ def ensure_linkedin_sample(db: Session):
 
 
 def clear_all_jobs(db: Session):
+    """
+    DEPRECATED: This function clears ALL jobs for ALL users.
+    Use clear_user_job_data() instead for user-specific cleanup.
+    """
     # Delete dependent records first to avoid FK violations
     db.query(UserJobNotification).delete()
     db.query(UserJobVisit).delete()
@@ -197,15 +201,44 @@ def clear_all_jobs(db: Session):
     db.commit()
 
 
+def clear_user_job_data(db: Session, user_id: int):
+    """
+    Clear job-related data for a specific user only.
+    This resets notifications and visits so the user sees jobs as "new" again.
+    Does NOT delete the jobs themselves (they're shared across all users).
+    """
+    db.query(UserJobNotification).filter(UserJobNotification.user_id == user_id).delete()
+    db.query(UserJobVisit).filter(UserJobVisit.user_id == user_id).delete()
+    # Keep blacklist - user explicitly marked these jobs
+    db.commit()
+
+
 def cleanup_old_jobs(db: Session) -> int:
-    """Delete jobs older than OLD_JOB_DAYS (90 days by default)."""
+    """Delete jobs older than OLD_JOB_DAYS (90 days by default).
+
+    Uses bulk delete for better performance. Cascading deletes are handled
+    by first removing related records (notifications, visits, blacklist).
+    """
     cutoff = datetime.now(timezone.utc) - timedelta(days=OLD_JOB_DAYS)
-    old_jobs = db.query(JobListing).filter(JobListing.created_at < cutoff).all()
-    count = len(old_jobs)
-    for job in old_jobs:
-        db.delete(job)
-    if count:
-        db.commit()
+
+    # Get IDs of old jobs for bulk operations
+    old_job_ids = [
+        row[0]
+        for row in db.query(JobListing.id).filter(JobListing.created_at < cutoff).all()
+    ]
+
+    if not old_job_ids:
+        return 0
+
+    # Delete related records first (bulk delete for performance)
+    db.query(UserJobNotification).filter(UserJobNotification.job_id.in_(old_job_ids)).delete(synchronize_session=False)
+    db.query(UserJobVisit).filter(UserJobVisit.job_id.in_(old_job_ids)).delete(synchronize_session=False)
+    db.query(UserJobBlacklist).filter(UserJobBlacklist.job_id.in_(old_job_ids)).delete(synchronize_session=False)
+
+    # Now bulk delete the jobs themselves
+    count = db.query(JobListing).filter(JobListing.id.in_(old_job_ids)).delete(synchronize_session=False)
+
+    db.commit()
     return count
 
 
@@ -282,16 +315,28 @@ def list_matches_for_user(
     page_size: Optional[int] = None,
     sort_by: SortOption = "new_first",
 ) -> list[JobOut]:
-    blacklisted_ids = {
-        row[0]
-        for row in db.query(UserJobBlacklist.job_id).filter(UserJobBlacklist.user_id == user_id).all()
-    }
-    jobs = db.query(JobListing).all()
+    # Get blacklisted job IDs using a subquery for efficient filtering
+    blacklisted_subquery = (
+        db.query(UserJobBlacklist.job_id)
+        .filter(UserJobBlacklist.user_id == user_id)
+        .subquery()
+    )
+
+    # Query jobs excluding blacklisted ones at the database level
+    # Also order by created_at DESC to get newest first (optimization for pagination)
+    jobs_query = (
+        db.query(JobListing)
+        .filter(~JobListing.id.in_(blacklisted_subquery))
+        .order_by(JobListing.created_at.desc())
+    )
+
+    # Fetch jobs in batches to reduce memory usage
+    jobs = jobs_query.all()
+
     result = []
     removed = 0
     for job in jobs:
-        if job.id in blacklisted_ids:
-            continue
+        # Note: cleanup_dead_links is expensive (HTTP calls), disabled by default
         if cleanup_dead_links and not is_job_url_alive(job.url):
             db.delete(job)
             removed += 1

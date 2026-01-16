@@ -94,6 +94,10 @@ class UserJobNotification(Base):
 
 class JobSearchRun(Base):
     __tablename__ = "job_search_runs"
+    __table_args__ = (
+        # Composite index for efficient "latest run by user" queries
+        Index("ix_job_search_run_user_created", "user_id", "created_at"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

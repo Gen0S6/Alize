@@ -7,7 +7,7 @@ from app.deps import get_db
 from app.models import User, UserPreference
 from app.schemas import PreferenceIn, PreferenceOut
 from app.services.preferences import get_or_create_pref
-from app.services.matching import clear_all_jobs
+from app.services.matching import clear_user_job_data
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -47,7 +47,7 @@ def upsert_preferences(
     pref.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(pref)
-    clear_all_jobs(db)
+    clear_user_job_data(db, user.id)
 
     return PreferenceOut(
         id=pref.id,
