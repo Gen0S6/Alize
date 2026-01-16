@@ -306,6 +306,16 @@ export default function DashboardPage() {
               >
                 Profil
               </Link>
+              <Link
+                href="/campaigns"
+                className={
+                  isDark
+                    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-2 text-sm text-white text-center"
+                    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-2 text-sm text-white text-center"
+                }
+              >
+                Mes Campagnes
+              </Link>
             </div>
           </div>
 

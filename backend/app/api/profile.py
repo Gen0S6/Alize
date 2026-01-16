@@ -6,7 +6,7 @@ from app.models import User, CV, UserPreference, JobSearchRun, UserJobNotificati
 from app.schemas import ProfileOut, ProfileUpdate
 from app.security import hash_password, verify_password
 from app.api.auth import _sanitize_password
-from app.services.matching import clear_all_jobs
+# Note: clear_all_jobs import removed - function was incorrectly deleting ALL users' data
 from app.services import storage
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -49,7 +49,7 @@ def delete_profile(
     # Supprime l'utilisateur
     db.delete(user)
     db.commit()
-    clear_all_jobs(db)
+    # Note: clear_all_jobs() was removed - it incorrectly deleted ALL users' data
     return {"deleted": True}
 
 
