@@ -1,6 +1,6 @@
 import os
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -16,6 +16,11 @@ from app.services.notifications import (
     send_slack_notification,
 )
 from app.services.preferences import get_or_create_pref
+
+# Admin emails from environment variable
+ADMIN_EMAILS = [
+    e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()
+]
 
 router = APIRouter(prefix="/notify", tags=["notify"])
 
@@ -64,7 +69,9 @@ def notify_run(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # Notifie tous les utilisateurs (admin light)
+    """Notifie tous les utilisateurs - réservé aux admins."""
+    if not ADMIN_EMAILS or user.email.lower() not in ADMIN_EMAILS:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     notify_all_users(
         db,
         matches_func=lambda u, db_: list_matches_for_user(
