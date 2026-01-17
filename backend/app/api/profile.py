@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.deps import get_db
-from app.models import User, CV, UserPreference, JobSearchRun, UserJobNotification, UserJobVisit, UserJobBlacklist, UserAnalysisCache
+from app.models import User, CV, UserPreference, JobSearchRun, UserJob, UserAnalysisCache
 from app.schemas import ProfileOut, ProfileUpdate
 from app.security import hash_password, verify_password
 from app.api.auth import _sanitize_password
@@ -38,13 +38,11 @@ def delete_profile(
     # Préférences, runs, notifications
     db.query(UserPreference).filter(UserPreference.user_id == user.id).delete()
     db.query(JobSearchRun).filter(JobSearchRun.user_id == user.id).delete()
-    db.query(UserJobNotification).filter(UserJobNotification.user_id == user.id).delete()
-    db.query(UserJobVisit).filter(UserJobVisit.user_id == user.id).delete()
-    db.query(UserJobBlacklist).filter(UserJobBlacklist.user_id == user.id).delete()
+    db.query(UserJob).filter(UserJob.user_id == user.id).delete()
     db.query(UserAnalysisCache).filter(UserAnalysisCache.user_id == user.id).delete()
 
     # Note: JobListings are shared resources, we don't delete them when a user is deleted
-    # The UserJobNotification, UserJobVisit, UserJobBlacklist entries are already deleted above
+    # The UserJob entries linking the user to jobs are already deleted above
 
     # Supprime l'utilisateur
     db.delete(user)
