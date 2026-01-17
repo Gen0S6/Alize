@@ -114,6 +114,7 @@ export default function DashboardPage() {
       }
       await load(1);
       await loadRuns();
+      await loadStats();
     } catch (err: any) {
       const message =
         err?.message === "Not authenticated"
@@ -213,6 +214,7 @@ export default function DashboardPage() {
       setMatchesPage((prev) =>
         prev ? { ...prev, items: prev.items.filter((m) => m.id !== id), total: Math.max(0, prev.total - 1) } : prev
       );
+      await loadStats(); // Rafraîchir les compteurs après suppression
       addToast("Offre supprimée avec succès", "success");
     } catch (err: any) {
       addToast(err?.message ?? "Impossible de supprimer l'offre.", "error");
@@ -235,6 +237,7 @@ export default function DashboardPage() {
     if (id) {
       try {
         await markMatchVisited(id);
+        await loadStats(); // Rafraîchir les compteurs après avoir marqué comme consulté
       } catch (_err) {
         // ignore API failure for marking visited
       }
