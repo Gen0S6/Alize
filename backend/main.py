@@ -44,6 +44,28 @@ from app.services.notifications import notify_all_users
 from app.services.preferences import get_or_create_pref
 from app.rate_limit import limiter, rate_limit_exceeded_handler
 
+# Run Alembic migrations at startup to ensure schema is up to date
+def run_migrations():
+    """Run Alembic migrations to ensure database schema is current."""
+    from alembic.config import Config
+    from alembic import command
+    import os
+
+    # Get the directory where main.py is located
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    alembic_ini_path = os.path.join(base_dir, "alembic.ini")
+
+    if os.path.exists(alembic_ini_path):
+        alembic_cfg = Config(alembic_ini_path)
+        alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "alembic"))
+        try:
+            command.upgrade(alembic_cfg, "head")
+        except Exception as e:
+            logging.getLogger("alize").warning("Alembic migration warning: %s", e)
+
+run_migrations()
+
+# Create any new tables (fallback for tables not managed by migrations)
 Base.metadata.create_all(bind=engine)
 
 SWAGGER_FAVICON_URL = "/static/swagger-favicon.svg"
