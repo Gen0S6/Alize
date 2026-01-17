@@ -33,10 +33,8 @@ from app.models import (
     CV,
     UserPreference,
     JobListing,
-    UserJobNotification,
+    UserJob,
     JobSearchRun,
-    UserJobVisit,
-    UserJobBlacklist,
     UserAnalysisCache,
 )
 
