@@ -14,6 +14,7 @@ from .services.providers import (
     fetch_francetravail_jobs,
     fetch_linkedin_jobs,
 )
+from .services.matching import add_jobs_to_user_dashboard, cv_keywords
 from urllib.parse import urlsplit, urlunsplit
 
 log = logging.getLogger("alize.ai")
@@ -1334,6 +1335,7 @@ def search_jobs_for_user(
     tried = []
     sources: Dict[str, int] = {}
     inserted = 0
+    new_jobs: List[JobListing] = []  # Collecter les nouveaux jobs pour le dashboard
 
     def normalize_url(raw: str) -> Optional[str]:
         if not raw:
@@ -1374,6 +1376,8 @@ def search_jobs_for_user(
                     .first()
                 )
                 if existing:
+                    # Le job existe déjà, mais on le collecte pour le dashboard
+                    new_jobs.append(existing)
                     continue
                 record = JobListing(
                     source=job.get("source") or source_name,
@@ -1385,13 +1389,22 @@ def search_jobs_for_user(
                     salary_min=job.get("salary_min"),
                 )
                 db.add(record)
+                new_jobs.append(record)  # Collecter pour le dashboard
                 inserted += 1
                 src_key = job.get("source") or source_name
                 sources[src_key] = sources.get(src_key, 0) + 1
     db.commit()
 
+    # Ajouter les nouveaux jobs au dashboard de l'utilisateur
+    added_to_dashboard = 0
+    if new_jobs:
+        user_cv = cv_keywords(db, user_id)
+        added_to_dashboard = add_jobs_to_user_dashboard(db, user_id, new_jobs, pref, user_cv)
+        log.info("Added %d jobs to user %d dashboard", added_to_dashboard, user_id)
+
     return {
         "inserted": inserted,
+        "added_to_dashboard": added_to_dashboard,
         "tried_queries": tried,
         "sources": sources,
         "analysis": analysis,
