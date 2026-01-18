@@ -70,7 +70,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   const navClass = isDark ? "flex items-center gap-4 text-sm text-gray-200" : "flex items-center gap-4 text-sm text-gray-700";
   const containerClass = isDark
     ? "min-h-screen bg-[#0b0c10] text-gray-100 flex flex-col"
-    : "min-h-screen bg-gray-50 text-gray-900 flex flex-col";
+    : "min-h-screen bg-white text-gray-900 flex flex-col";
   const badgeClass = isDark
     ? "fixed bottom-6 right-10 flex items-center justify-center px-3.5 py-2 rounded-md border border-gray-700/50 bg-gray-900/70 backdrop-blur-sm shadow-sm"
     : "fixed bottom-6 right-10 flex items-center justify-center px-3.5 py-2 rounded-md border border-gray-200/70 bg-white/80 backdrop-blur-sm shadow-sm";

@@ -23,7 +23,7 @@ export default function HomePage() {
 
   const containerClass = isDark
     ? "min-h-screen bg-[#0b0c10] text-gray-100 theme-hover"
-    : "min-h-screen bg-gray-50 text-gray-900 theme-hover";
+    : "min-h-screen bg-white text-gray-900 theme-hover";
 
   const cardClass = isDark
     ? "mt-8 rounded-2xl border border-gray-700 bg-[#0f1116] p-6"
