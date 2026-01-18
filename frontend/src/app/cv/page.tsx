@@ -476,33 +476,17 @@ export default function CVPage() {
 
                 {/* Visualiseur PDF */}
                 {showPdfViewer && (
-                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-700">
+                  <div className={`mt-4 rounded-xl overflow-hidden border ${isDark ? "border-gray-700" : "border-gray-200"}`}>
                     {(() => {
                       const base = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
-                      const pdfBase = latest.url.startsWith("http") ? latest.url : `${base}${latest.url}`;
-                      const pdfUrl = `${pdfBase}#toolbar=0&navpanes=0&scrollbar=0`;
+                      const pdfUrl = latest.url.startsWith("http") ? latest.url : `${base}${latest.url}`;
                       return (
-                        <object
-                          data={pdfUrl}
-                          type="application/pdf"
+                        <iframe
+                          src={pdfUrl}
                           className="w-full"
                           style={{ height: viewerHeight }}
-                        >
-                          <div className={`flex flex-col items-center justify-center py-12 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
-                            <svg className={`w-12 h-12 mb-3 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <p className={textMuted}>Aperçu indisponible</p>
-                            <a
-                              className={`mt-3 ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"} underline text-sm`}
-                              href={pdfUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Ouvrir le PDF dans un nouvel onglet
-                            </a>
-                          </div>
-                        </object>
+                          title="Aperçu CV"
+                        />
                       );
                     })()}
                   </div>

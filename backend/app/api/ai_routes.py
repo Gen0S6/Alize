@@ -15,6 +15,15 @@ from app.services.matching import ensure_linkedin_sample
 router = APIRouter(tags=["ai"])
 
 
+def _normalize_datetime(dt):
+    """Normalise une datetime pour comparaison (enlève la timezone si présente)."""
+    if dt is None:
+        return None
+    if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+        return dt.replace(tzinfo=None)
+    return dt
+
+
 @router.get("/ai/analysis", response_model=AnalysisOut)
 def ai_analysis(
     user: User = Depends(get_current_user),
@@ -24,13 +33,25 @@ def ai_analysis(
     pref = get_or_create_pref(user, db)
     cv_entry = latest_cv(db, user.id)
     cache = db.query(UserAnalysisCache).filter(UserAnalysisCache.user_id == user.id).first()
-    pref_updated = pref.updated_at or pref.created_at
-    if not force and cache and pref_updated <= cache.updated_at and (not cv_entry or cv_entry.created_at <= cache.updated_at):
-        try:
-            cached = json.loads(cache.analysis_json) if cache.analysis_json else {}
-            return AnalysisOut(**cached)
-        except Exception:
-            pass
+
+    # Normaliser les dates pour éviter les problèmes de timezone
+    pref_updated = _normalize_datetime(pref.updated_at or pref.created_at)
+    cache_updated = _normalize_datetime(cache.updated_at) if cache else None
+    cv_created = _normalize_datetime(cv_entry.created_at) if cv_entry else None
+
+    # Utiliser le cache si valide
+    if not force and cache and cache_updated:
+        cache_is_valid = (
+            pref_updated <= cache_updated and
+            (cv_created is None or cv_created <= cache_updated)
+        )
+        if cache_is_valid:
+            try:
+                cached = json.loads(cache.analysis_json) if cache.analysis_json else {}
+                return AnalysisOut(**cached)
+            except Exception:
+                pass
+
     analysis = analyze_profile(db, user.id, pref)
     now = datetime.now(timezone.utc)
     if cache:
