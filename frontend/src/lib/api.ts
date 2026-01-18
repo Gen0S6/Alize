@@ -1,14 +1,10 @@
-import { getToken, clearToken } from "./auth";
+import { getToken, clearToken, redirectToLogin } from "./auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
 /* =========================
    API FETCH WRAPPER
    ========================= */
-
-function redirectToLogin() {
-  window.location.assign("/login");
-}
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = getToken();
