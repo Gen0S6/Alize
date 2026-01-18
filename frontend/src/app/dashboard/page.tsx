@@ -55,6 +55,7 @@ export default function DashboardPage() {
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
   const autoSearched = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
+  const [runsLoading, setRunsLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [saving, setSaving] = useState<number | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
@@ -253,10 +254,13 @@ export default function DashboardPage() {
   const newOffers = matches.filter((m) => m.is_new && !visitedMatches.has(m.url));
 
   async function loadRuns() {
+    setRunsLoading(true);
     try {
       const data = await getJobRuns();
       setRuns(data);
     } catch (_err) {
+    } finally {
+      setRunsLoading(false);
     }
   }
 
@@ -353,27 +357,39 @@ export default function DashboardPage() {
             </div>
           </div>
 
-        {/* Statistiques simples */}
-        {stats && (
-          <div className={isDark ? "mt-6 grid grid-cols-2 md:grid-cols-4 gap-3" : "mt-6 grid grid-cols-2 md:grid-cols-4 gap-3"}>
-            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
-              <div className={isDark ? "text-2xl font-bold text-blue-400" : "text-2xl font-bold text-blue-600"}>{stats.total_jobs}</div>
-              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Total offres</div>
-            </div>
-            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
-              <div className={isDark ? "text-2xl font-bold text-green-400" : "text-2xl font-bold text-green-600"}>{stats.new_jobs}</div>
-              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Non consultees</div>
-            </div>
-            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
-              <div className={isDark ? "text-2xl font-bold text-gray-300" : "text-2xl font-bold text-gray-700"}>{stats.viewed_jobs}</div>
-              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Consultees</div>
-            </div>
-            <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
-              <div className={isDark ? "text-2xl font-bold text-amber-400" : "text-2xl font-bold text-amber-600"}>{stats.saved_jobs}</div>
-              <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Sauvegardees</div>
-            </div>
-          </div>
-        )}
+        {/* Statistiques simples - toujours visible avec skeleton ou données */}
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          {!stats ? (
+            // Skeleton pour les stats - réserve l'espace pendant le chargement
+            <>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+                  <div className={`h-8 w-12 mx-auto rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  <div className={`h-3 w-20 mx-auto mt-2 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+                <div className={isDark ? "text-2xl font-bold text-blue-400" : "text-2xl font-bold text-blue-600"}>{stats.total_jobs}</div>
+                <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Total offres</div>
+              </div>
+              <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+                <div className={isDark ? "text-2xl font-bold text-green-400" : "text-2xl font-bold text-green-600"}>{stats.new_jobs}</div>
+                <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Non consultees</div>
+              </div>
+              <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+                <div className={isDark ? "text-2xl font-bold text-gray-300" : "text-2xl font-bold text-gray-700"}>{stats.viewed_jobs}</div>
+                <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Consultees</div>
+              </div>
+              <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0f1116] p-4 text-center" : "rounded-xl border bg-white p-4 text-center"}>
+                <div className={isDark ? "text-2xl font-bold text-amber-400" : "text-2xl font-bold text-amber-600"}>{stats.saved_jobs}</div>
+                <div className={isDark ? "text-xs text-gray-400 mt-1" : "text-xs text-gray-600 mt-1"}>Sauvegardees</div>
+              </div>
+            </>
+          )}
+        </div>
 
         <div
           className={
@@ -423,7 +439,39 @@ export default function DashboardPage() {
           )}
 
           {analysisLoading && !analysis && (
-            <p className={isDark ? "mt-3 text-sm text-gray-400" : "mt-3 text-sm text-gray-600"}>Analyse en cours...</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {/* Skeleton colonne gauche */}
+              <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0d1016] p-3" : "rounded-xl border border-gray-200 bg-white p-3"}>
+                <div className={`h-4 w-full rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                <div className={`h-4 w-3/4 rounded animate-pulse mt-2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className={`h-6 w-20 rounded-full animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  ))}
+                </div>
+                <div className={`h-3 w-16 rounded animate-pulse mt-3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className={`h-6 w-24 rounded-full animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  ))}
+                </div>
+              </div>
+              {/* Skeleton colonne droite */}
+              <div className={isDark ? "rounded-xl border border-gray-700 bg-[#0d1016] p-3" : "rounded-xl border border-gray-200 bg-white p-3"}>
+                <div className={`h-3 w-24 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className={`h-6 w-16 rounded-full animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  ))}
+                </div>
+                <div className={`h-3 w-32 rounded animate-pulse mt-3 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className={`h-6 w-14 rounded-full animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
           {analysis && (
@@ -699,7 +747,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className={isDark ? "mt-6 rounded-2xl border border-gray-700 p-4 bg-[#0f1116]" : "mt-6 rounded-2xl border p-4 bg-white"}>
+        <div className={`relative ${isDark ? "mt-6 rounded-2xl border border-gray-700 p-4 bg-[#0f1116]" : "mt-6 rounded-2xl border p-4 bg-white"}`}>
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-1 items-end gap-3 md:grid-cols-4">
               <div className="md:col-span-2">
@@ -844,7 +892,18 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
-          {loading && matchesPage && <p className={isDark ? "text-sm text-gray-400" : "text-sm text-gray-600"}>Chargement...</p>}
+          {/* Overlay de chargement pendant la pagination/filtrage - garde le tableau visible avec opacité réduite */}
+          {loading && matchesPage && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-[#0f1116]/50 rounded-xl z-10">
+              <div className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className={isDark ? "text-sm text-gray-300" : "text-sm text-gray-600"}>Chargement...</span>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -860,16 +919,17 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {!loading && !error && (
+          {/* Afficher le contenu même pendant le chargement si on a déjà des données */}
+          {(!loading || matchesPage) && !error && (
             <>
-              {matches.length === 0 ? (
-                <div className={isDark ? "text-sm text-gray-300" : "text-sm text-gray-700"}>
+              {matches.length === 0 && !loading ? (
+                <div className={isDark ? "text-sm text-gray-300 min-h-[100px]" : "text-sm text-gray-700 min-h-[100px]"}>
                   <p>Pas encore d'offres correspondantes.</p>
                   <p className="mt-1">
                     Relance une recherche ou repasse dans 3 jours : un email de notification te sera envoyé quand de nouvelles offres arriveront.
                   </p>
                 </div>
-              ) : (
+              ) : matches.length > 0 || loading ? (
                 <div className="space-y-3">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -984,7 +1044,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
                 </div>
-              )}
+              ) : null}
             </>
           )}
         </div>
@@ -1003,30 +1063,47 @@ export default function DashboardPage() {
             Rafraîchir
           </button>
         </div>
-        {runs.length === 0 ? (
-          <p className={isDark ? "mt-2 text-sm text-gray-400" : "mt-2 text-sm text-gray-600"}>Pas encore d'historique.</p>
-        ) : (
-          <ul className={isDark ? "mt-3 divide-y divide-gray-800" : "mt-3 divide-y"}>
-            {runs.map((run) => (
-              <li key={run.id} className={isDark ? "py-2 text-sm flex items-start justify-between gap-3 text-gray-200" : "py-2 text-sm flex items-start justify-between gap-3 text-gray-800"}>
-                <div>
-                  <div className={isDark ? "font-medium text-gray-100" : "font-medium text-gray-900"}>
-                    {formatDate(run.created_at)}
+        {/* Contenu avec min-height pour éviter le layout shift */}
+        <div className="min-h-[120px]">
+          {runsLoading ? (
+            // Skeleton pour l'historique
+            <div className={isDark ? "mt-3 divide-y divide-gray-800" : "mt-3 divide-y"}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="py-2 flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className={`h-4 w-32 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-3 w-48 rounded animate-pulse mt-2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-3 w-40 rounded animate-pulse mt-1 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
                   </div>
-                  <div className={isDark ? "text-gray-300" : "text-gray-700"}>
-                    Requêtes: {run.tried_queries && run.tried_queries.length > 0 ? run.tried_queries.join(" • ") : "—"}
-                  </div>
-                  <div className={isDark ? "text-gray-400 text-xs" : "text-gray-600 text-xs"}>
-                    Sources: {Object.entries(run.sources || {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}
-                  </div>
+                  <div className={`h-6 w-20 rounded-full animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
                 </div>
-                <span className={isDark ? "rounded-full bg-[#111621] border border-gray-700 px-3 py-1 text-xs font-semibold text-blue-300" : "rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700"}>
-                  +{run.inserted} offres
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+              ))}
+            </div>
+          ) : runs.length === 0 ? (
+            <p className={isDark ? "mt-2 text-sm text-gray-400" : "mt-2 text-sm text-gray-600"}>Pas encore d'historique.</p>
+          ) : (
+            <ul className={isDark ? "mt-3 divide-y divide-gray-800" : "mt-3 divide-y"}>
+              {runs.map((run) => (
+                <li key={run.id} className={isDark ? "py-2 text-sm flex items-start justify-between gap-3 text-gray-200" : "py-2 text-sm flex items-start justify-between gap-3 text-gray-800"}>
+                  <div>
+                    <div className={isDark ? "font-medium text-gray-100" : "font-medium text-gray-900"}>
+                      {formatDate(run.created_at)}
+                    </div>
+                    <div className={isDark ? "text-gray-300" : "text-gray-700"}>
+                      Requêtes: {run.tried_queries && run.tried_queries.length > 0 ? run.tried_queries.join(" • ") : "—"}
+                    </div>
+                    <div className={isDark ? "text-gray-400 text-xs" : "text-gray-600 text-xs"}>
+                      Sources: {Object.entries(run.sources || {}).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}
+                    </div>
+                  </div>
+                  <span className={isDark ? "rounded-full bg-[#111621] border border-gray-700 px-3 py-1 text-xs font-semibold text-blue-300" : "rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700"}>
+                    +{run.inserted} offres
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {confirmTarget && (
