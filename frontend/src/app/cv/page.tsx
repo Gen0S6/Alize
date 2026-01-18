@@ -216,13 +216,13 @@ export default function CVPage() {
 
   const badgeClass = (color: string) => {
     const colors: Record<string, string> = {
-      blue: isDark ? "bg-blue-900/40 text-blue-300 border-blue-700/50" : "bg-blue-50 text-blue-700 border-blue-200",
-      green: isDark ? "bg-green-900/40 text-green-300 border-green-700/50" : "bg-green-50 text-green-700 border-green-200",
-      purple: isDark ? "bg-purple-900/40 text-purple-300 border-purple-700/50" : "bg-purple-50 text-purple-700 border-purple-200",
-      amber: isDark ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-amber-50 text-amber-700 border-amber-200",
-      gray: isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-200",
+      blue: isDark ? "bg-blue-900/40 text-blue-300 border-blue-700/50" : "bg-blue-100/80 text-blue-800 border-blue-300",
+      green: isDark ? "bg-emerald-900/40 text-emerald-300 border-emerald-700/50" : "bg-emerald-100/80 text-emerald-800 border-emerald-300",
+      purple: isDark ? "bg-purple-900/40 text-purple-300 border-purple-700/50" : "bg-purple-100/80 text-purple-800 border-purple-300",
+      amber: isDark ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-amber-100/80 text-amber-800 border-amber-300",
+      gray: isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-600 border-gray-300",
     };
-    return `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${colors[color] || colors.gray}`;
+    return `inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${colors[color] || colors.gray}`;
   };
 
   return (
