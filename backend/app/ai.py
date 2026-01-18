@@ -543,15 +543,6 @@ def extract_work_experiences(text: str) -> List[Dict[str, Any]]:
     experiences: List[Dict[str, Any]] = []
     text_lower = text.lower()
 
-    # Split text into potential experience blocks
-    # Look for patterns that typically start a new experience
-    experience_markers = [
-        r"\n(?=\d{4}\s*[-–—])",  # Year at start of line
-        r"\n(?=[A-Z][a-zà-ü]+\s+[-–—|:]\s+)",  # Title format
-        r"\n(?=(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})",
-        r"\n(?=(?:jan|fév|mar|avr|mai|jun|jul|aoû|sep|oct|nov|déc)\.?\s+\d{4})",
-    ]
-
     # Find all date ranges in the text
     date_ranges = []
     year_pattern = r"(\d{4})\s*[-–—]\s*(\d{4}|présent|present|actuel|aujourd'hui|current|now|en cours)"
@@ -954,11 +945,8 @@ def clean_pdf_text(text: str) -> str:
     if not text:
         return ""
 
-    # Fix spaced-out letters (common PDF issue)
-    # e.g., "D é v e l o p p e u r" -> "Développeur"
-    spaced_pattern = r"(?<=[A-Za-zÀ-ÿ])\s(?=[A-Za-zÀ-ÿ]\s[A-Za-zÀ-ÿ])"
-
     # Multiple passes to catch deeply spaced text
+    # Fixes spaced-out letters like "D é v e l o p p e u r" -> "Développeur"
     cleaned = text
     for _ in range(3):
         # Check if text looks spaced (many single letters separated by spaces)
