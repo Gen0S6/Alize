@@ -22,11 +22,20 @@ export function clearToken() {
   }
 }
 
+// Dispatch a custom event for client-side navigation (avoids full page reload)
+export function navigateTo(path: string) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("app_navigate", { detail: { path } }));
+  }
+}
+
 export function clearTokenAndRedirectHome() {
   clearToken();
-  if (typeof window !== "undefined") {
-    window.location.href = "/";
-  }
+  navigateTo("/");
+}
+
+export function redirectToLogin() {
+  navigateTo("/login");
 }
 
 export function isAuthed(): boolean {

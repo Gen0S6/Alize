@@ -7,18 +7,30 @@ import ThemeProvider, { useTheme } from "./ThemeProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ToastProvider } from "../components/Toast";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getToken } from "../lib/auth";
 
 function ShellFrame({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const pathname = usePathname();
+  const router = useRouter();
   const [isAuthed, setIsAuthed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register") || pathname?.startsWith("/reset-password") || pathname?.startsWith("/verify-email");
   const isHomePage = pathname === "/";
+
+  // Listen for client-side navigation events (avoids full page reloads)
+  useEffect(() => {
+    const handleNavigate = (e: CustomEvent<{ path: string }>) => {
+      router.push(e.detail.path);
+    };
+    window.addEventListener("app_navigate", handleNavigate as EventListener);
+    return () => {
+      window.removeEventListener("app_navigate", handleNavigate as EventListener);
+    };
+  }, [router]);
 
   useEffect(() => {
     const update = () => setIsAuthed(!!getToken());
