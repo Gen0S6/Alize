@@ -4,7 +4,8 @@ import os
 import re
 import unicodedata
 from collections import Counter
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple, Any
 
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,137 @@ from .services.matching import add_jobs_to_user_dashboard, cv_keywords
 from urllib.parse import urlsplit, urlunsplit
 
 log = logging.getLogger("alize.ai")
+
+
+# =============================================================================
+# CERTIFICATIONS DATABASE
+# =============================================================================
+CERTIFICATIONS = {
+    # Cloud & DevOps
+    "aws": [
+        "aws certified", "aws solutions architect", "aws developer", "aws sysops",
+        "aws devops", "aws cloud practitioner", "aws security specialty",
+        "aws machine learning", "aws data analytics", "aws database specialty",
+        "saa-c02", "saa-c03", "dva-c01", "soa-c02", "dop-c01", "clf-c01",
+    ],
+    "azure": [
+        "azure certified", "az-900", "az-104", "az-204", "az-400", "az-305",
+        "azure fundamentals", "azure administrator", "azure developer",
+        "azure solutions architect", "azure devops engineer",
+    ],
+    "gcp": [
+        "google cloud certified", "gcp certified", "associate cloud engineer",
+        "professional cloud architect", "professional data engineer",
+        "professional cloud developer", "professional cloud devops",
+    ],
+    "kubernetes": [
+        "cka", "ckad", "cks", "certified kubernetes administrator",
+        "certified kubernetes developer", "certified kubernetes security",
+    ],
+    # Project Management
+    "project_management": [
+        "pmp", "prince2", "psm", "csm", "pspo", "cspo", "safe",
+        "project management professional", "scrum master", "product owner",
+        "agile certified", "lean six sigma", "green belt", "black belt",
+    ],
+    # Data & Analytics
+    "data": [
+        "databricks certified", "snowflake certified", "tableau certified",
+        "power bi certified", "google analytics certified", "ga4 certified",
+        "microsoft certified data analyst", "data science certified",
+    ],
+    # Security
+    "security": [
+        "cissp", "cism", "ceh", "oscp", "comptia security+", "security+",
+        "iso 27001 lead auditor", "iso 27001 lead implementer",
+        "certified ethical hacker", "penetration testing",
+    ],
+    # Programming & Development
+    "development": [
+        "oracle certified", "java certified", "spring certified",
+        "microsoft certified developer", "mcsd", "mcp",
+        "salesforce certified", "salesforce administrator", "salesforce developer",
+    ],
+    # Languages
+    "languages": [
+        "toeic", "toefl", "ielts", "cambridge", "bulats", "linguaskill",
+        "delf", "dalf", "tcf", "tef", "goethe", "dele", "jlpt", "hsk",
+    ],
+    # Finance & Accounting
+    "finance": [
+        "cfa", "cpa", "acca", "dscg", "dcg", "dec",
+        "chartered financial analyst", "certified public accountant",
+    ],
+    # HR
+    "hr": [
+        "shrm", "phr", "sphr", "cipd", "gphr",
+    ],
+    # IT General
+    "it_general": [
+        "itil", "cobit", "togaf", "comptia a+", "comptia network+",
+        "cisco ccna", "ccnp", "ccie", "ccna", "mcse", "mcsa",
+    ],
+}
+
+# Flatten certifications for quick lookup
+ALL_CERTIFICATIONS = set()
+for cert_list in CERTIFICATIONS.values():
+    ALL_CERTIFICATIONS.update(cert_list)
+
+
+# =============================================================================
+# ACHIEVEMENT/PROJECT PATTERNS
+# =============================================================================
+ACHIEVEMENT_PATTERNS = [
+    # Quantified achievements
+    r"(?:augment|increas|improv|boost|rais|grew|growth|hausse|amélio|optimis)[eéa]?\w*\s+(?:de\s+)?(\d+[\s,.]?\d*\s*%)",
+    r"(\d+[\s,.]?\d*\s*%)\s+(?:d'?augmentation|de croissance|d'amélioration|increase|growth|improvement)",
+    r"(?:rédui|diminu|décr|reduc|decreas|cut|saved|économi)[teésir]*\w*\s+(?:de\s+)?(\d+[\s,.]?\d*\s*[%€$kK])",
+    r"(\d+[\s,.]?\d*\s*[kKmM]?[€$])\s+(?:de chiffre d'affaires|de CA|revenue|savings|budget)",
+    # Team/Project scale
+    r"(?:équipe|team|managed|géré|dirigé|encadré)\s+(?:de\s+)?(\d+)\s+(?:personnes|collaborateurs|people|developers|membres)",
+    r"(\d+)\s+(?:projets?|projects?|clients?|missions?)",
+    # Impact statements
+    r"(?:lancé|launched|déployé|deployed|livré|delivered|créé|created|développé|developed)\s+(\d+)\s+",
+    r"(?:leader|pilote|responsible|responsable)\s+(?:de|du|d'un)?\s*(?:projet|project|initiative)",
+]
+
+PROJECT_INDICATORS = [
+    "projet", "project", "mission", "réalisation", "achievement",
+    "développement de", "création de", "mise en place", "implementation",
+    "lancement", "launch", "déploiement", "deployment", "migration",
+    "refonte", "redesign", "optimisation", "optimization",
+]
+
+
+# =============================================================================
+# WORK EXPERIENCE PATTERNS
+# =============================================================================
+DATE_PATTERNS = [
+    # French formats
+    r"(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s*(\d{4})",
+    r"(jan|fév|fev|mar|avr|mai|juin|juil|jul|août|aout|sep|sept|oct|nov|déc|dec)\.?\s*(\d{4})",
+    # English formats
+    r"(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{4})",
+    r"(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s*(\d{4})",
+    # Numeric formats
+    r"(\d{1,2})[/\-](\d{4})",
+    r"(\d{4})\s*[-–—]\s*(\d{4}|présent|present|actuel|aujourd'hui|current|now)",
+]
+
+DURATION_INDICATORS = [
+    "présent", "present", "actuel", "aujourd'hui", "current", "now", "en cours",
+]
+
+JOB_TITLE_PATTERNS = [
+    # Common title formats
+    r"^([A-ZÀ-Ú][a-zà-ü]+(?:\s+[A-ZÀ-Ú]?[a-zà-ü]+)*)\s*[-–—|:]\s*",
+    r"(?:poste|position|titre|title)\s*:\s*(.+?)(?:\n|$)",
+]
+
+COMPANY_INDICATORS = [
+    "chez", "at", "@", "pour", "for", "entreprise", "company", "société", "group", "groupe",
+]
 
 # Rapid heuristics to extract skills/roles without an external LLM.
 STOPWORDS = {
@@ -362,13 +494,708 @@ def extract_education(text: str) -> Dict[str, List[str]]:
     return found_education
 
 
+# =============================================================================
+# NEW EXTRACTION FUNCTIONS
+# =============================================================================
+
+def extract_certifications(text: str) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Extract professional certifications from CV text.
+    Returns dict with certification categories and found certifications.
+    """
+    text_lower = strip_accents(text.lower())
+    found_certs: Dict[str, List[Dict[str, Any]]] = {}
+
+    for category, cert_patterns in CERTIFICATIONS.items():
+        category_matches = []
+        for cert in cert_patterns:
+            cert_normalized = strip_accents(cert.lower())
+            if cert_normalized in text_lower:
+                # Try to extract score/level for language certs
+                score = None
+                if category == "languages":
+                    # Look for TOEIC/TOEFL scores
+                    score_patterns = [
+                        rf"{cert_normalized}\s*[:\-]?\s*(\d{{3,4}})",
+                        rf"(\d{{3,4}})\s*(?:points?)?\s*(?:au|à|at)?\s*{cert_normalized}",
+                    ]
+                    for sp in score_patterns:
+                        match = re.search(sp, text_lower)
+                        if match:
+                            score = match.group(1)
+                            break
+
+                cert_info = {"name": cert, "score": score}
+                if cert_info not in category_matches:
+                    category_matches.append(cert_info)
+
+        if category_matches:
+            found_certs[category] = category_matches
+
+    return found_certs
+
+
+def extract_work_experiences(text: str) -> List[Dict[str, Any]]:
+    """
+    Extract structured work experiences from CV text.
+    Returns list of experiences with company, role, dates, and responsibilities.
+    """
+    experiences: List[Dict[str, Any]] = []
+    text_lower = text.lower()
+
+    # Split text into potential experience blocks
+    # Look for patterns that typically start a new experience
+    experience_markers = [
+        r"\n(?=\d{4}\s*[-–—])",  # Year at start of line
+        r"\n(?=[A-Z][a-zà-ü]+\s+[-–—|:]\s+)",  # Title format
+        r"\n(?=(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})",
+        r"\n(?=(?:jan|fév|mar|avr|mai|jun|jul|aoû|sep|oct|nov|déc)\.?\s+\d{4})",
+    ]
+
+    # Find all date ranges in the text
+    date_ranges = []
+    year_pattern = r"(\d{4})\s*[-–—]\s*(\d{4}|présent|present|actuel|aujourd'hui|current|now|en cours)"
+    for match in re.finditer(year_pattern, text_lower):
+        start_year = match.group(1)
+        end_year = match.group(2)
+        is_current = end_year.lower() in DURATION_INDICATORS or not end_year.isdigit()
+        date_ranges.append({
+            "start": start_year,
+            "end": "present" if is_current else end_year,
+            "is_current": is_current,
+            "position": match.start(),
+        })
+
+    # Extract context around each date range
+    for i, date_range in enumerate(date_ranges):
+        pos = date_range["position"]
+
+        # Get surrounding text (200 chars before and 500 after)
+        start_pos = max(0, pos - 200)
+        end_pos = min(len(text), pos + 500)
+        context = text[start_pos:end_pos]
+
+        # Try to extract company name
+        company = None
+        company_patterns = [
+            r"(?:chez|at|@)\s+([A-Z][A-Za-zÀ-ÿ\s&\-\.]+?)(?:\s*[-–—|,\n]|\s+(?:en|depuis|from))",
+            r"([A-Z][A-Za-z0-9À-ÿ\s&\-\.]{2,30})\s*[-–—|]\s*[A-Z]",
+            r"(?:entreprise|company|société)\s*[:\-]?\s*([A-Za-zÀ-ÿ\s&\-\.]+?)(?:\n|,)",
+        ]
+        for cp in company_patterns:
+            match = re.search(cp, context)
+            if match:
+                company = match.group(1).strip()
+                break
+
+        # Try to extract job title
+        title = None
+        title_patterns = [
+            r"([A-ZÀ-Ú][a-zà-ü]+(?:\s+[a-zà-ü]+){0,4})\s*[-–—|]\s*(?:" + (company or "") + ")",
+            r"(?:poste|position|titre)\s*[:\-]?\s*([A-Za-zÀ-ÿ\s\-]+?)(?:\n|,)",
+            r"^([A-ZÀ-Ú][a-zà-ü\s\-]+?)(?:\n|\s{2,})",
+        ]
+        for tp in title_patterns:
+            match = re.search(tp, context, re.MULTILINE)
+            if match:
+                title = match.group(1).strip()
+                if len(title) > 5 and len(title) < 80:
+                    break
+                title = None
+
+        # Extract responsibilities (bullet points or key phrases)
+        responsibilities = []
+        resp_patterns = [
+            r"[-•·]\s*([A-Za-zÀ-ÿ].{10,100}?)(?=\n|$)",
+            r"(?:^|\n)\s*[→►▪]\s*([A-Za-zÀ-ÿ].{10,100}?)(?=\n|$)",
+        ]
+        for rp in resp_patterns:
+            for match in re.finditer(rp, context):
+                resp = match.group(1).strip()
+                if len(resp) > 15 and resp not in responsibilities:
+                    responsibilities.append(resp)
+
+        experience = {
+            "company": company,
+            "title": title,
+            "start_date": date_range["start"],
+            "end_date": date_range["end"],
+            "is_current": date_range["is_current"],
+            "responsibilities": responsibilities[:5],  # Limit to 5
+            "duration_years": _calculate_duration(date_range["start"], date_range["end"]),
+        }
+
+        # Only add if we have meaningful data
+        if company or title:
+            experiences.append(experience)
+
+    # Deduplicate and sort by date
+    seen = set()
+    unique_experiences = []
+    for exp in experiences:
+        key = (exp.get("company"), exp.get("title"), exp.get("start_date"))
+        if key not in seen:
+            seen.add(key)
+            unique_experiences.append(exp)
+
+    # Sort by start date (most recent first)
+    unique_experiences.sort(key=lambda x: x.get("start_date", "0"), reverse=True)
+
+    return unique_experiences[:10]  # Limit to 10 experiences
+
+
+def _calculate_duration(start_year: str, end_year: str) -> Optional[float]:
+    """Calculate duration in years between two dates."""
+    try:
+        start = int(start_year)
+        if end_year.lower() in DURATION_INDICATORS or not end_year.replace(" ", "").isdigit():
+            end = datetime.now().year
+        else:
+            end = int(end_year)
+        return max(0, end - start)
+    except (ValueError, TypeError):
+        return None
+
+
+def extract_achievements(text: str) -> List[Dict[str, Any]]:
+    """
+    Extract quantified achievements and projects from CV text.
+    Returns list of achievements with type, value, and context.
+    """
+    achievements: List[Dict[str, Any]] = []
+    text_lower = text.lower()
+
+    # Extract quantified achievements
+    for pattern in ACHIEVEMENT_PATTERNS:
+        for match in re.finditer(pattern, text_lower, re.IGNORECASE):
+            # Get context around the match
+            start = max(0, match.start() - 50)
+            end = min(len(text), match.end() + 50)
+            context = text[start:end].strip()
+
+            achievement = {
+                "type": _categorize_achievement(match.group(0)),
+                "value": match.group(1) if match.groups() else None,
+                "context": context,
+                "raw_match": match.group(0),
+            }
+
+            # Avoid duplicates
+            if not any(a["context"] == context for a in achievements):
+                achievements.append(achievement)
+
+    # Extract project mentions
+    for indicator in PROJECT_INDICATORS:
+        pattern = rf"(?:^|\n|\s)({indicator}\s+[^\.]+\.?)"
+        for match in re.finditer(pattern, text_lower, re.IGNORECASE):
+            context = match.group(1).strip()
+            if len(context) > 20 and len(context) < 200:
+                achievement = {
+                    "type": "project",
+                    "value": None,
+                    "context": context,
+                    "raw_match": indicator,
+                }
+                if not any(a["context"] == context for a in achievements):
+                    achievements.append(achievement)
+
+    return achievements[:15]  # Limit to 15 achievements
+
+
+def _categorize_achievement(text: str) -> str:
+    """Categorize an achievement based on its content."""
+    text_lower = text.lower()
+
+    if any(kw in text_lower for kw in ["augment", "increas", "growth", "hausse", "croissance"]):
+        return "growth"
+    elif any(kw in text_lower for kw in ["rédui", "diminu", "reduc", "cut", "saved", "économi"]):
+        return "cost_saving"
+    elif any(kw in text_lower for kw in ["équipe", "team", "managed", "géré", "encadré"]):
+        return "team_management"
+    elif any(kw in text_lower for kw in ["projet", "project", "lancé", "launched", "déployé"]):
+        return "project"
+    elif any(kw in text_lower for kw in ["client", "revenue", "chiffre", "vente", "sales"]):
+        return "business"
+    else:
+        return "other"
+
+
+def calculate_cv_quality_score(
+    text: str,
+    skills: List[str],
+    experiences: List[Dict],
+    education: Dict,
+    certifications: Dict,
+    achievements: List[Dict],
+) -> Dict[str, Any]:
+    """
+    Calculate a CV quality score with detailed breakdown and improvement suggestions.
+    Returns score (0-100) with category breakdown and suggestions.
+    """
+    scores = {
+        "content_length": 0,
+        "skills_diversity": 0,
+        "experience_detail": 0,
+        "education": 0,
+        "certifications": 0,
+        "achievements": 0,
+        "formatting": 0,
+        "keywords": 0,
+    }
+    suggestions: List[str] = []
+    max_scores = {
+        "content_length": 10,
+        "skills_diversity": 20,
+        "experience_detail": 25,
+        "education": 10,
+        "certifications": 10,
+        "achievements": 15,
+        "formatting": 5,
+        "keywords": 5,
+    }
+
+    # 1. Content Length (10 points)
+    word_count = len(text.split())
+    if word_count >= 500:
+        scores["content_length"] = 10
+    elif word_count >= 300:
+        scores["content_length"] = 7
+    elif word_count >= 150:
+        scores["content_length"] = 5
+    else:
+        scores["content_length"] = 2
+        suggestions.append("Ajoute plus de détails à ton CV (minimum 300 mots recommandés)")
+
+    # 2. Skills Diversity (20 points)
+    skill_count = len(skills)
+    if skill_count >= 15:
+        scores["skills_diversity"] = 20
+    elif skill_count >= 10:
+        scores["skills_diversity"] = 15
+    elif skill_count >= 5:
+        scores["skills_diversity"] = 10
+    elif skill_count >= 2:
+        scores["skills_diversity"] = 5
+    else:
+        scores["skills_diversity"] = 0
+        suggestions.append("Ajoute plus de compétences techniques et soft skills")
+
+    # Check for skill categories diversity
+    skill_categories_found = set()
+    for skill in skills:
+        skill_lower = skill.lower()
+        if any(s in skill_lower for s in ["python", "java", "javascript", "react", "sql"]):
+            skill_categories_found.add("tech")
+        elif any(s in skill_lower for s in ["management", "leadership", "communication"]):
+            skill_categories_found.add("soft")
+        elif any(s in skill_lower for s in ["anglais", "english", "français"]):
+            skill_categories_found.add("languages")
+
+    if len(skill_categories_found) < 2:
+        suggestions.append("Diversifie tes compétences: techniques, soft skills, et langues")
+
+    # 3. Experience Detail (25 points)
+    exp_count = len(experiences)
+    exp_with_responsibilities = sum(1 for e in experiences if e.get("responsibilities"))
+    exp_with_dates = sum(1 for e in experiences if e.get("start_date") and e.get("end_date"))
+
+    if exp_count >= 3:
+        scores["experience_detail"] += 10
+    elif exp_count >= 1:
+        scores["experience_detail"] += 5
+    else:
+        suggestions.append("Ajoute tes expériences professionnelles avec dates et détails")
+
+    if exp_with_responsibilities >= 2:
+        scores["experience_detail"] += 10
+    elif exp_with_responsibilities >= 1:
+        scores["experience_detail"] += 5
+    else:
+        suggestions.append("Détaille tes responsabilités pour chaque poste")
+
+    if exp_with_dates >= exp_count * 0.8:
+        scores["experience_detail"] += 5
+    else:
+        suggestions.append("Assure-toi que chaque expérience a des dates précises")
+
+    # 4. Education (10 points)
+    diplomas = education.get("diplomes", [])
+    schools = education.get("ecoles", [])
+
+    if diplomas:
+        scores["education"] += 5
+    else:
+        suggestions.append("Mentionne ton niveau de diplôme (Bac, Licence, Master, etc.)")
+
+    if schools:
+        scores["education"] += 5
+    else:
+        suggestions.append("Indique le nom de ton école ou université")
+
+    # 5. Certifications (10 points)
+    cert_count = sum(len(certs) for certs in certifications.values())
+    if cert_count >= 3:
+        scores["certifications"] = 10
+    elif cert_count >= 1:
+        scores["certifications"] = 5
+    else:
+        suggestions.append("Ajoute des certifications professionnelles pertinentes (AWS, Scrum, TOEIC, etc.)")
+
+    # 6. Achievements (15 points)
+    quantified = sum(1 for a in achievements if a.get("value"))
+    if quantified >= 3:
+        scores["achievements"] = 15
+    elif quantified >= 1:
+        scores["achievements"] = 10
+    elif achievements:
+        scores["achievements"] = 5
+    else:
+        suggestions.append("Ajoute des réalisations chiffrées (+20% de ventes, équipe de 5 personnes, etc.)")
+
+    # 7. Formatting (5 points)
+    # Check for structure indicators
+    has_sections = any(kw in text.lower() for kw in [
+        "expérience", "experience", "formation", "education", "compétences", "skills",
+        "projets", "projects", "langues", "languages"
+    ])
+    has_bullets = bool(re.search(r"[-•·►▪→]", text))
+
+    if has_sections:
+        scores["formatting"] += 3
+    else:
+        suggestions.append("Structure ton CV avec des sections claires (Expérience, Formation, Compétences)")
+
+    if has_bullets:
+        scores["formatting"] += 2
+    else:
+        suggestions.append("Utilise des bullet points pour les responsabilités et réalisations")
+
+    # 8. Keywords (5 points)
+    # Check for action verbs
+    action_verbs = [
+        "développé", "developed", "géré", "managed", "créé", "created",
+        "optimisé", "optimized", "lancé", "launched", "dirigé", "led",
+        "amélioré", "improved", "conçu", "designed", "implémenté", "implemented",
+    ]
+    action_verb_count = sum(1 for verb in action_verbs if verb in text.lower())
+
+    if action_verb_count >= 5:
+        scores["keywords"] = 5
+    elif action_verb_count >= 2:
+        scores["keywords"] = 3
+    else:
+        suggestions.append("Utilise des verbes d'action (développé, géré, créé, optimisé, lancé)")
+
+    # Calculate total score
+    total_score = sum(scores.values())
+    max_total = sum(max_scores.values())
+    percentage = round((total_score / max_total) * 100)
+
+    # Generate overall assessment
+    if percentage >= 80:
+        assessment = "Excellent CV, bien structuré et complet"
+        grade = "A"
+    elif percentage >= 65:
+        assessment = "Bon CV avec quelques améliorations possibles"
+        grade = "B"
+    elif percentage >= 50:
+        assessment = "CV correct mais nécessite des améliorations"
+        grade = "C"
+    elif percentage >= 35:
+        assessment = "CV incomplet, plusieurs éléments manquants"
+        grade = "D"
+    else:
+        assessment = "CV à retravailler en profondeur"
+        grade = "E"
+
+    return {
+        "total_score": percentage,
+        "grade": grade,
+        "assessment": assessment,
+        "breakdown": {
+            category: {
+                "score": score,
+                "max": max_scores[category],
+                "percentage": round((score / max_scores[category]) * 100) if max_scores[category] > 0 else 0,
+            }
+            for category, score in scores.items()
+        },
+        "suggestions": suggestions[:8],  # Limit to top 8 suggestions
+        "strengths": _identify_strengths(scores, max_scores),
+    }
+
+
+def _identify_strengths(scores: Dict[str, int], max_scores: Dict[str, int]) -> List[str]:
+    """Identify CV strengths based on high-scoring categories."""
+    strengths = []
+    strength_labels = {
+        "content_length": "Contenu détaillé et complet",
+        "skills_diversity": "Large éventail de compétences",
+        "experience_detail": "Expériences bien détaillées",
+        "education": "Formation bien présentée",
+        "certifications": "Certifications valorisantes",
+        "achievements": "Réalisations quantifiées impressionnantes",
+        "formatting": "Bonne structure et mise en forme",
+        "keywords": "Bon usage des mots-clés",
+    }
+
+    for category, score in scores.items():
+        if max_scores[category] > 0 and (score / max_scores[category]) >= 0.8:
+            strengths.append(strength_labels.get(category, category))
+
+    return strengths
+
+
+def clean_pdf_text(text: str) -> str:
+    """
+    Clean and normalize PDF extracted text.
+    Fixes common PDF extraction issues.
+    """
+    if not text:
+        return ""
+
+    # Fix spaced-out letters (common PDF issue)
+    # e.g., "D é v e l o p p e u r" -> "Développeur"
+    spaced_pattern = r"(?<=[A-Za-zÀ-ÿ])\s(?=[A-Za-zÀ-ÿ]\s[A-Za-zÀ-ÿ])"
+
+    # Multiple passes to catch deeply spaced text
+    cleaned = text
+    for _ in range(3):
+        # Check if text looks spaced (many single letters separated by spaces)
+        single_letter_ratio = len(re.findall(r"\b[A-Za-zÀ-ÿ]\b", cleaned)) / max(len(cleaned.split()), 1)
+        if single_letter_ratio > 0.3:
+            # Reconstruct spaced words
+            words = []
+            buffer = []
+            for char in cleaned:
+                if char.isalpha():
+                    buffer.append(char)
+                elif char == " " and buffer:
+                    continue  # Skip spaces between letters
+                else:
+                    if buffer:
+                        words.append("".join(buffer))
+                        buffer = []
+                    if char != " " or (words and not words[-1].endswith(" ")):
+                        words.append(char)
+            if buffer:
+                words.append("".join(buffer))
+            cleaned = "".join(words)
+        else:
+            break
+
+    # Fix common ligature issues
+    ligature_map = {
+        "ﬁ": "fi",
+        "ﬂ": "fl",
+        "ﬀ": "ff",
+        "ﬃ": "ffi",
+        "ﬄ": "ffl",
+        "œ": "oe",
+        "æ": "ae",
+    }
+    for lig, replacement in ligature_map.items():
+        cleaned = cleaned.replace(lig, replacement)
+
+    # Normalize whitespace
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+
+    # Fix broken hyphenation (word split across lines)
+    cleaned = re.sub(r"(\w+)-\s*\n\s*(\w+)", r"\1\2", cleaned)
+
+    # Remove header/footer artifacts (page numbers, repeated headers)
+    lines = cleaned.split("\n")
+    if len(lines) > 10:
+        # Remove very short repeated lines (likely headers/footers)
+        line_counts = Counter(line.strip() for line in lines if len(line.strip()) < 50)
+        repeated_lines = {line for line, count in line_counts.items() if count > 2}
+        lines = [line for line in lines if line.strip() not in repeated_lines or len(line.strip()) > 20]
+        cleaned = "\n".join(lines)
+
+    return cleaned.strip()
+
+
+def calculate_total_experience_years(experiences: List[Dict]) -> float:
+    """Calculate total years of professional experience."""
+    total = 0.0
+    for exp in experiences:
+        duration = exp.get("duration_years")
+        if duration is not None:
+            total += duration
+    return round(total, 1)
+
+
+# =============================================================================
+# SEMANTIC SKILL MATCHING
+# =============================================================================
+
+# Skill synonyms and related terms for semantic matching
+SKILL_SYNONYMS = {
+    # Programming languages
+    "javascript": ["js", "ecmascript", "es6", "es2015"],
+    "typescript": ["ts"],
+    "python": ["py", "python3", "python2"],
+    "golang": ["go"],
+    "csharp": ["c#", ".net", "dotnet"],
+
+    # Frontend
+    "react": ["reactjs", "react.js", "react native"],
+    "vue": ["vuejs", "vue.js", "vue3"],
+    "angular": ["angularjs", "angular.js"],
+
+    # Backend
+    "nodejs": ["node.js", "node", "express"],
+    "django": ["python web", "drf", "django rest"],
+    "fastapi": ["fast api", "python api"],
+    "spring": ["springboot", "spring boot", "java web"],
+
+    # Databases
+    "postgresql": ["postgres", "psql", "pg"],
+    "mongodb": ["mongo", "nosql"],
+    "mysql": ["mariadb", "sql database"],
+
+    # Cloud
+    "aws": ["amazon web services", "amazon cloud", "ec2", "s3", "lambda"],
+    "azure": ["microsoft azure", "ms azure", "azure cloud"],
+    "gcp": ["google cloud", "google cloud platform"],
+
+    # DevOps
+    "kubernetes": ["k8s", "kube"],
+    "docker": ["container", "containerization", "dockerfile"],
+    "ci/cd": ["cicd", "continuous integration", "continuous deployment", "pipeline"],
+
+    # Data
+    "machine learning": ["ml", "deep learning", "dl", "artificial intelligence", "ai"],
+    "data science": ["data scientist", "data analysis", "data analytics"],
+
+    # Soft skills
+    "leadership": ["lead", "management", "team lead", "chef d'équipe", "encadrement"],
+    "communication": ["présentation", "rédaction", "oral", "écrit"],
+    "agile": ["scrum", "kanban", "sprint", "product owner", "scrum master"],
+
+    # Business
+    "sales": ["vente", "commercial", "business development"],
+    "marketing": ["marketing digital", "growth", "acquisition"],
+}
+
+
+def calculate_skill_similarity(skill1: str, skill2: str) -> float:
+    """
+    Calculate similarity between two skills using synonyms and string matching.
+    Returns a score between 0 and 1.
+    """
+    s1 = strip_accents(skill1.lower().strip())
+    s2 = strip_accents(skill2.lower().strip())
+
+    # Exact match
+    if s1 == s2:
+        return 1.0
+
+    # Check if one contains the other
+    if s1 in s2 or s2 in s1:
+        return 0.8
+
+    # Check synonyms
+    for main_skill, synonyms in SKILL_SYNONYMS.items():
+        all_variants = [main_skill] + synonyms
+        s1_match = any(v in s1 or s1 in v for v in all_variants)
+        s2_match = any(v in s2 or s2 in v for v in all_variants)
+        if s1_match and s2_match:
+            return 0.9
+
+    # Simple character-based similarity (Jaccard on character trigrams)
+    def get_trigrams(s: str) -> set:
+        if len(s) < 3:
+            return {s}
+        return {s[i:i+3] for i in range(len(s) - 2)}
+
+    trigrams1 = get_trigrams(s1)
+    trigrams2 = get_trigrams(s2)
+
+    if not trigrams1 or not trigrams2:
+        return 0.0
+
+    intersection = len(trigrams1 & trigrams2)
+    union = len(trigrams1 | trigrams2)
+
+    return intersection / union if union > 0 else 0.0
+
+
+def match_skills_semantic(
+    cv_skills: List[str],
+    job_skills: List[str],
+    threshold: float = 0.6
+) -> Dict[str, Any]:
+    """
+    Match CV skills against job requirements using semantic similarity.
+
+    Returns:
+        - matched_skills: Skills that match between CV and job
+        - missing_skills: Required skills not found in CV
+        - extra_skills: CV skills not required by job (bonus skills)
+        - match_score: Overall matching percentage
+    """
+    if not cv_skills or not job_skills:
+        return {
+            "matched_skills": [],
+            "missing_skills": job_skills or [],
+            "extra_skills": cv_skills or [],
+            "match_score": 0,
+            "match_details": [],
+        }
+
+    cv_skills_lower = [strip_accents(s.lower().strip()) for s in cv_skills]
+    job_skills_lower = [strip_accents(s.lower().strip()) for s in job_skills]
+
+    matched = []
+    match_details = []
+    matched_cv_indices = set()
+
+    for job_skill in job_skills_lower:
+        best_match = None
+        best_score = 0
+
+        for i, cv_skill in enumerate(cv_skills_lower):
+            if i in matched_cv_indices:
+                continue
+
+            score = calculate_skill_similarity(cv_skill, job_skill)
+            if score > best_score and score >= threshold:
+                best_score = score
+                best_match = (i, cv_skill)
+
+        if best_match:
+            idx, cv_skill = best_match
+            matched_cv_indices.add(idx)
+            matched.append(job_skill)
+            match_details.append({
+                "job_skill": job_skill,
+                "cv_skill": cv_skill,
+                "similarity": round(best_score, 2),
+            })
+
+    missing = [s for s in job_skills_lower if s not in matched]
+    extra = [cv_skills[i] for i in range(len(cv_skills)) if i not in matched_cv_indices]
+
+    match_score = round((len(matched) / len(job_skills)) * 100) if job_skills else 0
+
+    return {
+        "matched_skills": matched,
+        "missing_skills": missing,
+        "extra_skills": extra,
+        "match_score": match_score,
+        "match_details": match_details,
+    }
+
+
 def build_enhanced_prompt(cv_text: str, pref_role: Optional[str], pref_location: Optional[str], must_keywords: List[str]) -> str:
-    """Build an enhanced prompt for OpenAI CV analysis."""
-    return f"""Analyse ce CV français et extrais les informations suivantes de manière structurée.
+    """Build an enhanced prompt for OpenAI CV analysis with comprehensive extraction."""
+    return f"""Tu es un expert en recrutement et analyse de CV. Analyse ce CV français de manière approfondie.
 
 CV (texte extrait):
 ---
-{cv_text[:2500]}
+{cv_text[:4000]}
 ---
 
 Préférences utilisateur:
@@ -376,21 +1203,83 @@ Préférences utilisateur:
 - Localisation: {pref_location or 'France'}
 - Mots-clés obligatoires: {', '.join(must_keywords) if must_keywords else 'Aucun'}
 
-Réponds en JSON avec cette structure exacte:
+Réponds en JSON avec cette structure exacte (sois exhaustif et précis):
 {{
-    "profil_resume": "Résumé du profil en 2-3 phrases maximum, incluant le niveau (étudiant/junior/confirmé/senior), le domaine et les points forts",
-    "titre_poste_cible": "Le titre de poste le plus adapté au profil",
-    "competences_cles": ["compétence1", "compétence2", "compétence3", "compétence4", "compétence5"],
-    "competences_techniques": ["tech1", "tech2", "tech3"],
-    "competences_transversales": ["soft1", "soft2"],
-    "langues": ["langue1 (niveau)", "langue2 (niveau)"],
-    "formation": "Diplôme principal et école/université",
-    "niveau_experience": "junior|confirme|senior",
-    "secteurs_cibles": ["secteur1", "secteur2"],
-    "requetes_recherche": ["requête optimisée 1", "requête optimisée 2", "requête optimisée 3", "requête optimisée 4", "requête optimisée 5"]
+    "profil_resume": "Résumé du profil en 3-4 phrases, incluant le niveau d'expérience, le domaine principal, les points forts distinctifs et la valeur ajoutée",
+    "titre_poste_cible": "Le titre de poste le plus adapté au profil (ex: Développeur Full Stack Senior, Chef de Projet Digital)",
+    "niveau_experience": "junior|confirme|senior|expert",
+    "annees_experience_total": 0,
+
+    "competences_cles": ["compétence1", "compétence2", "compétence3", "compétence4", "compétence5", "compétence6", "compétence7", "compétence8"],
+    "competences_techniques": ["tech1", "tech2", "tech3", "tech4", "tech5"],
+    "competences_transversales": ["soft skill 1", "soft skill 2", "soft skill 3"],
+
+    "experiences": [
+        {{
+            "entreprise": "Nom de l'entreprise",
+            "poste": "Titre du poste",
+            "periode": "2020-2023 ou Jan 2020 - Présent",
+            "responsabilites": ["responsabilité 1", "responsabilité 2"],
+            "realisations": ["réalisation chiffrée 1", "réalisation 2"]
+        }}
+    ],
+
+    "formation": {{
+        "diplome_principal": "Master, Licence, etc.",
+        "ecole": "Nom de l'école/université",
+        "annee": "2020",
+        "specialite": "Informatique, Marketing, etc."
+    }},
+
+    "certifications": ["AWS Solutions Architect", "PMP", "TOEIC 950"],
+
+    "langues": [
+        {{"langue": "Français", "niveau": "Natif"}},
+        {{"langue": "Anglais", "niveau": "Courant (TOEIC 900)"}}
+    ],
+
+    "projets_remarquables": [
+        {{
+            "nom": "Nom du projet",
+            "description": "Description courte",
+            "technologies": ["tech1", "tech2"],
+            "impact": "Impact mesurable si disponible"
+        }}
+    ],
+
+    "secteurs_cibles": ["Tech", "Finance", "Conseil"],
+    "types_entreprise": ["Startup", "Grand groupe", "ESN"],
+
+    "points_forts": ["Point fort 1", "Point fort 2", "Point fort 3"],
+    "axes_amelioration": ["Axe 1 à développer", "Axe 2"],
+
+    "requetes_recherche": [
+        "requête optimisée 1 incluant le rôle et la localisation",
+        "requête 2 avec compétences clés",
+        "requête 3 variante sectorielle",
+        "requête 4 titre alternatif",
+        "requête 5 spécialisée"
+    ],
+
+    "score_cv": {{
+        "note_globale": 75,
+        "completude": 80,
+        "impact": 70,
+        "lisibilite": 85
+    }},
+
+    "conseils_personnalises": [
+        "Conseil 1 pour améliorer le CV",
+        "Conseil 2 spécifique au profil"
+    ]
 }}
 
-Les requêtes de recherche doivent être optimisées pour les sites d'emploi français (France Travail, LinkedIn, Indeed) et inclure la localisation si pertinente."""
+Instructions importantes:
+1. Extrais TOUTES les expériences professionnelles visibles dans le CV
+2. Identifie les réalisations chiffrées (%, €, équipe de X personnes)
+3. Les requêtes de recherche doivent être optimisées pour France Travail, LinkedIn, Indeed
+4. Sois précis sur les technologies et outils mentionnés
+5. Évalue objectivement les forces et faiblesses du CV"""
 # Expanded role detection (all domains)
 ROLE_HINTS = [
     # === TECH / IT ===
@@ -1069,230 +1958,376 @@ def extract_must_hits(cv_tokens: List[str], must_keywords: List[str]) -> Tuple[L
 
 def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     """
-    Analyse complète du profil utilisateur basée sur son CV et ses préférences.
-    Combine extraction locale de compétences et enrichissement OpenAI.
-    Comprehensive CV and profile analysis.
-    Returns detected skills, roles, experience level, and search queries.
+    Analyse complète et enrichie du profil utilisateur basée sur son CV et ses préférences.
+    Combine extraction locale avancée et enrichissement OpenAI.
+
+    Extrait:
+    - Compétences techniques et transversales
+    - Expériences professionnelles structurées
+    - Certifications
+    - Réalisations quantifiées
+    - Score de qualité du CV
+    - Suggestions d'amélioration
     """
     cv = latest_cv(db, user_id)
-    cv_text = cv.text or "" if cv else ""
+    raw_cv_text = cv.text or "" if cv else ""
 
-    # Extract technical skills first (more accurate than generic tokenization)
+    # Clean PDF text for better extraction
+    cv_text = clean_pdf_text(raw_cv_text) if raw_cv_text else ""
+
+    # =========================================================================
+    # LOCAL EXTRACTION (Always performed, serves as fallback)
+    # =========================================================================
+
+    # Extract technical/professional skills
     tech_skills = extract_tech_skills(cv_text) if cv_text else []
 
-    # Also get general tokens for frequency analysis
+    # Tokenize for frequency analysis
     tokens = tokenize(cv_text) if cv_text else []
-
-    # Combine tech skills with top frequent tokens (prioritize tech skills)
-    # Filter out single-letter tokens to avoid false positives like "r"
     top_tokens = [w for w, _ in Counter(tokens).most_common(20) if len(w) > 1]
-    # Tech skills first, then other frequent keywords not already in tech_skills
+
+    # Combine tech skills with frequent tokens
     top_keywords = tech_skills[:15] + [t for t in top_tokens if t not in tech_skills][:5]
-    top_keywords = top_keywords[:15]  # Limit to 15
+    top_keywords = top_keywords[:15]
 
     # Detect experience level
-    experience_level = detect_experience_level(cv_text) if cv_text else None
+    experience_level = detect_experience_level(cv_text) if cv_text else "junior"
 
-    # Categorize skills for better display
+    # Categorize skills
     skill_categories = categorize_skills(tech_skills) if tech_skills else {}
 
+    # Extract education
+    education = extract_education(cv_text) if cv_text else {"ecoles": [], "diplomes": []}
+
+    # NEW: Extract certifications
+    certifications = extract_certifications(cv_text) if cv_text else {}
+
+    # NEW: Extract work experiences
+    work_experiences = extract_work_experiences(cv_text) if cv_text else []
+
+    # NEW: Extract achievements
+    achievements = extract_achievements(cv_text) if cv_text else []
+
+    # NEW: Calculate total experience years
+    total_experience_years = calculate_total_experience_years(work_experiences)
+
+    # Extract skills by category
+    extracted_skills = extract_skills_from_text(cv_text) if cv_text else {}
+
+    # Flatten extracted skills
+    all_extracted_skills = []
+    for category, skills in extracted_skills.items():
+        all_extracted_skills.extend(skills)
+
+    # Clean user preferences
     cleaned_role = clean_field(pref.role)
     cleaned_location = clean_field(pref.location)
 
-    # Parse must keywords from preferences
-    must_keywords_raw = [
-        kw for kw in (pref.must_keywords or "").split(",") if kw.strip()
-    ]
+    # Parse must keywords
+    must_keywords_raw = [kw for kw in (pref.must_keywords or "").split(",") if kw.strip()]
     must_keywords = [
         kw.strip().lower()
         for kw in must_keywords_raw
         if kw.strip() and kw.strip().lower() not in PLACEHOLDER_VALUES
     ]
 
-    # Local analysis (always performed, serves as fallback)
-    # Filter out single-letter tokens to avoid false positives
+    # Local analysis
     local_top_keywords = [w for w, _ in Counter(tokens).most_common(15) if len(w) > 1]
     local_roles = infer_roles(cv_text, cleaned_role)
     hits, missing = extract_must_hits(tokens, must_keywords)
 
-    # Enhanced local analysis
-    extracted_skills = extract_skills_from_text(cv_text) if cv_text else {}
-    experience_level = detect_experience_level(cv_text) if cv_text else "junior"
-    education = extract_education(cv_text) if cv_text else {"ecoles": [], "diplomes": []}
-
-    # Flatten extracted skills for display
-    all_extracted_skills = []
-    for category, skills in extracted_skills.items():
-        all_extracted_skills.extend(skills)
-
-    # Build initial queries from local analysis
+    # Build initial queries
     queries = build_queries(local_roles, must_keywords, local_top_keywords, cleaned_location)
 
-    # Initialize result with local analysis
+    # Initialize with local analysis results
     llm_used = False
     summary = ""
-    top_keywords = all_extracted_skills[:15] if all_extracted_skills else local_top_keywords
     roles = local_roles
     titre_poste = local_roles[0] if local_roles else None
     competences_techniques = extracted_skills.get("langages_programmation", []) + extracted_skills.get("frameworks_web", [])
     competences_transversales = extracted_skills.get("soft_skills", [])
     langues = extracted_skills.get("langues", [])
-    formation = ", ".join(education.get("diplomes", [])[:2] + education.get("ecoles", [])[:1])
+    formation_str = ", ".join(education.get("diplomes", [])[:2] + education.get("ecoles", [])[:1])
     secteurs = []
+    points_forts = []
+    axes_amelioration = []
+    projets = []
+    llm_experiences = []
+    llm_score_cv = None
+    conseils = []
 
-    # OpenAI enrichment (optional, provides better results when available)
+    # =========================================================================
+    # LLM ENRICHMENT (Optional, provides enhanced results)
+    # =========================================================================
+
     if cv_text:
         prompt = build_enhanced_prompt(cv_text, cleaned_role, cleaned_location, must_keywords)
-        llm_result = _call_openai(prompt, max_tokens=700)
+        llm_result = _call_openai(prompt, max_tokens=1500)
 
         if llm_result:
             llm_used = True
 
-            # Extract LLM results with fallbacks
+            # Profile summary
             llm_summary = llm_result.get("profil_resume", "")
             if isinstance(llm_summary, str) and llm_summary.strip():
                 summary = llm_summary.strip()
 
+            # Target job title
             llm_titre = llm_result.get("titre_poste_cible", "")
             if isinstance(llm_titre, str) and llm_titre.strip():
                 titre_poste = llm_titre.strip()
                 if titre_poste.lower() not in [r.lower() for r in roles]:
                     roles = [titre_poste] + roles[:2]
 
+            # Experience level
+            llm_niveau = llm_result.get("niveau_experience", "")
+            if isinstance(llm_niveau, str) and llm_niveau.strip() in ["junior", "confirme", "senior", "expert"]:
+                experience_level = llm_niveau.strip()
+
+            # Total years
+            llm_years = llm_result.get("annees_experience_total")
+            if isinstance(llm_years, (int, float)) and llm_years > 0:
+                total_experience_years = float(llm_years)
+
+            # Key competencies
             llm_competences = llm_result.get("competences_cles", [])
             if isinstance(llm_competences, list) and llm_competences:
-                # Filter out single-letter skills that are likely false positives
-                top_keywords = [
-                    c for c in llm_competences
-                    if isinstance(c, str) and len(c.strip()) > 1
-                ][:15]
+                top_keywords = [c for c in llm_competences if isinstance(c, str) and len(c.strip()) > 1][:15]
 
+            # Technical skills
             llm_tech = llm_result.get("competences_techniques", [])
             if isinstance(llm_tech, list) and llm_tech:
                 competences_techniques = [c for c in llm_tech if isinstance(c, str)]
 
+            # Soft skills
             llm_soft = llm_result.get("competences_transversales", [])
             if isinstance(llm_soft, list) and llm_soft:
                 competences_transversales = [c for c in llm_soft if isinstance(c, str)]
 
+            # Languages (handle both string and dict formats)
             llm_langues = llm_result.get("langues", [])
             if isinstance(llm_langues, list) and llm_langues:
-                langues = [lang for lang in llm_langues if isinstance(lang, str)]
+                processed_langues = []
+                for lang in llm_langues:
+                    if isinstance(lang, str):
+                        processed_langues.append(lang)
+                    elif isinstance(lang, dict):
+                        langue_name = lang.get("langue", "")
+                        niveau = lang.get("niveau", "")
+                        if langue_name:
+                            processed_langues.append(f"{langue_name} ({niveau})" if niveau else langue_name)
+                langues = processed_langues
 
-            llm_formation = llm_result.get("formation", "")
+            # Formation (handle both string and dict formats)
+            llm_formation = llm_result.get("formation")
             if isinstance(llm_formation, str) and llm_formation.strip():
-                formation = llm_formation.strip()
+                formation_str = llm_formation.strip()
+            elif isinstance(llm_formation, dict):
+                parts = []
+                if llm_formation.get("diplome_principal"):
+                    parts.append(llm_formation["diplome_principal"])
+                if llm_formation.get("specialite"):
+                    parts.append(llm_formation["specialite"])
+                if llm_formation.get("ecole"):
+                    parts.append(llm_formation["ecole"])
+                if llm_formation.get("annee"):
+                    parts.append(f"({llm_formation['annee']})")
+                formation_str = " - ".join(parts) if parts else formation_str
 
-            llm_niveau = llm_result.get("niveau_experience", "")
-            if isinstance(llm_niveau, str) and llm_niveau.strip() in ["junior", "confirme", "senior"]:
-                experience_level = llm_niveau.strip()
+            # Certifications from LLM
+            llm_certs = llm_result.get("certifications", [])
+            if isinstance(llm_certs, list) and llm_certs:
+                for cert in llm_certs:
+                    if isinstance(cert, str) and cert.strip():
+                        # Add to appropriate category
+                        cert_lower = cert.lower()
+                        category = "it_general"
+                        for cat, patterns in CERTIFICATIONS.items():
+                            if any(p in cert_lower for p in patterns):
+                                category = cat
+                                break
+                        if category not in certifications:
+                            certifications[category] = []
+                        certifications[category].append({"name": cert, "score": None})
 
+            # Experiences from LLM
+            llm_exp = llm_result.get("experiences", [])
+            if isinstance(llm_exp, list) and llm_exp:
+                for exp in llm_exp:
+                    if isinstance(exp, dict):
+                        llm_experiences.append({
+                            "company": exp.get("entreprise"),
+                            "title": exp.get("poste"),
+                            "period": exp.get("periode"),
+                            "responsibilities": exp.get("responsabilites", []),
+                            "achievements": exp.get("realisations", []),
+                        })
+
+            # Projects
+            llm_projets = llm_result.get("projets_remarquables", [])
+            if isinstance(llm_projets, list) and llm_projets:
+                for proj in llm_projets:
+                    if isinstance(proj, dict):
+                        projets.append({
+                            "name": proj.get("nom"),
+                            "description": proj.get("description"),
+                            "technologies": proj.get("technologies", []),
+                            "impact": proj.get("impact"),
+                        })
+
+            # Target sectors
             llm_secteurs = llm_result.get("secteurs_cibles", [])
             if isinstance(llm_secteurs, list) and llm_secteurs:
                 secteurs = [s for s in llm_secteurs if isinstance(s, str)]
 
+            # Strengths and improvements
+            llm_points_forts = llm_result.get("points_forts", [])
+            if isinstance(llm_points_forts, list):
+                points_forts = [p for p in llm_points_forts if isinstance(p, str)]
+
+            llm_axes = llm_result.get("axes_amelioration", [])
+            if isinstance(llm_axes, list):
+                axes_amelioration = [a for a in llm_axes if isinstance(a, str)]
+
+            # Search queries
             llm_queries = llm_result.get("requetes_recherche", [])
             if isinstance(llm_queries, list) and llm_queries:
                 queries = [q for q in llm_queries if isinstance(q, str)][:5]
 
-    # Build summary if not from LLM
+            # CV Score from LLM
+            llm_score = llm_result.get("score_cv")
+            if isinstance(llm_score, dict):
+                llm_score_cv = llm_score
+
+            # Personalized advice
+            llm_conseils = llm_result.get("conseils_personnalises", [])
+            if isinstance(llm_conseils, list):
+                conseils = [c for c in llm_conseils if isinstance(c, str)]
+
+    # =========================================================================
+    # CALCULATE CV QUALITY SCORE (Local calculation)
+    # =========================================================================
+
+    cv_quality = calculate_cv_quality_score(
+        text=cv_text,
+        skills=tech_skills,
+        experiences=work_experiences if work_experiences else llm_experiences,
+        education=education,
+        certifications=certifications,
+        achievements=achievements,
+    )
+
+    # Merge LLM score with local score if available
+    if llm_score_cv:
+        # Average the scores
+        if llm_score_cv.get("note_globale"):
+            cv_quality["total_score"] = round(
+                (cv_quality["total_score"] + llm_score_cv["note_globale"]) / 2
+            )
+
+    # =========================================================================
+    # BUILD SUMMARY
+    # =========================================================================
+
     if not summary:
         summary_parts = []
         if titre_poste:
-            summary_parts.append(f"Profil {experience_level} en {titre_poste}")
-        if formation:
-            summary_parts.append(f"Formation: {formation}")
+            level_label = {
+                "junior": "Junior",
+                "confirme": "Confirmé",
+                "mid": "Confirmé",
+                "senior": "Senior",
+                "expert": "Expert",
+                "management": "Manager",
+            }.get(experience_level, experience_level)
+            summary_parts.append(f"Profil {level_label} - {titre_poste}")
+
+        if total_experience_years > 0:
+            summary_parts.append(f"{total_experience_years} ans d'expérience")
+
+        if formation_str:
+            summary_parts.append(f"Formation: {formation_str}")
+
         if top_keywords:
             summary_parts.append(f"Compétences: {', '.join(top_keywords[:5])}")
+
         if not summary_parts:
             summary_parts.append("Ajoute un CV pour une analyse détaillée de ton profil.")
+
         summary = " | ".join(summary_parts)
 
-    # Ensure queries have location if specified
+    # Ensure queries have location
     if cleaned_location and queries:
         queries = [
             q if cleaned_location.lower() in q.lower() else f"{q} {cleaned_location}"
             for q in queries
         ][:5]
-    # Optionnel : enrichir avec OpenAI si dispo
-    llm_enriched = None
-    if cv_text or pref.must_keywords or pref.role or pref.location:
-        # Include detected skills in prompt for better context
-        skills_context = ", ".join(tech_skills[:20]) if tech_skills else "non détectées"
-        prompt = (
-            "Analyse ce CV et ces préférences et propose des requêtes d'emploi pour la France.\n"
-            f"Rôle souhaité: {cleaned_role or 'non précisé'}\n"
-            f"Localisation: {cleaned_location or 'France'}\n"
-            f"Niveau détecté: {experience_level or 'non détecté'}\n"
-            f"Compétences techniques détectées: {skills_context}\n"
-            f"Mots-clés obligatoires: {', '.join(must_keywords) or '—'}\n"
-            f"Texte CV (tronqué): {cv_text[:1500]}\n"
-            'Réponds en JSON: {"queries": ["..."], "resume": "1-2 phrases", "tags": ["tag1","tag2","tag3"]}'
-        )
-        llm_enriched = _call_openai(prompt)
 
-    if llm_enriched:
-        llm_used = True
-        llm_queries = [q for q in llm_enriched.get("queries", []) if isinstance(q, str)]
-        if llm_queries:
-            queries = llm_queries[:5]
-        llm_summary = llm_enriched.get("resume")
-        if isinstance(llm_summary, str) and llm_summary.strip():
-            summary_parts = [llm_summary.strip()]
-        llm_tags = [t for t in llm_enriched.get("tags", []) if isinstance(t, str)]
-        if llm_tags:
-            # Merge LLM tags with detected tech skills
-            merged = tech_skills[:10] + [t for t in llm_tags if t not in tech_skills]
-            top_keywords = merged[:15]
+    # Merge experiences (prefer LLM if available, otherwise use local)
+    final_experiences = llm_experiences if llm_experiences else work_experiences
 
-    # Build summary
-    if experience_level:
-        level_labels = {
-            "junior": "Junior / Débutant",
-            "mid": "Confirmé (3-5 ans)",
-            "senior": "Senior / Expert",
-            "management": "Manager / Direction"
-        }
-        summary_parts.append(f"Niveau: {level_labels.get(experience_level, experience_level)}")
+    # Flatten certifications for simple display
+    certifications_list = []
+    for category, certs in certifications.items():
+        for cert in certs:
+            cert_display = cert.get("name", "")
+            if cert.get("score"):
+                cert_display += f" ({cert['score']})"
+            if cert_display and cert_display not in certifications_list:
+                certifications_list.append(cert_display)
 
-    if roles:
-        summary_parts.append(f"Rôle cible: {roles[0]}")
-
-    if tech_skills:
-        # Show categorized skills in summary
-        main_skills = tech_skills[:5]
-        summary_parts.append(f"Compétences clés: {', '.join(main_skills)}")
-
-    if hits:
-        summary_parts.append(f"Mots-clés trouvés: {', '.join(hits)}")
-    if missing:
-        summary_parts.append(f"À renforcer: {', '.join(missing)}")
-
-    if not summary_parts:
-        summary_parts.append("Ajoute un CV et des préférences pour une analyse plus fine.")
+    # =========================================================================
+    # RETURN COMPREHENSIVE ANALYSIS
+    # =========================================================================
 
     return {
+        # Basic info
         "cv_present": bool(cv),
+        "llm_used": llm_used,
+        "summary": summary,
+
+        # Target profile
+        "titre_poste_cible": titre_poste,
+        "inferred_roles": roles[:5],
+        "secteurs_cibles": secteurs[:5],
+
+        # Experience
+        "niveau_experience": experience_level,
+        "experience_level": experience_level,  # Alias for compatibility
+        "total_experience_years": total_experience_years,
+        "experiences": final_experiences[:10],
+
+        # Skills
         "top_keywords": top_keywords,
-        "inferred_roles": roles,
+        "competences_techniques": competences_techniques[:15],
+        "competences_transversales": competences_transversales[:10],
+        "skill_categories": skill_categories,
+        "skills_by_category": extracted_skills,
+        "tech_skills_count": len(tech_skills),
+
+        # Education & Certifications
+        "formation": formation_str,
+        "education": education,
+        "certifications": certifications,
+        "certifications_list": certifications_list[:10],
+
+        # Languages
+        "langues": langues[:8],
+
+        # Achievements & Projects
+        "achievements": achievements[:10],
+        "projets": projets[:5],
+
+        # CV Quality
+        "cv_quality_score": cv_quality,
+        "points_forts": points_forts[:5],
+        "axes_amelioration": axes_amelioration[:5],
+        "conseils_personnalises": conseils[:5] if conseils else cv_quality.get("suggestions", [])[:5],
+
+        # Job search
         "suggested_queries": queries,
         "must_hits": hits,
         "missing_must": missing,
-        "summary": summary,
-        "llm_used": llm_used,
-        # Enhanced fields
-        "titre_poste_cible": titre_poste,
-        "niveau_experience": experience_level,
-        "competences_techniques": competences_techniques[:10],
-        "competences_transversales": competences_transversales[:5],
-        "langues": langues[:5],
-        "formation": formation,
-        "secteurs_cibles": secteurs[:5],
-        "skills_by_category": extracted_skills,
-        # New fields for enhanced analysis
-        "experience_level": experience_level,
-        "skill_categories": skill_categories,
-        "tech_skills_count": len(tech_skills),
     }
 
 
