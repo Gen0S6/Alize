@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { apiFetch, getLatestCV, getMatches, type CVLatest } from "../../lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { apiFetch, getLatestCV, getMatches, getAnalysis, type CVLatest, type Analysis } from "../../lib/api";
 import { getToken } from "../../lib/auth";
 import { useTheme } from "../ThemeProvider";
 
@@ -15,19 +15,35 @@ export default function CVPage() {
   const [loading, setLoading] = useState(false);
   const [latest, setLatest] = useState<CVLatest | null>(null);
   const [loadingLatest, setLoadingLatest] = useState(true);
-  const [viewerHeight, setViewerHeight] = useState<string>("80vh");
+  const [viewerHeight, setViewerHeight] = useState<string>("70vh");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const token = getToken();
-    if (!token) return; // le composant est protégé par ailleurs via le dashboard
+    if (!token) return;
     (async () => {
       try {
         const cv = await getLatestCV();
         setLatest(cv);
+        // Charger l'analyse si un CV existe
+        if (cv) {
+          setLoadingAnalysis(true);
+          try {
+            const analysisData = await getAnalysis();
+            setAnalysis(analysisData);
+          } catch {
+            // Pas d'analyse disponible
+          } finally {
+            setLoadingAnalysis(false);
+          }
+        }
       } catch (err: any) {
-        // 404 si aucun CV encore
         if (err?.message?.includes("404")) {
           setLatest(null);
         } else {
@@ -41,12 +57,40 @@ export default function CVPage() {
 
   useEffect(() => {
     function updateHeight() {
-      const available = window.innerHeight - 220; // laisse un peu de place pour le header/form
+      const available = window.innerHeight - 300;
       setViewerHeight(`${Math.max(400, available)}px`);
     }
     updateHeight();
     window.addEventListener("resize", updateHeight);
     return () => window.removeEventListener("resize", updateHeight);
+  }, []);
+
+  // Drag and drop handlers
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.type === "application/pdf") {
+        setFile(droppedFile);
+        setMsg(null);
+        setError(null);
+      } else {
+        setError("Seuls les fichiers PDF sont acceptés.");
+      }
+    }
   }, []);
 
   async function doUpload() {
@@ -65,19 +109,43 @@ export default function CVPage() {
     try {
       setLoading(true);
       setError(null);
+      setUploadProgress(0);
+
+      // Simuler la progression
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 100);
+
       await apiFetch("/cv/upload", {
         method: "POST",
         body: formData,
       });
-      setMsg("CV uploadé avec succès");
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      setMsg("CV uploadé avec succès !");
       const cv = await getLatestCV();
       setLatest(cv);
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+
+      // Relancer l'analyse
+      setLoadingAnalysis(true);
+      try {
+        const analysisData = await getAnalysis(true);
+        setAnalysis(analysisData);
+      } catch {
+        // Pas d'analyse
+      } finally {
+        setLoadingAnalysis(false);
+      }
+
+      setTimeout(() => setUploadProgress(0), 1000);
     } catch (err: any) {
       setError(err?.message ?? "Erreur upload");
-    }
-    finally {
+      setUploadProgress(0);
+    } finally {
       setLoading(false);
       setConfirmOpen(false);
     }
@@ -94,165 +162,562 @@ export default function CVPage() {
         setConfirmOpen(true);
         return;
       }
-    } catch (_err) {
-      // ignore warning
+    } catch {
+      // ignore
     }
     await doUpload();
   }
 
-  const inputClass = isDark
-    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-3 py-2 text-gray-100 placeholder-gray-500"
-    : "mt-1 w-full rounded-xl border px-3 py-2";
-  const panelClass = isDark ? "mt-8 rounded-2xl border border-gray-700 p-4 bg-[#0f1116]" : "mt-8 rounded-2xl border p-4 bg-white";
-  const textMuted = isDark ? "text-sm text-gray-400" : "text-sm text-gray-600";
+  async function refreshAnalysis() {
+    setLoadingAnalysis(true);
+    try {
+      const analysisData = await getAnalysis(true);
+      setAnalysis(analysisData);
+    } catch {
+      setError("Impossible de charger l'analyse");
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  // Styles
+  const cardClass = isDark
+    ? "rounded-2xl border border-gray-700/50 bg-gradient-to-br from-[#0f1116] to-[#12141a] p-6 shadow-lg"
+    : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm";
+
+  const textMuted = isDark ? "text-gray-400" : "text-gray-500";
+  const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
+  const textSecondary = isDark ? "text-gray-300" : "text-gray-700";
+
   const btnPrimary = isDark
-    ? "rounded-xl border border-gray-700 px-4 py-2 font-medium bg-[#0f1116] text-gray-100 hover:bg-gray-800 disabled:opacity-50"
-    : "rounded-xl border px-4 py-2 font-medium hover:bg-gray-50 disabled:opacity-50";
-  const linkBtn = isDark
-    ? "rounded-xl border border-gray-700 px-4 py-2 text-sm hover:bg-gray-800"
-    : "rounded-xl border px-4 py-2 text-sm hover:bg-gray-50";
+    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+
+  const btnSecondary = isDark
+    ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
+    : "rounded-xl border border-gray-300 bg-white hover:bg-gray-50 px-4 py-2 font-medium text-gray-700 transition-all duration-200";
+
+  const badgeClass = (color: string) => {
+    const colors: Record<string, string> = {
+      blue: isDark ? "bg-blue-900/40 text-blue-300 border-blue-700/50" : "bg-blue-50 text-blue-700 border-blue-200",
+      green: isDark ? "bg-green-900/40 text-green-300 border-green-700/50" : "bg-green-50 text-green-700 border-green-200",
+      purple: isDark ? "bg-purple-900/40 text-purple-300 border-purple-700/50" : "bg-purple-50 text-purple-700 border-purple-200",
+      amber: isDark ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-amber-50 text-amber-700 border-amber-200",
+      gray: isDark ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-gray-100 text-gray-700 border-gray-200",
+    };
+    return `inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${colors[color] || colors.gray}`;
+  };
 
   return (
-    <main className={isDark ? "p-6 max-w-6xl mx-auto flex flex-col gap-6 bg-[#0b0c10] text-gray-100 theme-hover" : "p-6 max-w-6xl mx-auto flex flex-col gap-6 bg-white text-gray-900 theme-hover"}>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">CV</h1>
-        <Link
-          href="/dashboard"
-          className={linkBtn}
-        >
-          ← Retour dashboard
+    <main className={isDark ? "min-h-screen p-4 md:p-6 max-w-6xl mx-auto bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 max-w-6xl mx-auto bg-gray-50 text-gray-900"}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+            <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20" : "p-2.5 rounded-xl bg-blue-600 shadow-md"}>
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </span>
+            Mon CV
+          </h1>
+          <p className={`mt-2 ${textMuted}`}>Gère ton CV et visualise l'analyse de ton profil</p>
+        </div>
+        <Link href="/dashboard" className={btnSecondary}>
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Dashboard
+          </span>
         </Link>
       </div>
-      <div>
-        <h2 className="text-lg font-semibold">Uploader ton CV</h2>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          className="mt-3"
-          ref={fileInputRef}
-          onChange={(e) => {
-            setMsg(null);
-            setError(null);
-            setFile(e.target.files?.[0] ?? null);
-          }}
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Colonne gauche - Upload et CV actuel */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Zone d'upload */}
+          <div className={cardClass}>
+            <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${textPrimary}`}>
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Uploader un CV
+            </h2>
 
-        {file && (
-          <p className={isDark ? "mt-2 text-sm text-gray-300" : "mt-2 text-sm text-gray-700"}>
-            Fichier sélectionné : <span className="font-medium">{file.name}</span>
-          </p>
-        )}
-
-        <button
-          onClick={upload}
-          className={`mt-4 ${btnPrimary}`}
-          disabled={!file || loading}
-        >
-          {loading ? "Upload..." : "Uploader"}
-        </button>
-
-        {msg && <p className={isDark ? "mt-3 text-sm text-green-400" : "mt-3 text-sm text-green-700"}>{msg}</p>}
-        {error && (
-          <p className={isDark ? "mt-3 text-sm text-red-400" : "mt-3 text-sm text-red-700"}>
-            {error}
-          </p>
-        )}
-      </div>
-
-      <div className={panelClass}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Dernier CV</h2>
-            <p className={textMuted}>
-              Aperçu rapide du fichier stocké.
-            </p>
-          </div>
-          {latest && (
-            <a
-              className={isDark ? "text-sm underline text-blue-300 hover:text-blue-200" : "text-sm underline text-blue-700 hover:text-blue-900"}
-              href={
-                latest.url.startsWith("http")
-                  ? latest.url
-                  : (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000") + latest.url
-              }
-              target="_blank"
-              rel="noreferrer"
+            {/* Drag & Drop Zone */}
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`
+                relative cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200
+                ${dragActive
+                  ? (isDark ? "border-blue-500 bg-blue-900/20" : "border-blue-500 bg-blue-50")
+                  : (isDark ? "border-gray-600 hover:border-gray-500 hover:bg-gray-800/50" : "border-gray-300 hover:border-gray-400 hover:bg-gray-50")
+                }
+              `}
             >
-              Ouvrir
-            </a>
-          )}
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={(e) => {
+                  setMsg(null);
+                  setError(null);
+                  setFile(e.target.files?.[0] ?? null);
+                }}
+              />
+
+              <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
+                dragActive
+                  ? (isDark ? "bg-blue-900/40" : "bg-blue-100")
+                  : (isDark ? "bg-gray-800" : "bg-gray-100")
+              }`}>
+                <svg className={`w-8 h-8 ${dragActive ? "text-blue-400" : textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+
+              <p className={`text-sm font-medium ${textPrimary}`}>
+                {dragActive ? "Dépose ton fichier ici" : "Glisse-dépose ton CV ici"}
+              </p>
+              <p className={`mt-1 text-xs ${textMuted}`}>
+                ou clique pour parcourir tes fichiers
+              </p>
+              <p className={`mt-3 text-xs ${textMuted}`}>
+                Format accepté : PDF uniquement
+              </p>
+            </div>
+
+            {/* Fichier sélectionné */}
+            {file && (
+              <div className={`mt-4 p-4 rounded-xl flex items-center justify-between ${isDark ? "bg-gray-800/50 border border-gray-700" : "bg-gray-50 border border-gray-200"}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${isDark ? "bg-red-900/30" : "bg-red-100"}`}>
+                    <svg className={`w-5 h-5 ${isDark ? "text-red-400" : "text-red-600"}`} fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 13H11v6H9.5v-4.5h-1V13zm6 0c.8 0 1.5.7 1.5 1.5v3c0 .8-.7 1.5-1.5 1.5h-3V13h3zm0 4.5v-3h-1.5v3h1.5z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${textPrimary}`}>{file.name}</p>
+                    <p className={`text-xs ${textMuted}`}>{formatFileSize(file.size)}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className={`p-1.5 rounded-lg transition-colors ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}
+                >
+                  <svg className={`w-4 h-4 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {/* Barre de progression */}
+            {uploadProgress > 0 && (
+              <div className="mt-4">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className={textMuted}>Upload en cours...</span>
+                  <span className={textMuted}>{uploadProgress}%</span>
+                </div>
+                <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-gray-800" : "bg-gray-200"}`}>
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Messages */}
+            {msg && (
+              <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${isDark ? "bg-green-900/20 border border-green-700/50" : "bg-green-50 border border-green-200"}`}>
+                <svg className={`w-5 h-5 ${isDark ? "text-green-400" : "text-green-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className={`text-sm ${isDark ? "text-green-300" : "text-green-700"}`}>{msg}</p>
+              </div>
+            )}
+            {error && (
+              <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${isDark ? "bg-red-900/20 border border-red-700/50" : "bg-red-50 border border-red-200"}`}>
+                <svg className={`w-5 h-5 ${isDark ? "text-red-400" : "text-red-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className={`text-sm ${isDark ? "text-red-300" : "text-red-700"}`}>{error}</p>
+              </div>
+            )}
+
+            {/* Bouton upload */}
+            <button
+              onClick={upload}
+              className={`mt-4 w-full ${btnPrimary}`}
+              disabled={!file || loading}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Upload en cours...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Uploader le CV
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* CV actuel */}
+          <div className={cardClass}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-lg font-semibold flex items-center gap-2 ${textPrimary}`}>
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                CV actuel
+              </h2>
+              {latest && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowPdfViewer(!showPdfViewer)}
+                    className={btnSecondary}
+                  >
+                    {showPdfViewer ? "Masquer" : "Afficher"}
+                  </button>
+                  <a
+                    className={btnSecondary}
+                    href={
+                      latest.url.startsWith("http")
+                        ? latest.url
+                        : (process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000") + latest.url
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Ouvrir
+                    </span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {loadingLatest && (
+              <div className="space-y-3">
+                <div className={`h-4 w-48 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`}></div>
+                <div className={`h-4 w-32 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`}></div>
+              </div>
+            )}
+
+            {!loadingLatest && !latest && (
+              <div className={`text-center py-12 rounded-xl ${isDark ? "bg-gray-800/30" : "bg-gray-50"}`}>
+                <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? "bg-gray-800" : "bg-gray-200"}`}>
+                  <svg className={`w-8 h-8 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className={`font-medium ${textPrimary}`}>Aucun CV uploadé</p>
+                <p className={`mt-1 text-sm ${textMuted}`}>
+                  Uploade ton premier CV pour commencer
+                </p>
+              </div>
+            )}
+
+            {latest && (
+              <div className="space-y-4">
+                {/* Infos du fichier */}
+                <div className={`p-4 rounded-xl flex items-center gap-4 ${isDark ? "bg-gray-800/50" : "bg-gray-50"}`}>
+                  <div className={`p-3 rounded-xl ${isDark ? "bg-red-900/30" : "bg-red-100"}`}>
+                    <svg className={`w-8 h-8 ${isDark ? "text-red-400" : "text-red-600"}`} fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 13H11v6H9.5v-4.5h-1V13zm6 0c.8 0 1.5.7 1.5 1.5v3c0 .8-.7 1.5-1.5 1.5h-3V13h3zm0 4.5v-3h-1.5v3h1.5z"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-medium ${textPrimary}`}>{latest.filename}</p>
+                    <p className={`text-sm ${textMuted}`}>
+                      Uploadé le {formatDate(latest.created_at)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Visualiseur PDF */}
+                {showPdfViewer && (
+                  <div className="mt-4 rounded-xl overflow-hidden border border-gray-700">
+                    {(() => {
+                      const base = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+                      const pdfBase = latest.url.startsWith("http") ? latest.url : `${base}${latest.url}`;
+                      const pdfUrl = `${pdfBase}#toolbar=0&navpanes=0&scrollbar=0`;
+                      return (
+                        <object
+                          data={pdfUrl}
+                          type="application/pdf"
+                          className="w-full"
+                          style={{ height: viewerHeight }}
+                        >
+                          <div className={`flex flex-col items-center justify-center py-12 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
+                            <svg className={`w-12 h-12 mb-3 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p className={textMuted}>Aperçu indisponible</p>
+                            <a
+                              className={`mt-3 ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"} underline text-sm`}
+                              href={pdfUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Ouvrir le PDF dans un nouvel onglet
+                            </a>
+                          </div>
+                        </object>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {loadingLatest && (
-          <p className={textMuted}>Chargement...</p>
-        )}
-
-        {!loadingLatest && !latest && (
-          <p className={textMuted}>
-            Aucun CV stocké pour l’instant.
-          </p>
-        )}
-
-        {latest && (
-          <div className="mt-4 space-y-3">
-            <p className={isDark ? "text-sm text-gray-200" : "text-sm text-gray-800"}>
-              <span className="font-medium">Fichier :</span>{" "}
-              {latest.filename}
-            </p>
-            <div className="mt-3 flex justify-center">
-              {(() => {
-                const base = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
-                const pdfBase = latest.url.startsWith("http") ? latest.url : `${base}${latest.url}`;
-                const pdfUrl = `${pdfBase}#toolbar=0&navpanes=0&scrollbar=0`;
-                return (
-                  <object
-                    data={pdfUrl}
-                    type="application/pdf"
-                    className="w-full max-w-5xl border rounded-xl"
-                    style={{ height: viewerHeight }}
-                  >
-                    <p className={textMuted}>
-                      Aperçu indisponible.{" "}
-                      <a
-                        className={isDark ? "underline text-blue-300 hover:text-blue-200" : "underline text-blue-700 hover:text-blue-900"}
-                        href={pdfUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Ouvrir le PDF
-                      </a>
-                    </p>
-                  </object>
-                );
-              })()}
+        {/* Colonne droite - Analyse */}
+        <div className="space-y-6">
+          {/* Carte d'analyse */}
+          <div className={cardClass}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-lg font-semibold flex items-center gap-2 ${textPrimary}`}>
+                <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Analyse IA
+              </h2>
+              {latest && (
+                <button
+                  onClick={refreshAnalysis}
+                  disabled={loadingAnalysis}
+                  className={`p-2 rounded-lg transition-colors ${isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"} disabled:opacity-50`}
+                  title="Relancer l'analyse"
+                >
+                  <svg className={`w-4 h-4 ${loadingAnalysis ? "animate-spin" : ""} ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              )}
             </div>
+
+            {loadingAnalysis && (
+              <div className="space-y-4">
+                <div className={`h-4 w-full rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`}></div>
+                <div className={`h-4 w-3/4 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`}></div>
+                <div className={`h-4 w-1/2 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`}></div>
+              </div>
+            )}
+
+            {!loadingAnalysis && !analysis && (
+              <div className={`text-center py-8 rounded-xl ${isDark ? "bg-gray-800/30" : "bg-gray-50"}`}>
+                <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isDark ? "bg-gray-800" : "bg-gray-200"}`}>
+                  <svg className={`w-6 h-6 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <p className={`text-sm ${textMuted}`}>
+                  {latest ? "Aucune analyse disponible" : "Uploade un CV pour voir l'analyse"}
+                </p>
+              </div>
+            )}
+
+            {!loadingAnalysis && analysis && (
+              <div className="space-y-5">
+                {/* Résumé */}
+                {analysis.summary && (
+                  <div>
+                    <p className={`text-sm leading-relaxed ${textSecondary}`}>
+                      {analysis.summary}
+                    </p>
+                  </div>
+                )}
+
+                {/* Poste cible */}
+                {analysis.titre_poste_cible && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>Poste visé</p>
+                    <p className={`font-semibold ${textPrimary}`}>{analysis.titre_poste_cible}</p>
+                  </div>
+                )}
+
+                {/* Niveau d'expérience */}
+                {(analysis.niveau_experience || analysis.experience_level) && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>Niveau</p>
+                    <span className={badgeClass("purple")}>
+                      {analysis.niveau_experience || analysis.experience_level}
+                    </span>
+                  </div>
+                )}
+
+                {/* Compétences techniques */}
+                {analysis.competences_techniques && analysis.competences_techniques.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>
+                      Compétences techniques
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {analysis.competences_techniques.slice(0, 8).map((skill, i) => (
+                        <span key={i} className={badgeClass("blue")}>{skill}</span>
+                      ))}
+                      {analysis.competences_techniques.length > 8 && (
+                        <span className={badgeClass("gray")}>+{analysis.competences_techniques.length - 8}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Compétences transversales */}
+                {analysis.competences_transversales && analysis.competences_transversales.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>
+                      Soft skills
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {analysis.competences_transversales.slice(0, 5).map((skill, i) => (
+                        <span key={i} className={badgeClass("amber")}>{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Langues */}
+                {analysis.langues && analysis.langues.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>Langues</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {analysis.langues.map((lang, i) => (
+                        <span key={i} className={badgeClass("green")}>{lang}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Formation */}
+                {analysis.formation && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>Formation</p>
+                    <p className={`text-sm ${textSecondary}`}>{analysis.formation}</p>
+                  </div>
+                )}
+
+                {/* Mots-clés */}
+                {analysis.top_keywords && analysis.top_keywords.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>Mots-clés principaux</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {analysis.top_keywords.slice(0, 6).map((kw, i) => (
+                        <span key={i} className={badgeClass("gray")}>{kw}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Requêtes suggérées */}
+                {analysis.suggested_queries && analysis.suggested_queries.length > 0 && (
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-2 ${textMuted}`}>Requêtes de recherche</p>
+                    <div className="space-y-1.5">
+                      {analysis.suggested_queries.slice(0, 3).map((query, i) => (
+                        <div
+                          key={i}
+                          className={`text-xs p-2 rounded-lg ${isDark ? "bg-gray-800/50" : "bg-gray-50"} ${textSecondary}`}
+                        >
+                          "{query}"
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Lien vers le dashboard */}
+          {analysis && (
+            <Link
+              href="/dashboard"
+              className={`block text-center p-4 rounded-xl transition-all duration-200 ${
+                isDark
+                  ? "bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-700/30 hover:border-blue-600/50"
+                  : "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 hover:border-blue-300"
+              }`}
+            >
+              <p className={`font-medium ${textPrimary}`}>Voir les offres correspondantes</p>
+              <p className={`text-xs mt-1 ${textMuted}`}>Basées sur ton profil CV</p>
+            </Link>
+          )}
+        </div>
       </div>
 
+      {/* Modal de confirmation */}
       {confirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className={isDark ? "w-full max-w-sm rounded-xl bg-[#0f1116] border border-gray-700 p-4 shadow-xl text-gray-100" : "w-full max-w-sm rounded-xl bg-white p-4 shadow-xl"}>
-            <h3 className={isDark ? "text-sm font-semibold text-gray-100" : "text-sm font-semibold text-gray-900"}>
-              Supprimer les offres existantes ?
-            </h3>
-            <p className={isDark ? "mt-1 text-sm text-gray-300" : "mt-1 text-sm text-gray-600"}>
-              Uploader un nouveau CV va vider les offres actuelles.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${isDark ? "bg-[#0f1116] border border-gray-700" : "bg-white"}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-xl ${isDark ? "bg-amber-900/30" : "bg-amber-100"}`}>
+                <svg className={`w-6 h-6 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className={`text-lg font-semibold ${textPrimary}`}>
+                Remplacer le CV actuel ?
+              </h3>
+            </div>
+            <p className={`text-sm ${textSecondary}`}>
+              L'upload d'un nouveau CV va supprimer les offres d'emploi actuellement enregistrées.
+              Une nouvelle recherche sera effectuée basée sur le nouveau CV.
             </p>
-            <div className="mt-4 flex justify-end gap-2 text-sm">
+            <div className="mt-6 flex gap-3 justify-end">
               <button
-                className={isDark ? "rounded-md px-3 py-1.5 text-gray-200 hover:bg-gray-800 border border-gray-700" : "rounded-md px-3 py-1.5 text-gray-600 hover:bg-gray-100"}
+                className={btnSecondary}
                 onClick={() => setConfirmOpen(false)}
               >
                 Annuler
               </button>
               <button
-                className={isDark ? "rounded-md bg-red-900/40 border border-red-700 px-3 py-1.5 text-red-200 hover:bg-red-900/60 disabled:opacity-50" : "rounded-md bg-red-50 px-3 py-1.5 text-red-700 hover:bg-red-100 disabled:opacity-50"}
+                className={`rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 font-medium text-white transition-colors disabled:opacity-50`}
                 onClick={doUpload}
                 disabled={loading}
               >
-                {loading ? "…" : "Continuer"}
+                {loading ? "Upload..." : "Confirmer"}
               </button>
             </div>
           </div>
