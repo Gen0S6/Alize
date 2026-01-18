@@ -106,7 +106,7 @@ export default function ProfilePage() {
   const dangerTitleClass = isDark ? "text-sm text-red-300 font-medium" : "text-sm text-red-700 font-medium";
 
   return (
-    <main className={isDark ? "min-h-screen p-6 bg-[#0b0c10] text-gray-100 theme-hover" : "min-h-screen p-6 bg-gray-50 text-gray-900 theme-hover"}>
+    <main className={isDark ? "min-h-screen p-6 bg-[#0b0c10] text-gray-100 theme-hover" : "min-h-screen p-6 bg-white text-gray-900 theme-hover"}>
       <div className="mx-auto max-w-3xl">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

@@ -148,7 +148,7 @@ export default function PreferencesPage() {
     : "rounded-xl border border-gray-300 bg-white hover:bg-gray-50 px-4 py-2 font-medium text-gray-700 transition-all duration-200";
 
   return (
-    <main className={isDark ? "min-h-screen p-4 md:p-6 max-w-4xl mx-auto bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 max-w-4xl mx-auto bg-gray-50 text-gray-900"}>
+    <main className={isDark ? "min-h-screen p-4 md:p-6 max-w-4xl mx-auto bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 max-w-4xl mx-auto bg-white text-gray-900"}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
