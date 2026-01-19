@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faSignOutAlt, faCog } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import ThemeProvider, { useTheme } from "./ThemeProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ToastProvider } from "../components/Toast";
@@ -197,17 +197,6 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                       >
                         <FontAwesomeIcon icon={faUser} className="w-4 h-4 opacity-70" />
                         Profil
-                      </Link>
-                      <Link
-                        href="/preferences"
-                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 ${
-                          isDark
-                            ? "text-gray-200 hover:bg-gray-800"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        <FontAwesomeIcon icon={faCog} className="w-4 h-4 opacity-70" />
-                        Préférences
                       </Link>
 
                       <div className={`border-t my-1 ${isDark ? "border-gray-700" : "border-gray-100"}`} />
