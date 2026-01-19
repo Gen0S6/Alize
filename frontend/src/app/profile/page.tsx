@@ -14,7 +14,6 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +39,6 @@ export default function ProfilePage() {
         const data = await getProfile();
         setProfile(data);
         setEmail(data.email);
-        setNotificationsEnabled(data.notifications_enabled);
       } catch (err: any) {
         setError(err?.message ?? "Impossible de charger le profil");
         if (err?.message === "Not authenticated") {
@@ -73,7 +71,6 @@ export default function ProfilePage() {
         email,
         current_password: currentPassword || undefined,
         new_password: newPassword || undefined,
-        notifications_enabled: notificationsEnabled,
       });
       setProfile(updated);
       setSuccess("Profil sauvegardé");
@@ -130,7 +127,7 @@ export default function ProfilePage() {
               </span>
               Mon Profil
             </h1>
-            <p className={`mt-2 ${textMuted}`}>Gère ton compte, tes préférences et ta sécurité</p>
+            <p className={`mt-2 ${textMuted}`}>Gère ton compte et ta sécurité</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -295,35 +292,6 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Notifications */}
-            <div className={cardClass}>
-              <div className="flex items-center gap-2 mb-6">
-                <div className={`p-2 rounded-lg ${isDark ? "bg-emerald-900/30" : "bg-emerald-100"}`}>
-                  <svg className={`w-5 h-5 ${isDark ? "text-emerald-400" : "text-emerald-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </div>
-                <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
-              </div>
-
-              <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl transition-colors ${isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-50"}`}>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={notificationsEnabled}
-                    onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 rounded-full transition-colors ${notificationsEnabled ? (isDark ? "bg-emerald-600" : "bg-emerald-500") : (isDark ? "bg-gray-700" : "bg-gray-300")}`}></div>
-                  <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? "translate-x-5" : ""}`}></div>
-                </div>
-                <div>
-                  <p className={`text-sm font-medium ${textPrimary}`}>Notifications par email</p>
-                  <p className={`text-xs ${textMuted}`}>Reçois un récapitulatif des nouvelles offres tous les 3 jours</p>
-                </div>
-              </label>
             </div>
 
             {/* Submit button */}
