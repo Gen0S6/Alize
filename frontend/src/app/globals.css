@@ -149,3 +149,35 @@ html:not(.dark) body .theme-hover button:hover {
 .drag-active {
   animation: drag-pulse 1s ease-in-out infinite;
 }
+
+/* Dropdown menu animation */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.2s ease-out forwards;
+}
+
+/* Mobile menu item stagger animation */
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-menu-item {
+  animation: menu-item-in 0.3s ease-out forwards;
+}
