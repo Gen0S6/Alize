@@ -10,9 +10,8 @@ import {
   faHeart,
   faLightbulb,
   faArrowLeft,
-  faGithub,
 } from "@fortawesome/free-solid-svg-icons";
-import { faGithub as faGithubBrand } from "@fortawesome/free-brands-svg-icons";
+import { faGithub } from "@fortawesome/free-brands-svg-icons";
 
 export default function AboutPage() {
   const { theme } = useTheme();
@@ -197,7 +196,7 @@ export default function AboutPage() {
                 : "bg-gray-900 text-white hover:bg-gray-800"
             }`}
           >
-            <FontAwesomeIcon icon={faGithubBrand} />
+            <FontAwesomeIcon icon={faGithub} />
             Suivre Gen0S7 sur GitHub
           </a>
         </div>
