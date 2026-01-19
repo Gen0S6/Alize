@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faA } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faSignOutAlt, faCog } from "@fortawesome/free-solid-svg-icons";
 import ThemeProvider, { useTheme } from "./ThemeProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ToastProvider } from "../components/Toast";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken } from "../lib/auth";
+import { getToken, clearTokenAndRedirectHome } from "../lib/auth";
+import { getProfile, type Profile } from "../lib/api";
 
 function ShellFrame({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
@@ -17,6 +18,9 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isAuthed, setIsAuthed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/register") || pathname?.startsWith("/reset-password") || pathname?.startsWith("/verify-email");
   const isHomePage = pathname === "/";
@@ -33,7 +37,13 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   useEffect(() => {
-    const update = () => setIsAuthed(!!getToken());
+    const update = () => {
+      const authed = !!getToken();
+      setIsAuthed(authed);
+      if (!authed) {
+        setUserProfile(null);
+      }
+    };
     update();
     window.addEventListener("storage", update);
     window.addEventListener("token_changed", update as EventListener);
@@ -43,11 +53,32 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Fetch user profile when authenticated
+  useEffect(() => {
+    if (isAuthed) {
+      getProfile()
+        .then(setUserProfile)
+        .catch(() => setUserProfile(null));
+    }
+  }, [isAuthed]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Permettre d'annuler la saisie par Échap : blur sur le champ actif
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setMobileMenuOpen(false);
+        setUserDropdownOpen(false);
         const active = document.activeElement as HTMLElement | null;
         if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")) {
           active.blur();
@@ -58,14 +89,28 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Close mobile menu on route change
+  // Close mobile menu and dropdown on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setUserDropdownOpen(false);
   }, [pathname]);
 
+  const handleLogout = () => {
+    setUserDropdownOpen(false);
+    clearTokenAndRedirectHome();
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (userProfile?.email) {
+      return userProfile.email.charAt(0).toUpperCase();
+    }
+    return "U";
+  };
+
   const headerClass = isDark
-    ? "border-b border-gray-800 bg-[#0f1116]"
-    : "border-b border-gray-200 bg-white";
+    ? "sticky top-0 z-50 border-b border-gray-800 bg-[#0f1116]/95 backdrop-blur-sm shadow-lg shadow-black/10"
+    : "sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm";
   const linkClass = isDark ? "text-gray-100 hover:text-white" : "text-gray-800 hover:text-black";
   const navClass = isDark ? "flex items-center gap-4 text-sm text-gray-200" : "flex items-center gap-4 text-sm text-gray-700";
   const containerClass = isDark
@@ -94,20 +139,104 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
             <nav className={`hidden md:flex ${navClass}`}>
               {(!isHomePage || isAuthed) && (
                 <>
-                  <Link href="/dashboard" className={linkClass}>
+                  <Link href="/dashboard" className={`${linkClass} transition-colors duration-200`}>
                     Tableau de bord
                   </Link>
-                  <Link href="/preferences" className={linkClass}>
+                  <Link href="/preferences" className={`${linkClass} transition-colors duration-200`}>
                     Préférences
                   </Link>
-                  <Link href="/cv" className={linkClass}>
+                  <Link href="/cv" className={`${linkClass} transition-colors duration-200`}>
                     CV
                   </Link>
                 </>
               )}
-              <Link href="/profile" className={linkClass}>
-                Profil
-              </Link>
+
+              {/* User Avatar Dropdown */}
+              {isAuthed ? (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className={`flex items-center gap-2 ml-2 p-1 rounded-full transition-all duration-200 ${
+                      isDark
+                        ? "hover:bg-gray-800"
+                        : "hover:bg-gray-100"
+                    }`}
+                    aria-label="Menu utilisateur"
+                    aria-expanded={userDropdownOpen}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-transform duration-200 ${
+                      userDropdownOpen ? "scale-95" : ""
+                    } ${
+                      isDark
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-500 text-white"
+                    }`}>
+                      {getUserInitials()}
+                    </div>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {userDropdownOpen && (
+                    <div className={`absolute right-0 mt-2 w-56 rounded-lg border py-1 animate-dropdown-in ${
+                      isDark
+                        ? "bg-[#1a1b1f] border-gray-700 shadow-xl shadow-black/30"
+                        : "bg-white border-gray-200 shadow-lg"
+                    }`}>
+                      {/* User Info */}
+                      <div className={`px-4 py-3 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}>
+                        <p className={`text-sm font-medium truncate ${isDark ? "text-gray-100" : "text-gray-900"}`}>
+                          {userProfile?.email || "Utilisateur"}
+                        </p>
+                        <p className={`text-xs mt-0.5 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                          Connecté
+                        </p>
+                      </div>
+
+                      {/* Menu Items */}
+                      <Link
+                        href="/profile"
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 ${
+                          isDark
+                            ? "text-gray-200 hover:bg-gray-800"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <FontAwesomeIcon icon={faUser} className="w-4 h-4 opacity-70" />
+                        Profil
+                      </Link>
+                      <Link
+                        href="/preferences"
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 ${
+                          isDark
+                            ? "text-gray-200 hover:bg-gray-800"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <FontAwesomeIcon icon={faCog} className="w-4 h-4 opacity-70" />
+                        Préférences
+                      </Link>
+
+                      <div className={`border-t my-1 ${isDark ? "border-gray-700" : "border-gray-100"}`} />
+
+                      <button
+                        onClick={handleLogout}
+                        className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors duration-150 ${
+                          isDark
+                            ? "text-red-400 hover:bg-gray-800"
+                            : "text-red-600 hover:bg-red-50"
+                        }`}
+                      >
+                        <FontAwesomeIcon icon={faSignOutAlt} className="w-4 h-4 opacity-70" />
+                        Déconnexion
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link href="/login" className={`${linkClass} transition-colors duration-200`}>
+                  Connexion
+                </Link>
+              )}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -130,28 +259,106 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Mobile Menu Dropdown */}
-          {mobileMenuOpen && (
-            <div className={`md:hidden border-t ${isDark ? "border-gray-800 bg-[#0f1116]" : "border-gray-200 bg-white"}`}>
-              <nav className="flex flex-col px-6 py-4 space-y-3">
+          <div
+            className={`md:hidden overflow-hidden transition-all duration-300 ease-out ${
+              mobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className={`border-t ${isDark ? "border-gray-800 bg-[#0f1116]" : "border-gray-200 bg-white"}`}>
+              <nav className="flex flex-col px-6 py-4 space-y-1">
+                {/* User info on mobile */}
+                {isAuthed && userProfile && (
+                  <div className={`flex items-center gap-3 py-3 mb-2 border-b ${isDark ? "border-gray-800" : "border-gray-100"}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                      isDark ? "bg-blue-600 text-white" : "bg-blue-500 text-white"
+                    }`}>
+                      {getUserInitials()}
+                    </div>
+                    <div>
+                      <p className={`text-sm font-medium ${isDark ? "text-gray-100" : "text-gray-900"}`}>
+                        {userProfile.email}
+                      </p>
+                      <p className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                        Connecté
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {(!isHomePage || isAuthed) && (
                   <>
-                    <Link href="/dashboard" className={`${linkClass} py-2`}>
+                    <Link
+                      href="/dashboard"
+                      className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                        isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                      }`}
+                      style={{ animationDelay: "50ms" }}
+                    >
                       Tableau de bord
                     </Link>
-                    <Link href="/preferences" className={`${linkClass} py-2`}>
+                    <Link
+                      href="/preferences"
+                      className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                        isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                      }`}
+                      style={{ animationDelay: "100ms" }}
+                    >
                       Préférences
                     </Link>
-                    <Link href="/cv" className={`${linkClass} py-2`}>
+                    <Link
+                      href="/cv"
+                      className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                        isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                      }`}
+                      style={{ animationDelay: "150ms" }}
+                    >
                       CV
                     </Link>
                   </>
                 )}
-                <Link href="/profile" className={`${linkClass} py-2`}>
+                <Link
+                  href="/profile"
+                  className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                    isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                  }`}
+                  style={{ animationDelay: "200ms" }}
+                >
                   Profil
                 </Link>
+
+                {/* Logout button for mobile */}
+                {isAuthed && (
+                  <>
+                    <div className={`border-t my-2 ${isDark ? "border-gray-800" : "border-gray-100"}`} />
+                    <button
+                      onClick={handleLogout}
+                      className={`flex items-center gap-3 py-3 px-2 rounded-lg text-left transition-colors duration-200 ${
+                        isDark
+                          ? "text-red-400 hover:bg-gray-800"
+                          : "text-red-600 hover:bg-red-50"
+                      }`}
+                      style={{ animationDelay: "250ms" }}
+                    >
+                      <FontAwesomeIcon icon={faSignOutAlt} className="w-4 h-4" />
+                      Déconnexion
+                    </button>
+                  </>
+                )}
+
+                {/* Login link for non-authenticated users on mobile */}
+                {!isAuthed && (
+                  <Link
+                    href="/login"
+                    className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                      isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    Connexion
+                  </Link>
+                )}
               </nav>
             </div>
-          )}
+          </div>
         </header>
       )}
       <main className="flex-1">{children}</main>

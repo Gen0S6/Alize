@@ -80,14 +80,17 @@ export default function DashboardPage() {
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
   const autoSearched = useRef(false);
+  const initialized = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
+  const [runsError, setRunsError] = useState<string | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [saving, setSaving] = useState<number | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly) {
+  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly, retryCount = 0) {
     setError(null);
     setLoading(true);
     setPage(p);
@@ -101,26 +104,36 @@ export default function DashboardPage() {
       setMatchesPage(data);
       setPage(data.page);
     } catch (err: any) {
+      // Retry on network/fetch errors (up to 2 times)
+      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
+        setTimeout(() => load(p, ft, ms, sf, sb, no, retryCount + 1), 1000 * (retryCount + 1));
+        return;
+      }
       const message =
         err?.message === "Not authenticated"
-          ? "Session expiree. Reconnecte-toi."
-          : err?.message ?? "Failed to load matches";
+          ? "Session expirée. Reconnecte-toi."
+          : err?.message ?? "Impossible de charger les offres";
       setError(message);
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadAnalysis(force = false) {
+  async function loadAnalysis(force = false, retryCount = 0) {
     setAnalysisError(null);
     setAnalysisLoading(true);
     try {
       const data = await getAnalysis(force);
       setAnalysis(data);
     } catch (err: any) {
+      // Retry on network/fetch errors (up to 2 times)
+      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
+        setTimeout(() => loadAnalysis(force, retryCount + 1), 1000 * (retryCount + 1));
+        return;
+      }
       const message =
         err?.message === "Not authenticated"
-          ? "Session expiree. Reconnecte-toi."
+          ? "Session expirée. Reconnecte-toi."
           : err?.message ?? "Impossible de charger l'analyse";
       setAnalysisError(message);
     } finally {
@@ -154,22 +167,39 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
+    // Prevent duplicate initialization
+    if (initialized.current) return;
+
     const token = getToken();
     if (!token) {
       router.push("/login");
       return;
     }
-    Promise.all([
-      load(1, filterText, minScore, sourceFilter),
+
+    initialized.current = true;
+
+    // Load all data in parallel with individual error handling
+    Promise.allSettled([
+      load(1, filterText, minScore, sourceFilter, sortBy, newOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
-    ]).catch((err) => {
-      console.error("Error loading dashboard data:", err);
+    ]).then((results) => {
+      results.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.error(`Dashboard load error (${index}):`, result.reason);
+        }
+      });
     });
   }, [router]);
 
+  // Only reload matches when filters change (not on initial mount)
+  const filtersInitialized = useRef(false);
   useEffect(() => {
+    if (!filtersInitialized.current) {
+      filtersInitialized.current = true;
+      return;
+    }
     load(1, filterText, minScore, sourceFilter, sortBy, newOnly);
   }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
 
@@ -282,22 +312,43 @@ export default function DashboardPage() {
   const totalMatches = matchesPage?.total ?? 0;
   const newOffers = matches.filter((m) => m.is_new && !visitedMatches.has(m.url));
 
-  async function loadRuns() {
+  async function loadRuns(retryCount = 0) {
     setRunsLoading(true);
+    setRunsError(null);
     try {
       const data = await getJobRuns();
       setRuns(data);
-    } catch (_err) {
+    } catch (err: any) {
+      // Retry on network errors (up to 2 times)
+      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network"))) {
+        setTimeout(() => loadRuns(retryCount + 1), 1000 * (retryCount + 1));
+        return;
+      }
+      const message = err?.message === "Not authenticated"
+        ? "Session expirée"
+        : "Impossible de charger l'historique";
+      setRunsError(message);
     } finally {
       setRunsLoading(false);
     }
   }
 
-  async function loadStats() {
+  async function loadStats(retryCount = 0) {
+    setStatsError(null);
     try {
       const data = await getDashboardStats();
       setStats(data);
-    } catch (_err) {}
+    } catch (err: any) {
+      // Retry on network errors (up to 2 times)
+      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network"))) {
+        setTimeout(() => loadStats(retryCount + 1), 1000 * (retryCount + 1));
+        return;
+      }
+      const message = err?.message === "Not authenticated"
+        ? "Session expirée"
+        : "Impossible de charger les statistiques";
+      setStatsError(message);
+    }
   }
 
   async function toggleSaveJob(id: number) {
@@ -393,7 +444,21 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {!stats ? (
+          {statsError ? (
+            <div className={`col-span-2 md:col-span-4 rounded-xl p-4 flex items-center justify-between ${
+              isDark ? "bg-red-900/20 border border-red-800/50 text-red-300" : "bg-red-50 border border-red-200 text-red-600"
+            }`}>
+              <span className="text-sm">{statsError}</span>
+              <button
+                onClick={() => loadStats()}
+                className={`text-sm px-3 py-1 rounded-lg transition-all ${
+                  isDark ? "bg-red-800/50 hover:bg-red-800" : "bg-red-100 hover:bg-red-200"
+                }`}
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : !stats ? (
             <>
               {[...Array(4)].map((_, i) => (
                 <StatCardSkeleton key={i} isDark={isDark} />
@@ -747,6 +812,7 @@ export default function DashboardPage() {
             isDark={isDark}
             runs={runs}
             runsLoading={runsLoading}
+            runsError={runsError}
             onRefresh={loadRuns}
           />
         </div>
