@@ -117,14 +117,8 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     ? "min-h-screen bg-[#0b0c10] text-gray-100 flex flex-col"
     : "min-h-screen bg-white text-gray-900 flex flex-col";
   const badgeClass = isDark
-    ? "fixed bottom-6 right-10 flex items-center justify-center px-3.5 py-2 rounded-md border border-gray-700/50 bg-gray-900/70 backdrop-blur-sm shadow-sm"
-    : "fixed bottom-6 right-10 flex items-center justify-center px-3.5 py-2 rounded-md border border-gray-200/70 bg-white/80 backdrop-blur-sm shadow-sm";
-  const badgeText = isDark
-    ? "text-center text-[11px] leading-snug text-gray-300"
-    : "text-center text-[11px] leading-snug text-gray-600";
-  const badgeStrong = isDark
-    ? "text-sm font-semibold text-gray-100"
-    : "text-sm font-semibold text-gray-800";
+    ? "fixed bottom-6 right-6 group cursor-pointer"
+    : "fixed bottom-6 right-6 group cursor-pointer";
 
   return (
     <div className={containerClass}>
@@ -362,13 +356,36 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         </header>
       )}
       <main className="flex-1">{children}</main>
-      <div className={badgeClass}>
-        <span className={badgeText}>
-          Built by<br />
-          <span className={badgeStrong}>Gen0S7</span>'s<br />
-          members
-        </span>
-      </div>
+      <Link href="/about" className={badgeClass}>
+        <div className={`
+          flex items-center gap-2.5 px-4 py-2.5 rounded-full border backdrop-blur-md
+          transition-all duration-300 ease-out
+          ${isDark
+            ? "bg-gradient-to-r from-gray-900/90 to-gray-800/90 border-gray-700/60 hover:border-gray-600 hover:from-gray-800/95 hover:to-gray-700/95 shadow-lg shadow-black/20"
+            : "bg-gradient-to-r from-white/95 to-gray-50/95 border-gray-200/80 hover:border-gray-300 hover:shadow-md shadow-sm"
+          }
+          group-hover:scale-105
+        `}>
+          <div className={`
+            w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+            transition-transform duration-300 group-hover:rotate-12
+            ${isDark
+              ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
+              : "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
+            }
+          `}>
+            G7
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-[10px] leading-tight ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              Créé par
+            </span>
+            <span className={`text-sm font-semibold leading-tight ${isDark ? "text-gray-100" : "text-gray-800"}`}>
+              Gen0S7
+            </span>
+          </div>
+        </div>
+      </Link>
     </div>
   );
 }

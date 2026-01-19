@@ -148,9 +148,9 @@ export default function DashboardPage() {
       const res = await runJobSearch();
       setSearchResult(res);
       if (res.inserted > 0) {
-        addToast(`${res.inserted} nouvelles offres trouvees !`, "success");
+        addToast(`${res.inserted} nouvelles offres trouvées !`, "success");
       } else {
-        addToast("Recherche terminee - aucune nouvelle offre", "info");
+        addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
       await load(1);
       await loadRuns();
@@ -158,7 +158,7 @@ export default function DashboardPage() {
     } catch (err: any) {
       const message =
         err?.message === "Not authenticated"
-          ? "Session expiree. Reconnecte-toi."
+          ? "Session expirée. Reconnecte-toi."
           : err?.message ?? "Impossible de lancer la recherche IA";
       addToast(message, "error");
     } finally {
@@ -278,7 +278,7 @@ export default function DashboardPage() {
         prev ? { ...prev, items: prev.items.filter((m) => m.id !== id), total: Math.max(0, prev.total - 1) } : prev
       );
       await loadStats();
-      addToast("Offre supprimee avec succes", "success");
+      addToast("Offre supprimée avec succes", "success");
     } catch (err: any) {
       addToast(err?.message ?? "Impossible de supprimer l'offre.", "error");
     } finally {
@@ -362,11 +362,11 @@ export default function DashboardPage() {
           next.delete(id);
           return next;
         });
-        addToast("Offre retiree des favoris", "info");
+        addToast("Offre retirée des favoris", "info");
       } else {
         await saveMatch(id);
         setSavedJobs((prev) => new Set(prev).add(id));
-        addToast("Offre sauvegardee", "success");
+        addToast("Offre sauvegardée", "success");
       }
       await loadStats();
     } catch (err: any) {
@@ -395,7 +395,7 @@ export default function DashboardPage() {
               Tableau de bord
             </h1>
             <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              Tes dernieres opportunites proposees
+              Tes dernières opportunités proposées
             </p>
           </div>
 
@@ -411,7 +411,7 @@ export default function DashboardPage() {
               `}
             >
               <FontAwesomeIcon icon={faSliders} className="text-xs" />
-              Preferences
+              Préférences
             </Link>
             <Link
               href="/cv"
@@ -475,21 +475,21 @@ export default function DashboardPage() {
               />
               <StatCard
                 value={stats.new_jobs}
-                label="Non consultees"
+                label="Non consultées"
                 icon={faBolt}
                 color="green"
                 isDark={isDark}
               />
               <StatCard
                 value={stats.viewed_jobs}
-                label="Consultees"
+                label="Consultées"
                 icon={faEye}
                 color="gray"
                 isDark={isDark}
               />
               <StatCard
                 value={stats.saved_jobs}
-                label="Sauvegardees"
+                label="Sauvegardées"
                 icon={faStar}
                 color="amber"
                 isDark={isDark}
@@ -527,7 +527,7 @@ export default function DashboardPage() {
               <span className="text-sm">
                 {searchResult.inserted > 0 ? (
                   <>
-                    <span className="font-semibold">{searchResult.inserted}</span> nouvelles offres ajoutees
+                    <span className="font-semibold">{searchResult.inserted}</span> nouvelles offres ajoutées
                     {searchResult.tried_queries.length > 0 && (
                       <span className={isDark ? "text-emerald-400" : "text-emerald-600"}>
                         {" "}• Requetes: {searchResult.tried_queries.join(", ")}
@@ -535,7 +535,7 @@ export default function DashboardPage() {
                     )}
                   </>
                 ) : (
-                  <>Aucune nouvelle offre trouvee</>
+                  <>Aucune nouvelle offre trouvée</>
                 )}
               </span>
             </div>
@@ -598,7 +598,7 @@ export default function DashboardPage() {
                   ${isDark ? "bg-red-800 hover:bg-red-700" : "bg-red-100 hover:bg-red-200"}
                 `}
               >
-                Reessayer
+                Réessayer
               </button>
             </div>
           )}
@@ -770,7 +770,7 @@ export default function DashboardPage() {
                     `}
                   >
                     <FontAwesomeIcon icon={faChevronLeft} className="text-xs" />
-                    Precedent
+                    Précédent
                   </button>
 
                   <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
@@ -841,7 +841,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className={`mt-3 text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-              Cette action est irreversible.
+              Cette action est irréversible.
             </p>
             <div className="mt-5 flex justify-end gap-3">
               <button
