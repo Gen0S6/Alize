@@ -33,8 +33,8 @@ export default function HomePage() {
   }, []);
 
   const containerClass = isDark
-    ? "min-h-screen bg-[#0b0c10] text-gray-100 theme-hover"
-    : "min-h-screen bg-white text-gray-900 theme-hover";
+    ? "min-h-screen bg-[#0b0c10] text-gray-100"
+    : "min-h-screen bg-white text-gray-900";
 
   return (
     <main className={containerClass}>
