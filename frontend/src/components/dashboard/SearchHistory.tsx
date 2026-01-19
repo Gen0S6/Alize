@@ -15,6 +15,7 @@ interface SearchHistoryProps {
   isDark: boolean;
   runs: JobRun[];
   runsLoading: boolean;
+  runsError?: string | null;
   onRefresh: () => void;
 }
 
@@ -35,6 +36,7 @@ export function SearchHistory({
   isDark,
   runs,
   runsLoading,
+  runsError,
   onRefresh,
 }: SearchHistoryProps) {
   return (
@@ -78,7 +80,23 @@ export function SearchHistory({
 
       {/* Content */}
       <div className="mt-4 min-h-[150px]">
-        {runsLoading && runs.length === 0 ? (
+        {runsError ? (
+          <div className={`
+            flex flex-col items-center justify-center py-8 text-center rounded-xl
+            ${isDark ? "bg-red-900/20 border border-red-800/50" : "bg-red-50 border border-red-200"}
+          `}>
+            <p className={`text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>{runsError}</p>
+            <button
+              onClick={onRefresh}
+              className={`
+                mt-3 text-sm px-4 py-2 rounded-lg transition-all
+                ${isDark ? "bg-red-800/50 hover:bg-red-800 text-red-200" : "bg-red-100 hover:bg-red-200 text-red-700"}
+              `}
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : runsLoading && runs.length === 0 ? (
           <SearchHistorySkeleton isDark={isDark} />
         ) : runs.length === 0 ? (
           <div className={`
