@@ -335,7 +335,7 @@ export default function DashboardPage() {
   const maxPage = Math.max(1, Math.ceil(totalMatches / pageSize));
 
   return (
-    <main className={isDark ? "min-h-screen p-4 md:p-6 bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 bg-gray-50 text-gray-900"}>
+    <main className={isDark ? "min-h-screen p-4 md:p-6 bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 bg-white text-gray-900"}>
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

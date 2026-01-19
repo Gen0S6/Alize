@@ -88,159 +88,328 @@ export default function ProfilePage() {
     }
   }
 
-  const errorClass = isDark
-    ? "mt-4 rounded-xl border border-red-700 bg-red-900/30 p-3 text-sm text-red-200"
-    : "mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700";
+  // Styles cohérents avec les autres pages
+  const cardClass = isDark
+    ? "rounded-2xl border border-gray-700/50 bg-gradient-to-br from-[#0f1116] to-[#12141a] p-6 shadow-lg"
+    : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm";
+
+  const textMuted = isDark ? "text-gray-400" : "text-gray-500";
+  const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
 
   const inputClass = isDark
-    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-3 py-2 text-gray-100 placeholder-gray-500"
-    : "mt-1 w-full rounded-xl border px-3 py-2 text-gray-900 placeholder-gray-500 bg-white";
-  const smallTextClass = isDark ? "text-xs text-gray-400" : "text-xs text-gray-600";
-  const buttonClass = isDark
-    ? "rounded-xl border border-gray-600 px-4 py-2 font-medium bg-[#0f1116] text-gray-100 hover:bg-gray-800 disabled:opacity-50"
-    : "rounded-xl border px-4 py-2 font-medium bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-50";
-  const dangerButtonClass = isDark
-    ? "rounded-xl border border-red-700 px-4 py-2 font-medium bg-red-900/40 text-red-100 hover:bg-red-900/60 disabled:opacity-50"
-    : "rounded-xl border border-red-300 px-4 py-2 font-medium bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50";
-  const dangerNoteClass = isDark ? "text-xs text-gray-400" : "text-xs text-gray-600";
-  const dangerTitleClass = isDark ? "text-sm text-red-300 font-medium" : "text-sm text-red-700 font-medium";
+    ? "w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+    : "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
+
+  const labelClass = isDark
+    ? "block text-sm font-medium text-gray-200 mb-2"
+    : "block text-sm font-medium text-gray-700 mb-2";
+
+  const btnPrimary = isDark
+    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+
+  const btnSecondary = isDark
+    ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
+    : "rounded-xl border border-gray-300 bg-white hover:bg-gray-50 px-4 py-2 font-medium text-gray-700 transition-all duration-200";
+
+  const btnDanger = isDark
+    ? "rounded-xl border border-red-700/50 bg-red-900/20 hover:bg-red-900/40 px-4 py-2 font-medium text-red-300 transition-all duration-200"
+    : "rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2 font-medium text-red-700 transition-all duration-200";
 
   return (
-    <main className={isDark ? "min-h-screen p-6 bg-[#0b0c10] text-gray-100 theme-hover" : "min-h-screen p-6 bg-white text-gray-900 theme-hover"}>
-      <div className="mx-auto max-w-3xl">
+    <main className={isDark ? "min-h-screen p-4 md:p-6 bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 bg-white text-gray-900"}>
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-semibold">Profil</h1>
-            <p className={isDark ? "text-sm text-gray-300 mt-1" : "text-sm text-gray-600 mt-1"}>
-              Gère ton compte, tes préférences et ta sécurité.
-            </p>
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+              <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-lg shadow-indigo-600/20" : "p-2.5 rounded-xl bg-indigo-600 shadow-md"}>
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </span>
+              Mon Profil
+            </h1>
+            <p className={`mt-2 ${textMuted}`}>Gère ton compte, tes préférences et ta sécurité</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={toggle}
-              className={
-                isDark
-                  ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800 bg-[#0f1116] text-gray-100"
-                  : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100 bg-white text-gray-800"
-              }
+              className={btnSecondary}
             >
-              {isDark ? "☀️ Clair" : "🌙 Sombre"}
+              <span className="flex items-center gap-2">
+                {isDark ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+                {isDark ? "Mode clair" : "Mode sombre"}
+              </span>
             </button>
-            <Link
-              href="/dashboard"
-              className={
-                isDark
-                  ? "rounded-xl border border-gray-700 px-3 py-2 text-sm hover:bg-gray-800"
-                  : "rounded-xl border px-3 py-2 text-sm hover:bg-gray-100"
-              }
-            >
-              ← Dashboard
+            <Link href="/dashboard" className={btnSecondary}>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Dashboard
+              </span>
             </Link>
             <button
               type="button"
               onClick={logout}
-              className={
-                isDark
-                  ? "rounded-xl border border-red-700/50 bg-red-900/20 px-3 py-2 text-sm text-red-300 hover:bg-red-900/40"
-                  : "rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 hover:bg-red-100"
-              }
+              className={btnDanger}
             >
-              Déconnexion
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Déconnexion
+              </span>
             </button>
           </div>
         </div>
 
-        {loading && <p className="mt-4 text-sm">Chargement...</p>}
+        {/* Error message */}
         {error && (
-          <div className={errorClass}>
-            <strong>Oups :</strong> {error}
+          <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${isDark ? "bg-red-900/20 border border-red-700/50" : "bg-red-50 border border-red-200"}`}>
+            <svg className={`w-5 h-5 flex-shrink-0 ${isDark ? "text-red-400" : "text-red-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className={`text-sm ${isDark ? "text-red-300" : "text-red-700"}`}>{error}</p>
+          </div>
+        )}
+
+        {/* Success message */}
+        {success && (
+          <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${isDark ? "bg-green-900/20 border border-green-700/50" : "bg-green-50 border border-green-200"}`}>
+            <svg className={`w-5 h-5 flex-shrink-0 ${isDark ? "text-green-400" : "text-green-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className={`text-sm ${isDark ? "text-green-300" : "text-green-700"}`}>{success}</p>
+          </div>
+        )}
+
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="space-y-6">
+            <div className={cardClass}>
+              <div className="space-y-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i}>
+                    <div className={`h-4 w-24 rounded animate-pulse mb-2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                    <div className={`h-12 w-full rounded-xl animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {profile && !loading && (
-          <form onSubmit={save} className="mt-6 space-y-4">
-            <div>
-              <label className="text-sm font-medium">Email</label>
-              <input
-                className={inputClass}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Mot de passe actuel</label>
-              <input
-                className={inputClass}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                type="password"
-                placeholder="Requis pour changer de mot de passe"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Nouveau mot de passe</label>
-              <input
-                className={inputClass}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                type="password"
-                placeholder="Laisse vide pour ne pas changer"
-              />
-              <p className={smallTextClass + " mt-1"}>8 caractères minimum.</p>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={notificationsEnabled}
-                onChange={(e) => setNotificationsEnabled(e.target.checked)}
-              />
-              Activer l'envoi d'emails tous les 3 jours
-            </label>
+          <form onSubmit={save} className="space-y-6">
+            {/* Informations du compte */}
+            <div className={cardClass}>
+              <div className="flex items-center gap-2 mb-6">
+                <div className={`p-2 rounded-lg ${isDark ? "bg-blue-900/30" : "bg-blue-100"}`}>
+                  <svg className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                </div>
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Informations du compte</h2>
+              </div>
 
-            <div className="flex items-center gap-3">
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClass}>
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Adresse email
+                    </span>
+                  </label>
+                  <input
+                    className={inputClass}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                    placeholder="ton@email.com"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sécurité */}
+            <div className={cardClass}>
+              <div className="flex items-center gap-2 mb-6">
+                <div className={`p-2 rounded-lg ${isDark ? "bg-amber-900/30" : "bg-amber-100"}`}>
+                  <svg className={`w-5 h-5 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Sécurité</h2>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClass}>
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                      Mot de passe actuel
+                    </span>
+                  </label>
+                  <input
+                    className={inputClass}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    type="password"
+                    placeholder="Requis pour changer de mot de passe"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      </svg>
+                      Nouveau mot de passe
+                    </span>
+                  </label>
+                  <input
+                    className={inputClass}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    type="password"
+                    placeholder="Laisse vide pour ne pas changer"
+                  />
+                  <p className={`text-xs mt-2 ${textMuted}`}>
+                    8 caractères minimum
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className={cardClass}>
+              <div className="flex items-center gap-2 mb-6">
+                <div className={`p-2 rounded-lg ${isDark ? "bg-emerald-900/30" : "bg-emerald-100"}`}>
+                  <svg className={`w-5 h-5 ${isDark ? "text-emerald-400" : "text-emerald-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
+              </div>
+
+              <label className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl transition-colors ${isDark ? "hover:bg-gray-800/50" : "hover:bg-gray-50"}`}>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={notificationsEnabled}
+                    onChange={(e) => setNotificationsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-11 h-6 rounded-full transition-colors ${notificationsEnabled ? (isDark ? "bg-emerald-600" : "bg-emerald-500") : (isDark ? "bg-gray-700" : "bg-gray-300")}`}></div>
+                  <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? "translate-x-5" : ""}`}></div>
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${textPrimary}`}>Notifications par email</p>
+                  <p className={`text-xs ${textMuted}`}>Reçois un récapitulatif des nouvelles offres tous les 3 jours</p>
+                </div>
+              </label>
+            </div>
+
+            {/* Submit button */}
+            <div className="flex items-center justify-between">
               <button
                 type="submit"
-                className={buttonClass}
+                className={btnPrimary}
                 disabled={saving}
               >
-                {saving ? "Sauvegarde..." : "Sauvegarder"}
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sauvegarde...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Sauvegarder les modifications
+                  </span>
+                )}
               </button>
-              {success && <span className="text-sm text-green-400">{success}</span>}
             </div>
-            <div className="pt-4 border-t border-gray-700/40">
-              <p className={dangerTitleClass}>Danger</p>
-              <p className={dangerNoteClass}>Supprimer ton compte supprimera aussi tes offres et préférences.</p>
+
+            {/* Zone de danger */}
+            <div className={`rounded-2xl border p-6 ${isDark ? "border-red-700/30 bg-red-900/10" : "border-red-200 bg-red-50/50"}`}>
+              <div className="flex items-center gap-2 mb-4">
+                <div className={`p-2 rounded-lg ${isDark ? "bg-red-900/30" : "bg-red-100"}`}>
+                  <svg className={`w-5 h-5 ${isDark ? "text-red-400" : "text-red-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h2 className={`text-lg font-semibold ${isDark ? "text-red-300" : "text-red-700"}`}>Zone de danger</h2>
+              </div>
+
+              <p className={`text-sm mb-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                La suppression de ton compte est irréversible. Toutes tes données, offres sauvegardées et préférences seront définitivement supprimées.
+              </p>
+
               <button
                 type="button"
-                className={dangerButtonClass + " mt-2"}
+                className={`${isDark ? "rounded-xl border border-red-700 bg-red-900/40 px-4 py-2.5 font-medium text-red-200 hover:bg-red-900/60 transition-all" : "rounded-xl border border-red-300 bg-red-100 px-4 py-2.5 font-medium text-red-700 hover:bg-red-200 transition-all"}`}
                 onClick={() => setConfirmDelete(true)}
               >
-                Supprimer mon compte
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Supprimer mon compte
+                </span>
               </button>
             </div>
           </form>
         )}
       </div>
 
+      {/* Modal de confirmation de suppression */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className={isDark ? "w-full max-w-sm rounded-xl bg-[#0f1116] border border-gray-700 p-4 shadow-xl text-gray-100" : "w-full max-w-sm rounded-xl bg-white p-4 shadow-xl text-gray-900"}>
-            <h3 className="text-sm font-semibold">Supprimer le compte ?</h3>
-            <p className={isDark ? "mt-1 text-sm text-gray-300" : "mt-1 text-sm text-gray-600"}>
-              Cette action est définitive et supprimera tes données et offres associées.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${isDark ? "bg-[#0f1116] border border-gray-700" : "bg-white"}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-xl ${isDark ? "bg-red-900/30" : "bg-red-100"}`}>
+                <svg className={`w-6 h-6 ${isDark ? "text-red-400" : "text-red-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className={`text-lg font-semibold ${textPrimary}`}>
+                Supprimer ton compte ?
+              </h3>
+            </div>
+            <p className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              Cette action est définitive et supprimera toutes tes données, offres sauvegardées et préférences.
             </p>
-            <div className="mt-4 flex justify-end gap-2 text-sm">
+            <div className="mt-6 flex gap-3 justify-end">
               <button
-                className={isDark ? "rounded-md px-3 py-1.5 text-gray-200 hover:bg-gray-800 border border-gray-700" : "rounded-md px-3 py-1.5 text-gray-600 hover:bg-gray-100"}
+                className={btnSecondary}
                 onClick={() => setConfirmDelete(false)}
               >
                 Annuler
               </button>
               <button
-                className={isDark ? "rounded-md bg-red-900/40 border border-red-700 px-3 py-1.5 text-red-200 hover:bg-red-900/60" : "rounded-md bg-red-50 border border-red-200 px-3 py-1.5 text-red-700 hover:bg-red-100"}
+                className={`rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 font-medium text-white transition-colors`}
                 onClick={async () => {
                   try {
                     await deleteProfile();
@@ -250,7 +419,12 @@ export default function ProfilePage() {
                   }
                 }}
               >
-                Supprimer
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Supprimer
+                </span>
               </button>
             </div>
           </div>
