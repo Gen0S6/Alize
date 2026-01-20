@@ -53,6 +53,7 @@ class JobOut(BaseModel):
     is_saved: Optional[bool] = None  # Pour indiquer si l'offre est sauvegardée
     status: Optional[str] = None  # new, viewed, saved, deleted
     created_at: Optional[datetime] = None
+    match_reasons: List[str] = []
 
 
 class MatchesPage(BaseModel):

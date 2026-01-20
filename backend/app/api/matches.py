@@ -85,6 +85,8 @@ def matches(
             new_count += 1
         if new_only and not m.is_new:
             continue
+        if status and m.status != status:
+            continue
         if src != "all" and (m.source or "").lower() != src.lower():
             continue
         if min_score and (m.score or 0) < min_score:

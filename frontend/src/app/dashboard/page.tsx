@@ -89,8 +89,18 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState<number | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [savedOnly, setSavedOnly] = useState(false);
 
-  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly, retryCount = 0) {
+  async function load(
+    p = page,
+    ft = filterText,
+    ms = minScore,
+    sf = sourceFilter,
+    sb = sortBy,
+    no = newOnly,
+    so = savedOnly,
+    retryCount = 0,
+  ) {
     setError(null);
     setLoading(true);
     setPage(p);
@@ -100,7 +110,8 @@ export default function DashboardPage() {
         router.push("/login");
         return;
       }
-      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no);
+      const status = so ? "saved" : undefined;
+      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no, status);
       setMatchesPage(data);
       setPage(data.page);
       // Synchroniser les offres sauvegardées avec les données du serveur
@@ -119,7 +130,7 @@ export default function DashboardPage() {
     } catch (err: any) {
       // Retry on network/fetch errors (up to 2 times)
       if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
-        setTimeout(() => load(p, ft, ms, sf, sb, no, retryCount + 1), 1000 * (retryCount + 1));
+        setTimeout(() => load(p, ft, ms, sf, sb, no, so, retryCount + 1), 1000 * (retryCount + 1));
         return;
       }
       const message =
@@ -165,7 +176,7 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
-      await load(1);
+      await load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
       await loadRuns();
       await loadStats();
     } catch (err: any) {
@@ -193,7 +204,7 @@ export default function DashboardPage() {
 
     // Load all data in parallel with individual error handling
     Promise.allSettled([
-      load(1, filterText, minScore, sourceFilter, sortBy, newOnly),
+      load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
@@ -213,8 +224,8 @@ export default function DashboardPage() {
       filtersInitialized.current = true;
       return;
     }
-    load(1, filterText, minScore, sourceFilter, sortBy, newOnly);
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
+    load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
+  }, [filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
 
   useEffect(() => {
     try {
@@ -235,6 +246,7 @@ export default function DashboardPage() {
         setSourceFilter(parsed.sourceFilter ?? "all");
         setSortBy(parsed.sortBy ?? "new_first");
         setNewOnly(parsed.newOnly ?? false);
+        setSavedOnly(parsed.savedOnly ?? false);
       }
     } catch (_err) {}
     try {
@@ -249,10 +261,10 @@ export default function DashboardPage() {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly })
+        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly })
       );
     } catch (_err) {}
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
+  }, [filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
 
   useEffect(() => {
     try {
@@ -608,8 +620,11 @@ export default function DashboardPage() {
             setSortBy={(v) => { setPage(1); setSortBy(v); }}
             newOnly={newOnly}
             setNewOnly={(v) => { setPage(1); setNewOnly(v); }}
+            savedOnly={savedOnly}
+            setSavedOnly={(v) => { setPage(1); setSavedOnly(v); }}
             sources={sources}
             newCount={matchesPage?.new_count ?? 0}
+            savedCount={stats?.saved_jobs ?? 0}
             viewMode={viewMode}
             setViewMode={setViewMode}
             totalMatches={totalMatches}
@@ -713,6 +728,22 @@ export default function DashboardPage() {
                                   </span>
                                 )}
                               </div>
+                              {m.match_reasons && m.match_reasons.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1.5">
+                                  {m.match_reasons.map((reason) => (
+                                    <span
+                                      key={reason}
+                                      className={`rounded-md px-2 py-0.5 text-[10px] ${
+                                        isDark
+                                          ? "bg-[#111621] text-gray-300 border border-gray-700"
+                                          : "bg-gray-100 text-gray-600"
+                                      }`}
+                                    >
+                                      {reason}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td className={`py-3 pr-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                               <div className="flex items-center gap-1.5">
@@ -804,7 +835,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       const next = Math.max(1, page - 1);
                       setPage(next);
-                      load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
+                      load(next, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                     }}
                     disabled={page <= 1 || loading}
                     className={`
@@ -831,7 +862,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
-                        load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
+                        load(next, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                       }
                     }}
                     disabled={loading || page >= maxPage}
