@@ -7,6 +7,7 @@ import {
   faTableCells,
   faList,
   faBolt,
+  faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { SortOption } from "../../lib/api";
 
@@ -22,8 +23,11 @@ interface FilterBarProps {
   setSortBy: (v: SortOption) => void;
   newOnly: boolean;
   setNewOnly: (v: boolean) => void;
+  savedOnly: boolean;
+  setSavedOnly: (v: boolean) => void;
   sources: string[];
   newCount: number;
+  savedCount: number;
   viewMode: "grid" | "table";
   setViewMode: (v: "grid" | "table") => void;
   totalMatches: number;
@@ -43,8 +47,11 @@ export function FilterBar({
   setSortBy,
   newOnly,
   setNewOnly,
+  savedOnly,
+  setSavedOnly,
   sources,
   newCount,
+  savedCount,
   viewMode,
   setViewMode,
   totalMatches,
@@ -205,6 +212,44 @@ export function FilterBar({
               <option value="score">Meilleur score</option>
             </select>
           </div>
+
+          {/* Saved only toggle */}
+          <label className="flex cursor-pointer items-center gap-2">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={savedOnly}
+                onChange={(e) => setSavedOnly(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className={`
+                h-6 w-11 rounded-full transition-all peer-focus:ring-2
+                ${isDark
+                  ? "bg-gray-700 peer-checked:bg-amber-500 peer-focus:ring-amber-500/20"
+                  : "bg-gray-200 peer-checked:bg-amber-400 peer-focus:ring-amber-400/20"
+                }
+              `} />
+              <div className={`
+                absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform
+                peer-checked:translate-x-5
+              `} />
+            </div>
+            <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+              Sauvegardées
+            </span>
+            {savedCount > 0 && (
+              <span className={`
+                inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold
+                ${isDark
+                  ? "bg-amber-900/40 text-amber-300 border border-amber-700/60"
+                  : "bg-amber-100 text-amber-700"
+                }
+              `}>
+                <FontAwesomeIcon icon={faStar} className="text-[10px]" />
+                {savedCount}
+              </span>
+            )}
+          </label>
 
           {/* New only toggle */}
           <label className="flex cursor-pointer items-center gap-2">

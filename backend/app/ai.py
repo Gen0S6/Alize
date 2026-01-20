@@ -2196,17 +2196,22 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     # CALCULATE CV QUALITY SCORE (Local calculation)
     # =========================================================================
 
-    cv_quality = calculate_cv_quality_score(
-        text=cv_text,
-        skills=tech_skills,
-        experiences=work_experiences if work_experiences else llm_experiences,
-        education=education,
-        certifications=certifications,
-        achievements=achievements,
-    )
+    cv_quality = None
+    if cv_text:
+        try:
+            cv_quality = calculate_cv_quality_score(
+                text=cv_text,
+                skills=tech_skills,
+                experiences=work_experiences if work_experiences else llm_experiences,
+                education=education,
+                certifications=certifications,
+                achievements=achievements,
+            )
+        except Exception as exc:
+            log.warning("CV quality score failed: %s", exc)
 
     # Merge LLM score with local score if available
-    if llm_score_cv:
+    if cv_quality and llm_score_cv:
         # Average the scores
         if llm_score_cv.get("note_globale"):
             cv_quality["total_score"] = round(
@@ -2310,7 +2315,7 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
         "cv_quality_score": cv_quality,
         "points_forts": points_forts[:5],
         "axes_amelioration": axes_amelioration[:5],
-        "conseils_personnalises": conseils[:5] if conseils else cv_quality.get("suggestions", [])[:5],
+        "conseils_personnalises": conseils[:5] if conseils else (cv_quality or {}).get("suggestions", [])[:5],
 
         # Job search
         "suggested_queries": queries,
