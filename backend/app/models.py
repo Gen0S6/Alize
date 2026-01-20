@@ -63,6 +63,10 @@ class UserPreference(Base):
     must_keywords = Column(Text, nullable=True)  # comma-separated
     avoid_keywords = Column(Text, nullable=True)  # comma-separated
 
+    # Notifications preferences
+    notification_frequency = Column(String(20), default="every_3_days", nullable=False)
+    send_empty_digest = Column(Boolean, default=True, nullable=False)
+
     # Recherche automatique
     last_search_at = Column(DateTime, nullable=True)  # Dernière recherche automatique
     last_email_at = Column(DateTime, nullable=True)   # Dernier email envoyé

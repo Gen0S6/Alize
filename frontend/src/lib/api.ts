@@ -72,6 +72,7 @@ export type Match = {
   is_saved?: boolean | null;
   status?: "new" | "viewed" | "saved" | "deleted" | null;
   created_at?: string;
+  match_reasons?: string[];
 };
 
 export type Preference = {
@@ -83,6 +84,8 @@ export type Preference = {
   salary_min?: number | null;
   must_keywords?: string | null;
   avoid_keywords?: string | null;
+  notification_frequency?: "daily" | "weekly" | "every_3_days" | null;
+  send_empty_digest?: boolean | null;
 };
 
 export type CVLatest = {
@@ -115,6 +118,21 @@ export type Analysis = {
   experience_level?: string | null;
   skill_categories?: Record<string, string[]>;
   tech_skills_count?: number;
+  cv_quality_score?: {
+    total_score: number;
+    grade: string;
+    assessment: string;
+    breakdown?: Record<
+      string,
+      {
+        score: number;
+        max: number;
+        percentage: number;
+      }
+    >;
+    suggestions?: string[];
+    strengths?: string[];
+  };
 };
 
 export type JobSearchResult = {
