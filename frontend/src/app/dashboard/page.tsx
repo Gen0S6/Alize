@@ -74,6 +74,7 @@ export default function DashboardPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("new_first");
   const [newOnly, setNewOnly] = useState(false);
+  const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
@@ -91,6 +92,16 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [savedOnly, setSavedOnly] = useState(false);
 
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedFilterText(filterText);
+    }, 300);
+    return () => window.clearTimeout(handler);
+  }, [filterText]);
+
+  async function load(
+    p = page,
+    ft = debouncedFilterText,
   async function load(
     p = page,
     ft = filterText,
@@ -176,6 +187,7 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
+      await load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
       await load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
       await loadRuns();
       await loadStats();
@@ -204,6 +216,7 @@ export default function DashboardPage() {
 
     // Load all data in parallel with individual error handling
     Promise.allSettled([
+      load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
       load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
       loadAnalysis(),
       loadRuns(),
@@ -224,6 +237,8 @@ export default function DashboardPage() {
       filtersInitialized.current = true;
       return;
     }
+    load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
+  }, [debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
     load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
   }, [filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
 
@@ -245,6 +260,10 @@ export default function DashboardPage() {
         setMinScore(typeof parsed.minScore === "number" ? parsed.minScore : 0);
         setSourceFilter(parsed.sourceFilter ?? "all");
         setSortBy(parsed.sortBy ?? "new_first");
+        const savedOnlyValue = parsed.savedOnly ?? false;
+        const newOnlyValue = savedOnlyValue ? false : (parsed.newOnly ?? false);
+        setNewOnly(newOnlyValue);
+        setSavedOnly(savedOnlyValue);
         setNewOnly(parsed.newOnly ?? false);
         setSavedOnly(parsed.savedOnly ?? false);
       }
@@ -619,6 +638,21 @@ export default function DashboardPage() {
             sortBy={sortBy}
             setSortBy={(v) => { setPage(1); setSortBy(v); }}
             newOnly={newOnly}
+            setNewOnly={(v) => {
+              setPage(1);
+              setNewOnly(v);
+              if (v) {
+                setSavedOnly(false);
+              }
+            }}
+            savedOnly={savedOnly}
+            setSavedOnly={(v) => {
+              setPage(1);
+              setSavedOnly(v);
+              if (v) {
+                setNewOnly(false);
+              }
+            }}
             setNewOnly={(v) => { setPage(1); setNewOnly(v); }}
             savedOnly={savedOnly}
             setSavedOnly={(v) => { setPage(1); setSavedOnly(v); }}
@@ -870,6 +904,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       const next = Math.max(1, page - 1);
                       setPage(next);
+                      load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                       load(next, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                     }}
                     disabled={page <= 1 || loading}
@@ -897,6 +932,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
+                        load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                         load(next, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                       }
                     }}

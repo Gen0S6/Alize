@@ -84,6 +84,8 @@ export type Preference = {
   salary_min?: number | null;
   must_keywords?: string | null;
   avoid_keywords?: string | null;
+  notification_frequency?: "daily" | "weekly" | "every_3_days" | null;
+  send_empty_digest?: boolean | null;
 };
 
 export type CVLatest = {

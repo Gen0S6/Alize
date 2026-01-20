@@ -23,6 +23,11 @@ class PreferenceIn(BaseModel):
     salary_min: Optional[int] = None
     must_keywords: Optional[str] = None
     avoid_keywords: Optional[str] = None
+    notification_frequency: Optional[str] = Field(
+        default=None,
+        pattern=r"^(daily|weekly|every_3_days)$",
+    )
+    send_empty_digest: Optional[bool] = None
 
 
 class PreferenceOut(PreferenceIn):

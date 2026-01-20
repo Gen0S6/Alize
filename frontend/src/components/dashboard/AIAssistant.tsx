@@ -172,6 +172,7 @@ export function AIAssistant({
               </div>
             )}
 
+            {analysis.cv_present && analysis.cv_quality_score && (
             {analysis.cv_quality_score && (
               <div className={`mt-4 rounded-xl border p-3 ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-gray-50"}`}>
                 <div className="flex items-center justify-between">
