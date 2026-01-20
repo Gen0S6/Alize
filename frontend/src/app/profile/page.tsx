@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getProfile, updateProfile, deleteProfile, type Profile } from "../../lib/api";
+import { getProfile, updateProfile, deleteProfile, requestEmailVerification, type Profile } from "../../lib/api";
 import { clearToken, getToken, clearTokenAndRedirectHome } from "../../lib/auth";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../ThemeProvider";
@@ -19,9 +19,52 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
   const { addToast } = useToast();
+
+  async function handleSendVerification() {
+    setSendingVerification(true);
+    try {
+      await requestEmailVerification();
+      addToast("Email de vérification envoyé !", "success");
+    } catch (err: any) {
+      addToast(err?.message ?? "Erreur lors de l'envoi", "error");
+    } finally {
+      setSendingVerification(false);
+    }
+  }
+
+  // Raccourcis clavier pour le modal de confirmation
+  useEffect(() => {
+    if (!confirmDelete) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setConfirmDelete(false);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (!deleting) {
+          handleDeleteAccount();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deleting]);
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteProfile();
+      clearTokenAndRedirectHome();
+    } catch (err: any) {
+      addToast(err?.message ?? "Impossible de supprimer le compte", "error");
+      setDeleting(false);
+    }
+  }
 
   function logout() {
     clearToken();
@@ -75,6 +118,8 @@ export default function ProfilePage() {
       setProfile(updated);
       setSuccess("Profil sauvegardé");
       addToast("Profil sauvegardé avec succès", "success");
+      // Notifier le header que le profil a été mis à jour
+      window.dispatchEvent(new CustomEvent("profile_updated", { detail: updated }));
       setCurrentPassword("");
       setNewPassword("");
     } catch (err: any) {
@@ -237,6 +282,44 @@ export default function ProfilePage() {
                     type="email"
                     placeholder="ton@email.com"
                   />
+                  {/* État de vérification d'email */}
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {profile.email_verified ? (
+                        <>
+                          <svg className={`w-4 h-4 ${isDark ? "text-green-400" : "text-green-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className={`text-sm ${isDark ? "text-green-400" : "text-green-600"}`}>
+                            Email vérifié
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className={`w-4 h-4 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <span className={`text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}>
+                            Email non vérifié
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {!profile.email_verified && (
+                      <button
+                        type="button"
+                        onClick={handleSendVerification}
+                        disabled={sendingVerification}
+                        className={`text-sm px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 ${
+                          isDark
+                            ? "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30"
+                            : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        }`}
+                      >
+                        {sendingVerification ? "Envoi..." : "Vérifier mon email"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -377,22 +460,26 @@ export default function ProfilePage() {
                 Annuler
               </button>
               <button
-                className={`rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 font-medium text-white transition-colors`}
-                onClick={async () => {
-                  try {
-                    await deleteProfile();
-                    clearTokenAndRedirectHome();
-                  } catch (err: any) {
-                    alert(err?.message ?? "Impossible de supprimer le compte");
-                  }
-                }}
+                className={`rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 font-medium text-white transition-colors disabled:opacity-50`}
+                onClick={handleDeleteAccount}
+                disabled={deleting}
               >
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Supprimer
-                </span>
+                {deleting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Suppression...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Supprimer
+                  </span>
+                )}
               </button>
             </div>
           </div>

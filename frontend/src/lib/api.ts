@@ -64,6 +64,8 @@ export type Match = {
   description?: string | null;
   is_remote?: boolean | null;
   is_new?: boolean | null;
+  is_saved?: boolean | null;
+  status?: "new" | "viewed" | "saved" | "deleted" | null;
   created_at?: string;
 };
 

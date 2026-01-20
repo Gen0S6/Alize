@@ -62,6 +62,19 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthed]);
 
+  // Listen for profile updates from the profile page
+  useEffect(() => {
+    const handleProfileUpdate = (e: CustomEvent<Profile>) => {
+      if (e.detail) {
+        setUserProfile(e.detail);
+      }
+    };
+    window.addEventListener("profile_updated", handleProfileUpdate as EventListener);
+    return () => {
+      window.removeEventListener("profile_updated", handleProfileUpdate as EventListener);
+    };
+  }, []);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
