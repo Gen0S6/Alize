@@ -111,6 +111,29 @@ export function JobCard({
         )}
       </div>
 
+      {/* Match reasons */}
+      {match.match_reasons && match.match_reasons.length > 0 && (
+        <div className="mt-3">
+          <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+            Pourquoi ce match
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {match.match_reasons.map((reason) => (
+              <span
+                key={reason}
+                className={`rounded-lg px-2.5 py-1 text-xs ${
+                  isDark
+                    ? "bg-[#111621] text-gray-200 border border-gray-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {reason}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="mt-4 flex items-center justify-between">
         <a
