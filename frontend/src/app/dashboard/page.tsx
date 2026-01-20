@@ -680,7 +680,42 @@ export default function DashboardPage() {
                 `}>
                   <FontAwesomeIcon icon={faBriefcase} className="text-5xl mb-4" />
                   <p className="text-lg font-medium">Pas encore d'offres</p>
-                  <p className="text-sm mt-1">Relance une recherche IA ou repasse dans quelques jours</p>
+                  <p className="text-sm mt-1">
+                    Mets à jour ton CV et tes préférences pour obtenir de meilleurs résultats.
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    <Link
+                      href="/cv"
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                        isDark
+                          ? "bg-white text-gray-900 hover:bg-gray-100"
+                          : "bg-gray-900 text-white hover:bg-gray-800"
+                      }`}
+                    >
+                      Uploader mon CV
+                    </Link>
+                    <Link
+                      href="/preferences"
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                        isDark
+                          ? "border border-gray-700 text-gray-200 hover:bg-gray-800"
+                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Définir mes préférences
+                    </Link>
+                    <button
+                      onClick={launchSearch}
+                      disabled={searching}
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${
+                        isDark
+                          ? "bg-blue-600 text-white hover:bg-blue-500"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {searching ? "Recherche..." : "Lancer la recherche IA"}
+                    </button>
+                  </div>
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
