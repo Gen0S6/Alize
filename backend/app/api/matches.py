@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.deps import get_db
-from app.models import User, JobListing, UserJob, UserPreference
+from app.models import User, JobListing, UserJob
 from app.schemas import JobOut, MatchesPage, UserJobUpdate, UserJobOut, UserJobsPage, DashboardStatsOut
 from app.services.preferences import get_or_create_pref
 from app.services.matching import (
@@ -184,7 +184,7 @@ def dashboard_stats(
     viewed = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "viewed").count()
     saved = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "saved").count()
 
-    pref = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
+    pref = get_or_create_pref(user, db)
     last_search = pref.last_search_at if pref else None
 
     # Prochain email = dernier email + 3 jours
