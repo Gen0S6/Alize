@@ -652,6 +652,7 @@ export default function DashboardPage() {
             totalMatches={totalMatches}
             currentCount={matches.length}
             page={page}
+            isLoading={loading}
           />
 
           {/* Loading overlay */}

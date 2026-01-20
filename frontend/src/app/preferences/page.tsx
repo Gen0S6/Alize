@@ -108,8 +108,6 @@ export default function PreferencesPage() {
       "salary_min",
       "must_keywords",
       "avoid_keywords",
-      "notification_frequency",
-      "send_empty_digest",
     ];
     return keys.some((k) => {
       const cur = pref[k];
