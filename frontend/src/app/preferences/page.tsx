@@ -101,7 +101,16 @@ export default function PreferencesPage() {
 
   function hasChanges() {
     if (!pref || !initialPref) return false;
-    const keys: (keyof Preference)[] = ["role", "location", "contract_type", "salary_min", "must_keywords", "avoid_keywords"];
+    const keys: (keyof Preference)[] = [
+      "role",
+      "location",
+      "contract_type",
+      "salary_min",
+      "must_keywords",
+      "avoid_keywords",
+      "notification_frequency",
+      "send_empty_digest",
+    ];
     return keys.some((k) => {
       const cur = pref[k];
       const initial = initialPref[k];
@@ -368,6 +377,74 @@ export default function PreferencesPage() {
                 />
                 <p className={`text-xs mt-2 ${textMuted}`}>
                   Les offres contenant ces mots-clés seront exclues.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Notifications */}
+          <div className={cardClass}>
+            <div className="flex items-center gap-2 mb-6">
+              <div className={`p-2 rounded-lg ${isDark ? "bg-amber-900/30" : "bg-amber-100"}`}>
+                <svg className={`w-5 h-5 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+              </div>
+              <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClass}>
+                  Fréquence des emails
+                </label>
+                <select
+                  className={inputClass}
+                  value={pref.notification_frequency ?? "every_3_days"}
+                  onChange={(e) =>
+                    updateField("notification_frequency", e.target.value as Preference["notification_frequency"])
+                  }
+                >
+                  <option value="daily">Tous les jours</option>
+                  <option value="every_3_days">Tous les 3 jours</option>
+                  <option value="weekly">Toutes les semaines</option>
+                </select>
+                <p className={`text-xs mt-2 ${textMuted}`}>
+                  Définit la cadence de réception des emails de matching.
+                </p>
+              </div>
+
+              <div>
+                <label className={labelClass}>
+                  Envoyer un email quand aucune offre n'est trouvée
+                </label>
+                <div className="mt-1 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => updateField("send_empty_digest", !(pref.send_empty_digest ?? true))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                      (pref.send_empty_digest ?? true)
+                        ? isDark
+                          ? "bg-emerald-600"
+                          : "bg-emerald-500"
+                        : isDark
+                          ? "bg-gray-700"
+                          : "bg-gray-200"
+                    }`}
+                    aria-pressed={pref.send_empty_digest ?? true}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                        (pref.send_empty_digest ?? true) ? "translate-x-5" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-sm ${textMuted}`}>
+                    {pref.send_empty_digest ?? true ? "Activé" : "Désactivé"}
+                  </span>
+                </div>
+                <p className={`text-xs mt-2 ${textMuted}`}>
+                  Désactive pour ne recevoir un email que lorsqu'il y a de nouvelles offres.
                 </p>
               </div>
             </div>
