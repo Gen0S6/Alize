@@ -220,8 +220,9 @@ def confirm_password_reset(
             detail="Token invalide ou expiré. Veuillez demander un nouveau lien.",
         )
 
-    # Check expiration
-    if reset_token.expires_at < datetime.now(timezone.utc):
+    # Check expiration (handle naive datetime from database)
+    expires_at = reset_token.expires_at.replace(tzinfo=timezone.utc) if reset_token.expires_at.tzinfo is None else reset_token.expires_at
+    if expires_at < datetime.now(timezone.utc):
         reset_token.used = True
         db.commit()
         raise HTTPException(
@@ -318,8 +319,9 @@ def confirm_email_verification(
             detail="Token invalide ou expiré. Veuillez demander un nouveau lien.",
         )
 
-    # Check expiration
-    if verify_token.expires_at < datetime.now(timezone.utc):
+    # Check expiration (handle naive datetime from database)
+    expires_at = verify_token.expires_at.replace(tzinfo=timezone.utc) if verify_token.expires_at.tzinfo is None else verify_token.expires_at
+    if expires_at < datetime.now(timezone.utc):
         verify_token.used = True
         db.commit()
         raise HTTPException(
