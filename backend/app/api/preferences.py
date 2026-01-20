@@ -27,6 +27,8 @@ def get_preferences(
         salary_min=pref.salary_min,
         must_keywords=pref.must_keywords,
         avoid_keywords=pref.avoid_keywords,
+        notification_frequency=pref.notification_frequency,
+        send_empty_digest=pref.send_empty_digest,
     )
 
 
@@ -58,4 +60,6 @@ def upsert_preferences(
         salary_min=pref.salary_min,
         must_keywords=pref.must_keywords,
         avoid_keywords=pref.avoid_keywords,
+        notification_frequency=pref.notification_frequency,
+        send_empty_digest=pref.send_empty_digest,
     )
