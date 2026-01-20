@@ -17,10 +17,15 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new Error("Impossible de contacter le serveur. Vérifiez votre connexion internet.");
+  }
 
   if (res.status === 401  || res.status === 403) {
     clearToken();
@@ -164,13 +169,18 @@ export type DashboardStats = {
 };
 
 async function http<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new Error("Impossible de contacter le serveur. Vérifiez votre connexion internet.");
+  }
 
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
