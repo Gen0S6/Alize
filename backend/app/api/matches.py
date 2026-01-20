@@ -1,18 +1,20 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import case, or_
 from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.deps import get_db
-from app.models import User, JobListing, UserJob, UserPreference
+from app.models import User, JobListing, UserJob
 from app.schemas import JobOut, MatchesPage, UserJobUpdate, UserJobOut, UserJobsPage, DashboardStatsOut
 from app.services.preferences import get_or_create_pref
 from app.services.matching import (
     cv_keywords,
     ensure_linkedin_sample,
-    list_matches_for_user,
     is_job_url_alive,
+    _extract_match_reasons,
+    _normalize_created_at,
 )
 
 router = APIRouter(tags=["matches"])
@@ -69,36 +71,97 @@ def matches(
     if sort_by not in ("newest", "score", "new_first"):
         sort_by = "new_first"
 
-    all_matches = list_matches_for_user(
-        db, user.id, pref, user_cv, cleanup_dead_links=False, page=None, page_size=None, sort_by=sort_by
+    base_query = (
+        db.query(UserJob, JobListing)
+        .join(JobListing, UserJob.job_id == JobListing.id)
+        .filter(UserJob.user_id == user.id)
+        .filter(UserJob.status != "deleted")
     )
 
-    # Filtrage
-    filtered = []
-    ft = (filter_text or "").lower()
-    src = source
-    available_sources = sorted(list({m.source or "" for m in all_matches if m.source}))
-    new_count = 0
+    available_sources = sorted(
+        {
+            row[0]
+            for row in (
+                db.query(JobListing.source)
+                .join(UserJob, UserJob.job_id == JobListing.id)
+                .filter(UserJob.user_id == user.id, UserJob.status != "deleted")
+                .distinct()
+                .all()
+            )
+            if row[0]
+        }
+    )
 
-    for m in all_matches:
-        if m.is_new:
-            new_count += 1
-        if new_only and not m.is_new:
-            continue
-        if src != "all" and (m.source or "").lower() != src.lower():
-            continue
-        if min_score and (m.score or 0) < min_score:
-            continue
-        if ft:
-            blob = f"{m.title} {m.company} {m.location or ''} {m.source or ''}".lower()
-            if ft not in blob:
-                continue
-        filtered.append(m)
+    new_count = (
+        db.query(UserJob.id)
+        .filter(UserJob.user_id == user.id, UserJob.status == "new")
+        .count()
+    )
 
-    total = len(filtered)
+    if new_only:
+        base_query = base_query.filter(UserJob.status == "new")
+
+    if status:
+        base_query = base_query.filter(UserJob.status == status)
+
+    if source != "all":
+        base_query = base_query.filter(JobListing.source.ilike(source))
+
+    if min_score:
+        base_query = base_query.filter(UserJob.score.isnot(None)).filter(UserJob.score >= min_score)
+
+    ft = (filter_text or "").strip()
+    if ft:
+        like = f"%{ft}%"
+        base_query = base_query.filter(
+            or_(
+                JobListing.title.ilike(like),
+                JobListing.company.ilike(like),
+                JobListing.location.ilike(like),
+                JobListing.source.ilike(like),
+            )
+        )
+
+    if sort_by == "newest":
+        base_query = base_query.order_by(JobListing.created_at.desc().nullslast())
+    elif sort_by == "score":
+        base_query = base_query.order_by(UserJob.score.desc().nullslast())
+    else:
+        base_query = base_query.order_by(
+            case((UserJob.status == "new", 0), else_=1),
+            UserJob.score.desc().nullslast(),
+            JobListing.created_at.desc().nullslast(),
+        )
+
+    total = base_query.order_by(None).count()
     start = max(0, (page - 1) * page_size)
-    end = start + page_size
-    items = filtered[start:end]
+    rows = base_query.offset(start).limit(page_size).all()
+
+    items = []
+    for user_job, job in rows:
+        created_at = _normalize_created_at(job.created_at)
+        is_new = user_job.status == "new"
+        is_remote = "remote" in (job.location or "").lower() or "remote" in (job.description or "").lower()
+        match_reasons = _extract_match_reasons(job, pref, user_cv)
+        items.append(
+            JobOut(
+                id=job.id,
+                source=job.source,
+                title=job.title,
+                company=job.company,
+                location=job.location,
+                url=job.url,
+                description=job.description,
+                salary_min=job.salary_min,
+                score=user_job.score,
+                is_remote=is_remote,
+                is_new=is_new,
+                is_saved=user_job.status == "saved",
+                status=user_job.status,
+                created_at=created_at,
+                match_reasons=match_reasons,
+            )
+        )
 
     return MatchesPage(
         items=items,
@@ -106,7 +169,7 @@ def matches(
         page=page,
         page_size=page_size,
         available_sources=available_sources,
-        new_count=new_count
+        new_count=new_count,
     )
 
 
@@ -121,7 +184,7 @@ def dashboard_stats(
     viewed = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "viewed").count()
     saved = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "saved").count()
 
-    pref = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
+    pref = get_or_create_pref(user, db)
     last_search = pref.last_search_at if pref else None
 
     # Prochain email = dernier email + 3 jours

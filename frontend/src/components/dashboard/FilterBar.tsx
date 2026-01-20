@@ -7,6 +7,7 @@ import {
   faTableCells,
   faList,
   faBolt,
+  faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { SortOption } from "../../lib/api";
 
@@ -22,13 +23,17 @@ interface FilterBarProps {
   setSortBy: (v: SortOption) => void;
   newOnly: boolean;
   setNewOnly: (v: boolean) => void;
+  savedOnly: boolean;
+  setSavedOnly: (v: boolean) => void;
   sources: string[];
   newCount: number;
+  savedCount: number;
   viewMode: "grid" | "table";
   setViewMode: (v: "grid" | "table") => void;
   totalMatches: number;
   currentCount: number;
   page: number;
+  isLoading: boolean;
 }
 
 export function FilterBar({
@@ -43,13 +48,17 @@ export function FilterBar({
   setSortBy,
   newOnly,
   setNewOnly,
+  savedOnly,
+  setSavedOnly,
   sources,
   newCount,
+  savedCount,
   viewMode,
   setViewMode,
   totalMatches,
   currentCount,
   page,
+  isLoading,
 }: FilterBarProps) {
   return (
     <div className="space-y-4">
@@ -206,6 +215,44 @@ export function FilterBar({
             </select>
           </div>
 
+          {/* Saved only toggle */}
+          <label className="flex cursor-pointer items-center gap-2">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={savedOnly}
+                onChange={(e) => setSavedOnly(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className={`
+                h-6 w-11 rounded-full transition-all peer-focus:ring-2
+                ${isDark
+                  ? "bg-gray-700 peer-checked:bg-amber-500 peer-focus:ring-amber-500/20"
+                  : "bg-gray-200 peer-checked:bg-amber-400 peer-focus:ring-amber-400/20"
+                }
+              `} />
+              <div className={`
+                absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform
+                peer-checked:translate-x-5
+              `} />
+            </div>
+            <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+              Sauvegardées
+            </span>
+            {savedCount > 0 && (
+              <span className={`
+                inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold
+                ${isDark
+                  ? "bg-amber-900/40 text-amber-300 border border-amber-700/60"
+                  : "bg-amber-100 text-amber-700"
+                }
+              `}>
+                <FontAwesomeIcon icon={faStar} className="text-[10px]" />
+                {savedCount}
+              </span>
+            )}
+          </label>
+
           {/* New only toggle */}
           <label className="flex cursor-pointer items-center gap-2">
             <div className="relative">
@@ -246,7 +293,13 @@ export function FilterBar({
         </div>
 
         {/* Results count */}
-        <div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+        <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+          {isLoading && (
+            <svg className="h-4 w-4 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
           <span className="font-medium">{currentCount}</span> resultats sur{" "}
           <span className="font-medium">{totalMatches}</span> (page {page})
         </div>
