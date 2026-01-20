@@ -46,6 +46,42 @@ def norm_list(raw: Optional[str]) -> list[str]:
     return [item.strip().lower() for item in raw.split(",") if item.strip()]
 
 
+def _extract_match_reasons(
+    job: JobListing,
+    pref: UserPreference,
+    user_cv: set[str],
+    max_items: int = 4,
+) -> list[str]:
+    text = f"{job.title} {job.company} {job.location or ''} {job.description or ''}".lower()
+    title_lower = job.title.lower()
+    location_lower = (job.location or "").lower()
+    reasons: list[str] = []
+
+    role = (pref.role or "").strip()
+    if role:
+        role_lower = role.lower()
+        if role_lower in title_lower:
+            reasons.append(f"Rôle: {role}")
+        elif any(word in title_lower for word in role_lower.split() if len(word) > 3):
+            reasons.append(f"Rôle proche: {role}")
+
+    loc = (pref.location or "").strip()
+    if loc:
+        loc_words = [w.strip().lower() for w in loc.split(",") if w.strip()]
+        if any(word in location_lower for word in loc_words):
+            reasons.append(f"Localisation: {loc}")
+
+    must = norm_list(pref.must_keywords)
+    must_hits = [k for k in must if k in text][:2]
+    reasons.extend([f"Mot-clé: {k}" for k in must_hits])
+
+    if user_cv:
+        cv_hits = [kw for kw in sorted(user_cv) if kw in text][:2]
+        reasons.extend([f"CV: {kw}" for kw in cv_hits])
+
+    return reasons[:max_items]
+
+
 def cv_keywords(db: Session, user_id: int) -> set[str]:
     """Extract relevant keywords from CV using frequency analysis."""
     cv = (
@@ -293,6 +329,7 @@ def _job_to_jobout(job: JobListing, pref: UserPreference, user_cv: set[str]) -> 
         delta = datetime.now(timezone.utc) - created_at
         is_new = delta <= timedelta(days=NEW_BADGE_DAYS)
     is_remote = "remote" in (job.location or "").lower() or "remote" in (job.description or "").lower()
+    match_reasons = _extract_match_reasons(job, pref, user_cv)
     return JobOut(
         id=job.id,
         source=job.source,
@@ -306,6 +343,7 @@ def _job_to_jobout(job: JobListing, pref: UserPreference, user_cv: set[str]) -> 
         is_remote=is_remote,
         is_new=is_new,
         created_at=created_at,
+        match_reasons=match_reasons,
     )
 
 
@@ -338,6 +376,7 @@ def list_matches_for_user(
         created_at = _normalize_created_at(job.created_at)
         is_new = user_job.status == "new"
         is_remote = "remote" in (job.location or "").lower() or "remote" in (job.description or "").lower()
+        match_reasons = _extract_match_reasons(job, pref, user_cv)
 
         job_out = JobOut(
             id=job.id,
@@ -354,6 +393,7 @@ def list_matches_for_user(
             is_saved=user_job.status == "saved",
             status=user_job.status,
             created_at=created_at,
+            match_reasons=match_reasons,
         )
         result.append(job_out)
 

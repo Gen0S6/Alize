@@ -74,6 +74,7 @@ export default function DashboardPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("new_first");
   const [newOnly, setNewOnly] = useState(false);
+  const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
@@ -89,8 +90,25 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState<number | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [savedOnly, setSavedOnly] = useState(false);
 
-  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly, retryCount = 0) {
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedFilterText(filterText);
+    }, 300);
+    return () => window.clearTimeout(handler);
+  }, [filterText]);
+
+  async function load(
+    p = page,
+    ft = debouncedFilterText,
+    ms = minScore,
+    sf = sourceFilter,
+    sb = sortBy,
+    no = newOnly,
+    so = savedOnly,
+    retryCount = 0,
+  ) {
     setError(null);
     setLoading(true);
     setPage(p);
@@ -100,7 +118,8 @@ export default function DashboardPage() {
         router.push("/login");
         return;
       }
-      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no);
+      const status = so ? "saved" : undefined;
+      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no, status);
       setMatchesPage(data);
       setPage(data.page);
       // Synchroniser les offres sauvegardées avec les données du serveur
@@ -119,7 +138,7 @@ export default function DashboardPage() {
     } catch (err: any) {
       // Retry on network/fetch errors (up to 2 times)
       if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
-        setTimeout(() => load(p, ft, ms, sf, sb, no, retryCount + 1), 1000 * (retryCount + 1));
+        setTimeout(() => load(p, ft, ms, sf, sb, no, so, retryCount + 1), 1000 * (retryCount + 1));
         return;
       }
       const message =
@@ -165,7 +184,7 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
-      await load(1);
+      await load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
       await loadRuns();
       await loadStats();
     } catch (err: any) {
@@ -193,7 +212,7 @@ export default function DashboardPage() {
 
     // Load all data in parallel with individual error handling
     Promise.allSettled([
-      load(1, filterText, minScore, sourceFilter, sortBy, newOnly),
+      load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
@@ -213,8 +232,8 @@ export default function DashboardPage() {
       filtersInitialized.current = true;
       return;
     }
-    load(1, filterText, minScore, sourceFilter, sortBy, newOnly);
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
+    load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
+  }, [debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
 
   useEffect(() => {
     try {
@@ -234,7 +253,10 @@ export default function DashboardPage() {
         setMinScore(typeof parsed.minScore === "number" ? parsed.minScore : 0);
         setSourceFilter(parsed.sourceFilter ?? "all");
         setSortBy(parsed.sortBy ?? "new_first");
-        setNewOnly(parsed.newOnly ?? false);
+        const savedOnlyValue = parsed.savedOnly ?? false;
+        const newOnlyValue = savedOnlyValue ? false : (parsed.newOnly ?? false);
+        setNewOnly(newOnlyValue);
+        setSavedOnly(savedOnlyValue);
       }
     } catch (_err) {}
     try {
@@ -249,10 +271,10 @@ export default function DashboardPage() {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly })
+        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly })
       );
     } catch (_err) {}
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
+  }, [filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
 
   useEffect(() => {
     try {
@@ -607,9 +629,24 @@ export default function DashboardPage() {
             sortBy={sortBy}
             setSortBy={(v) => { setPage(1); setSortBy(v); }}
             newOnly={newOnly}
-            setNewOnly={(v) => { setPage(1); setNewOnly(v); }}
+            setNewOnly={(v) => {
+              setPage(1);
+              setNewOnly(v);
+              if (v) {
+                setSavedOnly(false);
+              }
+            }}
+            savedOnly={savedOnly}
+            setSavedOnly={(v) => {
+              setPage(1);
+              setSavedOnly(v);
+              if (v) {
+                setNewOnly(false);
+              }
+            }}
             sources={sources}
             newCount={matchesPage?.new_count ?? 0}
+            savedCount={stats?.saved_jobs ?? 0}
             viewMode={viewMode}
             setViewMode={setViewMode}
             totalMatches={totalMatches}
@@ -665,7 +702,42 @@ export default function DashboardPage() {
                 `}>
                   <FontAwesomeIcon icon={faBriefcase} className="text-5xl mb-4" />
                   <p className="text-lg font-medium">Pas encore d'offres</p>
-                  <p className="text-sm mt-1">Relance une recherche IA ou repasse dans quelques jours</p>
+                  <p className="text-sm mt-1">
+                    Mets à jour ton CV et tes préférences pour obtenir de meilleurs résultats.
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    <Link
+                      href="/cv"
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                        isDark
+                          ? "bg-white text-gray-900 hover:bg-gray-100"
+                          : "bg-gray-900 text-white hover:bg-gray-800"
+                      }`}
+                    >
+                      Uploader mon CV
+                    </Link>
+                    <Link
+                      href="/preferences"
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                        isDark
+                          ? "border border-gray-700 text-gray-200 hover:bg-gray-800"
+                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Définir mes préférences
+                    </Link>
+                    <button
+                      onClick={launchSearch}
+                      disabled={searching}
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${
+                        isDark
+                          ? "bg-blue-600 text-white hover:bg-blue-500"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
+                    >
+                      {searching ? "Recherche..." : "Lancer la recherche IA"}
+                    </button>
+                  </div>
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -713,6 +785,22 @@ export default function DashboardPage() {
                                   </span>
                                 )}
                               </div>
+                              {m.match_reasons && m.match_reasons.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1.5">
+                                  {m.match_reasons.map((reason) => (
+                                    <span
+                                      key={reason}
+                                      className={`rounded-md px-2 py-0.5 text-[10px] ${
+                                        isDark
+                                          ? "bg-[#111621] text-gray-300 border border-gray-700"
+                                          : "bg-gray-100 text-gray-600"
+                                      }`}
+                                    >
+                                      {reason}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td className={`py-3 pr-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                               <div className="flex items-center gap-1.5">
@@ -804,7 +892,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       const next = Math.max(1, page - 1);
                       setPage(next);
-                      load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
+                      load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                     }}
                     disabled={page <= 1 || loading}
                     className={`
@@ -831,7 +919,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
-                        load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
+                        load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                       }
                     }}
                     disabled={loading || page >= maxPage}
