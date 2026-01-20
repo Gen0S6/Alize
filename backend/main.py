@@ -4,9 +4,10 @@ from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.openapi.docs import get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -42,7 +43,7 @@ from app.db import Base, SessionLocal, engine
 from app.services.matching import cv_keywords, ensure_linkedin_sample, list_matches_for_user, cleanup_old_jobs
 from app.services.notifications import notify_all_users
 from app.services.preferences import get_or_create_pref
-from app.rate_limit import limiter, rate_limit_exceeded_handler
+from app.rate_limit import limiter, rate_limit_exceeded_handler, _get_cors_headers
 
 # Run Alembic migrations at startup to ensure schema is up to date
 def run_migrations():
@@ -82,6 +83,29 @@ log.info("Frontend URL: %s", os.getenv("FRONTEND_URL", "not set"))
 # Setup rate limiting
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+
+# Custom HTTPException handler with CORS headers
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with CORS headers for cross-origin error responses."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=_get_cors_headers(request),
+    )
+
+
+# General exception handler with CORS headers for uncaught errors
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle uncaught exceptions with CORS headers for cross-origin error responses."""
+    log.error("Unhandled exception: %s", exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Une erreur interne s'est produite."},
+        headers=_get_cors_headers(request),
+    )
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)

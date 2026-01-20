@@ -31,11 +31,42 @@ IS_TESTING = os.getenv("ENVIRONMENT") == "test"
 # Create the limiter instance
 limiter = Limiter(key_func=get_client_ip, enabled=not IS_TESTING)
 
+# CORS allowed origins for exception handlers
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://alizejobfinder.com",
+    "https://www.alizejobfinder.com",
+]
+
+
+def _get_cors_headers(request: Request) -> dict[str, str]:
+    """Get CORS headers for the response based on request origin."""
+    origin = request.headers.get("origin", "")
+
+    # Check additional origins from environment
+    allowed_origins = CORS_ALLOWED_ORIGINS.copy()
+    extra_origins = os.getenv("CORS_ORIGINS", "")
+    if extra_origins:
+        allowed_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
+    frontend_url = os.getenv("FRONTEND_URL")
+    if frontend_url:
+        allowed_origins.append(frontend_url)
+
+    if origin in allowed_origins:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, X-Requested-With",
+        }
+    return {}
+
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     """
     Custom handler for rate limit exceeded errors.
-    Returns a JSON response with proper error details.
+    Returns a JSON response with proper error details and CORS headers.
     """
     return JSONResponse(
         status_code=429,
@@ -44,4 +75,5 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
             "error": "rate_limit_exceeded",
             "retry_after": exc.detail,
         },
+        headers=_get_cors_headers(request),
     )
