@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.auth import get_current_user
 from app.deps import get_db
-from app.models import User, CV, UserPreference, JobSearchRun, UserJob, UserAnalysisCache
+from app.models import User, CV, UserPreference, JobSearchRun, UserJob, UserAnalysisCache, EmailVerificationToken, PasswordResetToken
 from app.schemas import ProfileOut, ProfileUpdate
 from app.security import hash_password, verify_password
 from app.api.auth import _sanitize_password
@@ -40,6 +40,10 @@ def delete_profile(
     db.query(JobSearchRun).filter(JobSearchRun.user_id == user.id).delete()
     db.query(UserJob).filter(UserJob.user_id == user.id).delete()
     db.query(UserAnalysisCache).filter(UserAnalysisCache.user_id == user.id).delete()
+
+    # Supprime les tokens de vérification et de reset de mot de passe
+    db.query(EmailVerificationToken).filter(EmailVerificationToken.user_id == user.id).delete()
+    db.query(PasswordResetToken).filter(PasswordResetToken.user_id == user.id).delete()
 
     # Note: JobListings are shared resources, we don't delete them when a user is deleted
     # The UserJob entries linking the user to jobs are already deleted above
