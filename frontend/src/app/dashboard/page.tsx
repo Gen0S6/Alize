@@ -103,6 +103,19 @@ export default function DashboardPage() {
       const data = await getMatches(p, pageSize, ft, ms, sf, sb, no);
       setMatchesPage(data);
       setPage(data.page);
+      // Synchroniser les offres sauvegardées avec les données du serveur
+      const savedIds = new Set(data.items.filter(m => m.is_saved || m.status === "saved").map(m => m.id).filter((id): id is number => id !== undefined));
+      setSavedJobs(prev => {
+        const merged = new Set(prev);
+        savedIds.forEach(id => merged.add(id));
+        // Supprimer les ids qui ne sont plus sauvegardés dans cette page
+        data.items.forEach(m => {
+          if (m.id && !m.is_saved && m.status !== "saved") {
+            merged.delete(m.id);
+          }
+        });
+        return merged;
+      });
     } catch (err: any) {
       // Retry on network/fetch errors (up to 2 times)
       if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
@@ -299,6 +312,17 @@ export default function DashboardPage() {
     if (id) {
       try {
         await markMatchVisited(id);
+        // Mettre à jour l'état local de l'offre (status devient "viewed" si c'était "new")
+        setMatchesPage((prev) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((m) =>
+                  m.id === id && m.status === "new" ? { ...m, is_new: false, status: "viewed" as const } : m
+                ),
+              }
+            : prev
+        );
         await loadStats();
       } catch (_err) {}
     }
@@ -362,10 +386,32 @@ export default function DashboardPage() {
           next.delete(id);
           return next;
         });
+        // Mettre à jour l'état local de l'offre
+        setMatchesPage((prev) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((m) =>
+                  m.id === id ? { ...m, is_saved: false, status: "viewed" as const } : m
+                ),
+              }
+            : prev
+        );
         addToast("Offre retirée des favoris", "info");
       } else {
         await saveMatch(id);
         setSavedJobs((prev) => new Set(prev).add(id));
+        // Mettre à jour l'état local de l'offre
+        setMatchesPage((prev) =>
+          prev
+            ? {
+                ...prev,
+                items: prev.items.map((m) =>
+                  m.id === id ? { ...m, is_saved: true, status: "saved" as const } : m
+                ),
+              }
+            : prev
+        );
         addToast("Offre sauvegardée", "success");
       }
       await loadStats();
@@ -629,7 +675,7 @@ export default function DashboardPage() {
                       match={m}
                       isDark={isDark}
                       isNew={!!m.is_new && !visitedMatches.has(m.url)}
-                      isSaved={savedJobs.has(m.id ?? 0)}
+                      isSaved={m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)}
                       isSaving={saving === m.id}
                       isDeleting={deleting === m.id}
                       onSave={() => m.id && toggleSaveJob(m.id)}
@@ -721,14 +767,14 @@ export default function DashboardPage() {
                                   disabled={saving === m.id}
                                   className={`
                                     inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50
-                                    ${savedJobs.has(m.id ?? 0)
+                                    ${(m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0))
                                       ? isDark ? "bg-amber-900/40 text-amber-400" : "bg-amber-100 text-amber-600"
                                       : isDark ? "text-gray-500 hover:bg-gray-800 hover:text-amber-400" : "text-gray-400 hover:bg-gray-100 hover:text-amber-500"
                                     }
                                   `}
-                                  title={savedJobs.has(m.id ?? 0) ? "Retirer des favoris" : "Sauvegarder"}
+                                  title={(m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)) ? "Retirer des favoris" : "Sauvegarder"}
                                 >
-                                  <FontAwesomeIcon icon={(savedJobs.has(m.id ?? 0) ? faStar : faStarRegular) as any} />
+                                  <FontAwesomeIcon icon={((m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)) ? faStar : faStarRegular) as any} />
                                 </button>
                                 <button
                                   onClick={() => requestDelete(m)}

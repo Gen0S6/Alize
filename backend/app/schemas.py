@@ -50,6 +50,8 @@ class JobOut(BaseModel):
     score: Optional[int] = None
     is_remote: Optional[bool] = None
     is_new: Optional[bool] = None
+    is_saved: Optional[bool] = None  # Pour indiquer si l'offre est sauvegardée
+    status: Optional[str] = None  # new, viewed, saved, deleted
     created_at: Optional[datetime] = None
 
 

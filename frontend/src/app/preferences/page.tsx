@@ -11,6 +11,7 @@ import {
 } from "../../lib/api";
 import { getToken, clearToken } from "../../lib/auth";
 import { useTheme } from "../ThemeProvider";
+import { useToast } from "../../components/Toast";
 
 export default function PreferencesPage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function PreferencesPage() {
   const [hasExistingJobs, setHasExistingJobs] = useState<boolean | null>(null);
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const { addToast } = useToast();
 
   useEffect(() => {
     const token = getToken();
@@ -50,6 +52,8 @@ export default function PreferencesPage() {
   }, [router]);
 
   async function doSave() {
+    // Fermer le modal immédiatement pour un feedback plus rapide
+    setConfirmOpen(false);
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -59,11 +63,13 @@ export default function PreferencesPage() {
       setPref(updated);
       setInitialPref(updated);
       setSuccess("Préférences sauvegardées avec succès !");
+      addToast("Préférences sauvegardées avec succès !", "success");
     } catch (err: any) {
-      setError(err?.message ?? "Erreur lors de la sauvegarde");
+      const message = err?.message ?? "Erreur lors de la sauvegarde";
+      setError(message);
+      addToast(message, "error");
     } finally {
       setSaving(false);
-      setConfirmOpen(false);
     }
   }
 

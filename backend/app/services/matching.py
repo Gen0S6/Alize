@@ -80,6 +80,11 @@ def score_job(job: JobListing, pref: UserPreference, user_cv: set[str]) -> Optio
     """
     Score a job from 0-100 based on user preferences and CV.
     Returns None if job should be filtered out.
+
+    Scoring strategy:
+    - If no preferences are set, rely more on CV matching
+    - Base score starts higher (40) to avoid all jobs being 2/10
+    - Bonuses for matches, minimal penalties for non-matches when preferences are empty
     """
     text = f"{job.title} {job.company} {job.location or ''} {job.description or ''}".lower()
     title_lower = job.title.lower()
@@ -100,19 +105,22 @@ def score_job(job: JobListing, pref: UserPreference, user_cv: set[str]) -> Optio
         if job.salary_min is not None and job.salary_min < salary_floor:
             return None
 
-    # Start with base score of 20 (allows more differentiation)
-    score = 20
+    # Check if user has defined meaningful preferences
+    has_preferences = bool(role or loc or must or contract_pref)
 
-    # === Role matching (up to +35) ===
+    # Start with base score - higher if no preferences (neutral starting point)
+    score = 35 if has_preferences else 50
+
+    # === Role matching (up to +25) ===
     if role:
         if role in title_lower:
-            score += 30  # Exact role in title = strong match
+            score += 25  # Exact role in title = strong match
         elif any(word in title_lower for word in role.split() if len(word) > 3):
             score += 15  # Partial role match
         else:
-            score -= 10  # Role specified but not found = penalty
+            score -= 5  # Role specified but not found = small penalty
 
-    # === Location matching (up to +20) ===
+    # === Location matching (up to +15) ===
     if loc:
         loc_words = [w.strip() for w in loc.split(",")]
         location_match = any(word in location_lower for word in loc_words if word)
@@ -120,62 +128,69 @@ def score_job(job: JobListing, pref: UserPreference, user_cv: set[str]) -> Optio
         remote_offered = "remote" in text or "télétravail" in text or "hybride" in text
 
         if location_match:
-            score += 20  # Location matches
+            score += 15  # Location matches
         elif remote_wanted and remote_offered:
-            score += 15  # Remote wanted and offered
-        elif not location_match and not (remote_wanted and remote_offered):
-            score -= 5  # Location specified but doesn't match
+            score += 12  # Remote wanted and offered
+        # No penalty if location doesn't match - user might be flexible
 
-    # === Must keywords (up to +25) ===
+    # === Must keywords (up to +20) ===
     if must:
         must_hits = sum(1 for k in must if k in text)
         must_ratio = must_hits / len(must) if must else 0
         if must_ratio >= 0.8:
-            score += 25  # Most must keywords found
+            score += 20  # Most must keywords found
         elif must_ratio >= 0.5:
-            score += 15  # Half found
+            score += 12  # Half found
         elif must_ratio > 0:
             score += must_hits * 3  # Some found
         else:
-            score -= 10  # None of the must keywords found
+            score -= 5  # None of the must keywords found = small penalty
 
     # === Contract type (up to +10) ===
     if contract_pref:
         if contract_pref in text:
             score += 10
-        # Check common variations
-        contract_map = {
-            "cdi": ["cdi", "permanent", "indéterminée"],
-            "cdd": ["cdd", "déterminée", "temporary"],
-            "stage": ["stage", "internship", "intern"],
-            "alternance": ["alternance", "apprentissage", "apprenticeship"],
-            "freelance": ["freelance", "indépendant", "contractor"],
-        }
-        for key, variants in contract_map.items():
-            if contract_pref == key and any(v in text for v in variants):
-                score += 10
-                break
+        else:
+            # Check common variations
+            contract_map = {
+                "cdi": ["cdi", "permanent", "indéterminée", "contrat indéterminé"],
+                "cdd": ["cdd", "déterminée", "temporary", "contrat déterminé"],
+                "stage": ["stage", "internship", "intern", "stagiaire"],
+                "alternance": ["alternance", "apprentissage", "apprenticeship", "apprenti"],
+                "freelance": ["freelance", "indépendant", "contractor", "mission"],
+            }
+            for key, variants in contract_map.items():
+                if contract_pref == key and any(v in text for v in variants):
+                    score += 10
+                    break
 
-    # === CV keywords matching (up to +20) ===
+    # === CV keywords matching (up to +30 when no preferences, +20 otherwise) ===
     if user_cv:
         # Check how many CV keywords appear in job description
         cv_matches = sum(1 for kw in user_cv if kw in text)
         match_ratio = cv_matches / len(user_cv) if user_cv else 0
 
-        if match_ratio >= 0.3:
-            score += 20  # Strong CV match
-        elif match_ratio >= 0.15:
-            score += 12  # Good match
+        # Give more weight to CV matching when no preferences are defined
+        cv_bonus_max = 30 if not has_preferences else 20
+
+        if match_ratio >= 0.35:
+            score += cv_bonus_max  # Strong CV match
+        elif match_ratio >= 0.20:
+            score += int(cv_bonus_max * 0.7)  # Good match
+        elif match_ratio >= 0.10:
+            score += int(cv_bonus_max * 0.4)  # Moderate match
         elif match_ratio >= 0.05:
-            score += 5   # Some match
+            score += int(cv_bonus_max * 0.2)  # Some match
         # No penalty for low CV match (user might be changing careers)
 
-    # === Bonus for detailed job posting ===
+    # === Bonus for detailed job posting (up to +5) ===
     desc_len = len(job.description or "")
-    if desc_len > 1000:
-        score += 5  # Detailed description is usually better quality
+    if desc_len > 1500:
+        score += 5  # Very detailed description
+    elif desc_len > 800:
+        score += 3  # Good description
     elif desc_len < 100:
-        score -= 5  # Very short descriptions are suspicious
+        score -= 3  # Very short descriptions are suspicious
 
     # Clamp score to 0-100
     return max(0, min(score, 100))
@@ -336,6 +351,8 @@ def list_matches_for_user(
             score=user_job.score,
             is_remote=is_remote,
             is_new=is_new,
+            is_saved=user_job.status == "saved",
+            status=user_job.status,
             created_at=created_at,
         )
         result.append(job_out)
