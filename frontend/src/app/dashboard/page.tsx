@@ -102,15 +102,12 @@ export default function DashboardPage() {
   async function load(
     p = page,
     ft = debouncedFilterText,
-  async function load(
-    p = page,
-    ft = filterText,
     ms = minScore,
     sf = sourceFilter,
     sb = sortBy,
     no = newOnly,
     so = savedOnly,
-    retryCount = 0,
+    retryCount = 0
   ) {
     setError(null);
     setLoading(true);
@@ -188,7 +185,6 @@ export default function DashboardPage() {
         addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
       await load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
-      await load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
       await loadRuns();
       await loadStats();
     } catch (err: any) {
@@ -217,7 +213,6 @@ export default function DashboardPage() {
     // Load all data in parallel with individual error handling
     Promise.allSettled([
       load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
-      load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
@@ -239,8 +234,6 @@ export default function DashboardPage() {
     }
     load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
   }, [debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
-    load(1, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
 
   useEffect(() => {
     try {
@@ -264,8 +257,6 @@ export default function DashboardPage() {
         const newOnlyValue = savedOnlyValue ? false : (parsed.newOnly ?? false);
         setNewOnly(newOnlyValue);
         setSavedOnly(savedOnlyValue);
-        setNewOnly(parsed.newOnly ?? false);
-        setSavedOnly(parsed.savedOnly ?? false);
       }
     } catch (_err) {}
     try {
@@ -653,9 +644,6 @@ export default function DashboardPage() {
                 setNewOnly(false);
               }
             }}
-            setNewOnly={(v) => { setPage(1); setNewOnly(v); }}
-            savedOnly={savedOnly}
-            setSavedOnly={(v) => { setPage(1); setSavedOnly(v); }}
             sources={sources}
             newCount={matchesPage?.new_count ?? 0}
             savedCount={stats?.saved_jobs ?? 0}
@@ -905,7 +893,6 @@ export default function DashboardPage() {
                       const next = Math.max(1, page - 1);
                       setPage(next);
                       load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
-                      load(next, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                     }}
                     disabled={page <= 1 || loading}
                     className={`
@@ -933,7 +920,6 @@ export default function DashboardPage() {
                       if (next !== page) {
                         setPage(next);
                         load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
-                        load(next, filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
                       }
                     }}
                     disabled={loading || page >= maxPage}

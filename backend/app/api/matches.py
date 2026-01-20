@@ -134,31 +134,6 @@ def matches(
         )
 
     total = base_query.order_by(None).count()
-    # Filtrage
-    filtered = []
-    ft = (filter_text or "").lower()
-    src = source
-    available_sources = sorted(list({m.source or "" for m in all_matches if m.source}))
-    new_count = 0
-
-    for m in all_matches:
-        if m.is_new:
-            new_count += 1
-        if new_only and not m.is_new:
-            continue
-        if status and m.status != status:
-            continue
-        if src != "all" and (m.source or "").lower() != src.lower():
-            continue
-        if min_score and (m.score or 0) < min_score:
-            continue
-        if ft:
-            blob = f"{m.title} {m.company} {m.location or ''} {m.source or ''}".lower()
-            if ft not in blob:
-                continue
-        filtered.append(m)
-
-    total = len(filtered)
     start = max(0, (page - 1) * page_size)
     rows = base_query.offset(start).limit(page_size).all()
 

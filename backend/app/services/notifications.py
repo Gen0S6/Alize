@@ -313,8 +313,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
     from sqlalchemy import func
 
     now = datetime.now(timezone.utc)
-    default_cooldown = timedelta(minutes=NOTIFY_INTERVAL_MINUTES)  # 3 jours par défaut
-
     # Uniquement les utilisateurs avec notifications activées
     users = db.query(User).filter(User.notifications_enabled.is_(True)).all()
     if not users:
