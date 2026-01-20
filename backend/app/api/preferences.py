@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from app.auth import get_current_user
 from app.deps import get_db
-from app.models import User, UserPreference
+from app.models import User
 from app.schemas import PreferenceIn, PreferenceOut
 from app.services.preferences import get_or_create_pref
 from app.services.matching import clear_user_job_data
@@ -27,6 +27,8 @@ def get_preferences(
         salary_min=pref.salary_min,
         must_keywords=pref.must_keywords,
         avoid_keywords=pref.avoid_keywords,
+        notification_frequency=pref.notification_frequency,
+        send_empty_digest=pref.send_empty_digest,
     )
 
 
@@ -36,11 +38,7 @@ def upsert_preferences(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    pref = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
-    if not pref:
-        pref = UserPreference(user_id=user.id)
-        db.add(pref)
-        db.flush()
+    pref = get_or_create_pref(user, db)
 
     for field, value in payload.model_dump().items():
         setattr(pref, field, value)
@@ -58,4 +56,6 @@ def upsert_preferences(
         salary_min=pref.salary_min,
         must_keywords=pref.must_keywords,
         avoid_keywords=pref.avoid_keywords,
+        notification_frequency=pref.notification_frequency,
+        send_empty_digest=pref.send_empty_digest,
     )
