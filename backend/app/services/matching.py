@@ -148,10 +148,8 @@ def score_job(job: JobListing, pref: UserPreference, user_cv: set[str]) -> Optio
 
     # === Contract type (up to +10) ===
     if contract_pref:
-        contract_found = False
         if contract_pref in text:
             score += 10
-            contract_found = True
         else:
             # Check common variations
             contract_map = {
@@ -164,7 +162,6 @@ def score_job(job: JobListing, pref: UserPreference, user_cv: set[str]) -> Optio
             for key, variants in contract_map.items():
                 if contract_pref == key and any(v in text for v in variants):
                     score += 10
-                    contract_found = True
                     break
 
     # === CV keywords matching (up to +30 when no preferences, +20 otherwise) ===
