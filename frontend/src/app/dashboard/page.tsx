@@ -74,12 +74,14 @@ export default function DashboardPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("new_first");
   const [newOnly, setNewOnly] = useState(false);
+  const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
   const autoSearched = useRef(false);
+  const initialized = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -87,7 +89,57 @@ export default function DashboardPage() {
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  async function load(p = page, ft = filterText, ms = minScore, sf = sourceFilter, sb = sortBy, no = newOnly) {
+  // Debounce filter text with 500ms delay
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedFilterText(filterText);
+    }, 500);
+    return () => window.clearTimeout(handler);
+  }, [filterText]);
+
+  // Debounced versions of other filters for smoother UX
+  const [debouncedMinScore, setDebouncedMinScore] = useState(minScore);
+  const [debouncedSourceFilter, setDebouncedSourceFilter] = useState(sourceFilter);
+  const [debouncedSortBy, setDebouncedSortBy] = useState(sortBy);
+  const [debouncedNewOnly, setDebouncedNewOnly] = useState(newOnly);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedMinScore(minScore);
+    }, 300);
+    return () => window.clearTimeout(handler);
+  }, [minScore]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedSourceFilter(sourceFilter);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [sourceFilter]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedSortBy(sortBy);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [sortBy]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedNewOnly(newOnly);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [newOnly]);
+
+  async function load(
+    p = page,
+    ft = debouncedFilterText,
+    ms = minScore,
+    sf = sourceFilter,
+    sb = sortBy,
+    no = newOnly,
+    retryCount = 0
+  ) {
     setError(null);
     setLoading(true);
     setPage(p);
@@ -139,7 +191,7 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminee - aucune nouvelle offre", "info");
       }
-      await load(1);
+      await load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
       await loadRuns();
       await loadStats();
     } catch (err: any) {
@@ -159,8 +211,12 @@ export default function DashboardPage() {
       router.push("/login");
       return;
     }
-    Promise.all([
-      load(1, filterText, minScore, sourceFilter),
+
+    initialized.current = true;
+
+    // Load all data in parallel with individual error handling
+    Promise.allSettled([
+      load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
@@ -169,9 +225,15 @@ export default function DashboardPage() {
     });
   }, [router]);
 
+  // Only reload matches when debounced filters change (not on initial mount)
+  const filtersInitialized = useRef(false);
   useEffect(() => {
-    load(1, filterText, minScore, sourceFilter, sortBy, newOnly);
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
+    if (!filtersInitialized.current) {
+      filtersInitialized.current = true;
+      return;
+    }
+    load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
+  }, [debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly]);
 
   useEffect(() => {
     try {
@@ -506,18 +568,7 @@ export default function DashboardPage() {
             page={page}
           />
 
-          {/* Loading overlay */}
-          {loading && matchesPage && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-[#0f1116]/50 rounded-xl z-10">
-              <div className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"}`}>Chargement...</span>
-              </div>
-            </div>
-          )}
+          {/* Loading indicator is now shown in FilterBar - no blocking overlay */}
 
           {/* Error state */}
           {error && (
@@ -693,7 +744,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       const next = Math.max(1, page - 1);
                       setPage(next);
-                      load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
+                      load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
                     }}
                     disabled={page <= 1 || loading}
                     className={`
@@ -720,7 +771,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
-                        load(next, filterText, minScore, sourceFilter, sortBy, newOnly);
+                        load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
                       }
                     }}
                     disabled={loading || page >= maxPage}
