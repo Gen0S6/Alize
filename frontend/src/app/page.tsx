@@ -261,6 +261,78 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Sample match preview */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="text-center mb-12">
+            <h2 className={`text-3xl md:text-4xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
+              Aperçu d'un match
+            </h2>
+            <p className={`mt-4 text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+              Un exemple concret de ce que tu verras dans ton dashboard.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                title: "Data Analyst",
+                company: "NovaTech",
+                location: "Paris · Hybride",
+                score: "9/10",
+                reasons: ["Rôle: Data Analyst", "Mot-clé: SQL", "CV: Python"],
+              },
+              {
+                title: "Product Manager",
+                company: "Studio Horizon",
+                location: "Lyon · Remote",
+                score: "8/10",
+                reasons: ["Rôle proche: Product", "Localisation: Remote", "CV: Agile"],
+              },
+            ].map((match) => (
+              <div
+                key={match.title}
+                className={`rounded-2xl border p-6 ${
+                  isDark
+                    ? "border-gray-700 bg-[#0f1116]"
+                    : "border-gray-200 bg-white shadow-sm"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}>
+                      {match.title}
+                    </h3>
+                    <p className={`mt-1 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                      {match.company} • {match.location}
+                    </p>
+                  </div>
+                  <span className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
+                    isDark ? "bg-emerald-900/40 text-emerald-200" : "bg-emerald-100 text-emerald-700"
+                  }`}>
+                    {match.score}
+                  </span>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {match.reasons.map((reason) => (
+                    <span
+                      key={reason}
+                      className={`rounded-lg px-3 py-1 text-xs ${
+                        isDark
+                          ? "bg-[#111621] text-gray-200 border border-gray-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {reason}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* How it works Section */}
       <section className="py-20">
         <div className="mx-auto max-w-6xl px-6">
