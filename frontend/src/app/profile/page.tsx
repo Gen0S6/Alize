@@ -244,8 +244,8 @@ export default function ProfilePage() {
 
   // Styles cohérents avec les autres pages
   const cardClass = isDark
-    ? "rounded-2xl border border-gray-700/50 bg-gradient-to-br from-[#0f1116] to-[#12141a] p-6 shadow-lg"
-    : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm";
+    ? "rounded-xl border border-slate-800 bg-[#111827] p-6"
+    : "rounded-xl border border-slate-200 bg-white p-6";
 
   const textMuted = isDark ? "text-gray-400" : "text-gray-500";
   const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
@@ -259,8 +259,8 @@ export default function ProfilePage() {
     : "block text-sm font-medium text-gray-700 mb-2";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -277,7 +277,7 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-              <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-lg shadow-indigo-600/20" : "p-2.5 rounded-xl bg-indigo-600 shadow-md"}>
+            <span className={isDark ? "p-2.5 rounded-lg bg-slate-700" : "p-2.5 rounded-lg bg-slate-200"}>
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>

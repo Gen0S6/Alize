@@ -39,29 +39,14 @@ export default function HomePage() {
   return (
     <main className={containerClass}>
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className={`absolute inset-0 ${
-          isDark
-            ? "bg-gradient-to-br from-blue-900/30 via-transparent to-purple-900/30"
-            : "bg-gradient-to-br from-blue-100 via-transparent to-purple-100"
-        }`} />
-
-        {/* Decorative elements */}
-        <div className={`absolute top-16 left-10 w-80 h-80 rounded-full blur-3xl ${
-          isDark ? "bg-blue-500/20" : "bg-blue-300/40"
-        }`} />
-        <div className={`absolute bottom-12 right-10 w-[28rem] h-[28rem] rounded-full blur-3xl ${
-          isDark ? "bg-purple-500/15" : "bg-purple-300/30"
-        }`} />
-
-        <div className="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
+      <section className={isDark ? "bg-[#0b0f19]" : "bg-white"}>
+        <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
           {/* Badge */}
           <div className="flex justify-center mb-6">
             <span className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium ${
               isDark
-                ? "bg-white/5 text-blue-200 border border-white/10"
-                : "bg-white/70 text-blue-700 border border-blue-200/60"
+                ? "bg-[#111827] text-slate-200 border border-slate-800"
+                : "bg-slate-100 text-slate-700 border border-slate-200"
             }`}>
               <FontAwesomeIcon icon={faRocket} className="text-xs" />
               Plateforme pilotée par l'IA
@@ -74,13 +59,7 @@ export default function HomePage() {
           }`}>
             Trouve les meilleures offres
             <br />
-            <span className={`bg-gradient-to-r bg-clip-text text-transparent ${
-              isDark
-                ? "from-blue-300 via-purple-300 to-blue-300"
-                : "from-blue-600 via-purple-600 to-blue-600"
-            }`}>
-              en quelques clics
-            </span>
+            <span>en quelques clics</span>
           </h1>
 
           {/* Subtitle */}
@@ -99,10 +78,10 @@ export default function HomePage() {
                   href="/register"
                   className={`
                     inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold
-                    transition-all duration-200 transform hover:-translate-y-0.5
+                    transition-colors duration-200
                     ${isDark
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30"
-                      : "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30"
+                      ? "bg-blue-500 text-white hover:bg-blue-600"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
                     }
                   `}
                 >
@@ -113,10 +92,10 @@ export default function HomePage() {
                   href="/login"
                   className={`
                     inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold
-                    transition-all duration-200 border backdrop-blur
+                    transition-colors duration-200 border
                     ${isDark
-                      ? "border-white/10 text-slate-200 hover:bg-white/10"
-                      : "border-slate-200 text-slate-700 hover:bg-white"
+                      ? "border-slate-700 text-slate-200 hover:bg-slate-800"
+                      : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }
                   `}
                 >
@@ -128,10 +107,10 @@ export default function HomePage() {
                 href="/dashboard"
                 className={`
                   inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold
-                  transition-all duration-200 transform hover:-translate-y-0.5
+                  transition-colors duration-200
                   ${isDark
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
                   }
                 `}
               >
@@ -162,7 +141,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className={`py-20 ${isDark ? "bg-[#0a0c14]" : "bg-white/60"}`}>
+      <section className="py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="text-center mb-16">
             <h2 className={`text-3xl md:text-4xl font-semibold ${isDark ? "text-white" : "text-slate-900"}`}>
@@ -175,16 +154,16 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Feature 1 */}
-            <div className={`rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 ${
+            <div className={`rounded-xl border p-6 ${
               isDark
-                ? "glass-panel shadow-lg shadow-black/20"
-                : "bg-white border border-slate-200 shadow-sm"
+                ? "border-slate-800 bg-[#111827]"
+                : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                isDark ? "bg-purple-500/20" : "bg-purple-100"
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
+                isDark ? "bg-slate-800" : "bg-slate-100"
               }`}>
                 <FontAwesomeIcon icon={faWandMagicSparkles} className={`text-xl ${
-                  isDark ? "text-purple-300" : "text-purple-600"
+                  isDark ? "text-slate-200" : "text-slate-700"
                 }`} />
               </div>
               <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}>
@@ -196,16 +175,16 @@ export default function HomePage() {
             </div>
 
             {/* Feature 2 */}
-            <div className={`rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 ${
+            <div className={`rounded-xl border p-6 ${
               isDark
-                ? "glass-panel shadow-lg shadow-black/20"
-                : "bg-white border border-slate-200 shadow-sm"
+                ? "border-slate-800 bg-[#111827]"
+                : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                isDark ? "bg-blue-500/20" : "bg-blue-100"
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
+                isDark ? "bg-slate-800" : "bg-slate-100"
               }`}>
                 <FontAwesomeIcon icon={faBriefcase} className={`text-xl ${
-                  isDark ? "text-blue-300" : "text-blue-600"
+                  isDark ? "text-slate-200" : "text-slate-700"
                 }`} />
               </div>
               <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}>
@@ -217,16 +196,16 @@ export default function HomePage() {
             </div>
 
             {/* Feature 3 */}
-            <div className={`rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 ${
+            <div className={`rounded-xl border p-6 ${
               isDark
-                ? "glass-panel shadow-lg shadow-black/20"
-                : "bg-white border border-slate-200 shadow-sm"
+                ? "border-slate-800 bg-[#111827]"
+                : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                isDark ? "bg-emerald-500/20" : "bg-emerald-100"
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
+                isDark ? "bg-slate-800" : "bg-slate-100"
               }`}>
                 <FontAwesomeIcon icon={faChartLine} className={`text-xl ${
-                  isDark ? "text-emerald-300" : "text-emerald-600"
+                  isDark ? "text-slate-200" : "text-slate-700"
                 }`} />
               </div>
               <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}>
@@ -238,16 +217,16 @@ export default function HomePage() {
             </div>
 
             {/* Feature 4 */}
-            <div className={`rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 ${
+            <div className={`rounded-xl border p-6 ${
               isDark
-                ? "glass-panel shadow-lg shadow-black/20"
-                : "bg-white border border-slate-200 shadow-sm"
+                ? "border-slate-800 bg-[#111827]"
+                : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                isDark ? "bg-amber-500/20" : "bg-amber-100"
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
+                isDark ? "bg-slate-800" : "bg-slate-100"
               }`}>
                 <FontAwesomeIcon icon={faBell} className={`text-xl ${
-                  isDark ? "text-amber-300" : "text-amber-600"
+                  isDark ? "text-slate-200" : "text-slate-700"
                 }`} />
               </div>
               <h3 className={`text-lg font-semibold mb-2 ${isDark ? "text-white" : "text-slate-900"}`}>
@@ -347,13 +326,13 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Step 1 */}
-            <div className={`rounded-2xl p-6 text-center ${
-              isDark ? "glass-panel shadow-lg shadow-black/20" : "bg-white border border-slate-200 shadow-sm"
+            <div className={`rounded-xl border p-6 text-center ${
+              isDark ? "border-slate-800 bg-[#111827]" : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 text-xl font-bold ${
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-6 text-xl font-bold ${
                 isDark
-                  ? "bg-blue-500/20 text-blue-200"
-                  : "bg-blue-100 text-blue-600"
+                  ? "bg-slate-800 text-slate-200"
+                  : "bg-slate-100 text-slate-700"
               }`}>
                 1
               </div>
@@ -366,13 +345,13 @@ export default function HomePage() {
             </div>
 
             {/* Step 2 */}
-            <div className={`rounded-2xl p-6 text-center ${
-              isDark ? "glass-panel shadow-lg shadow-black/20" : "bg-white border border-slate-200 shadow-sm"
+            <div className={`rounded-xl border p-6 text-center ${
+              isDark ? "border-slate-800 bg-[#111827]" : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 text-xl font-bold ${
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-6 text-xl font-bold ${
                 isDark
-                  ? "bg-purple-500/20 text-purple-200"
-                  : "bg-purple-100 text-purple-600"
+                  ? "bg-slate-800 text-slate-200"
+                  : "bg-slate-100 text-slate-700"
               }`}>
                 2
               </div>
@@ -385,13 +364,13 @@ export default function HomePage() {
             </div>
 
             {/* Step 3 */}
-            <div className={`rounded-2xl p-6 text-center ${
-              isDark ? "glass-panel shadow-lg shadow-black/20" : "bg-white border border-slate-200 shadow-sm"
+            <div className={`rounded-xl border p-6 text-center ${
+              isDark ? "border-slate-800 bg-[#111827]" : "border-slate-200 bg-white"
             }`}>
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 text-xl font-bold ${
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-6 text-xl font-bold ${
                 isDark
-                  ? "bg-emerald-500/20 text-emerald-200"
-                  : "bg-emerald-100 text-emerald-600"
+                  ? "bg-slate-800 text-slate-200"
+                  : "bg-slate-100 text-slate-700"
               }`}>
                 3
               </div>
@@ -407,15 +386,15 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className={`py-20 ${isDark ? "bg-[#0a0c14]" : "bg-white/60"}`}>
+      <section className="py-20">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <div className={`rounded-3xl p-10 md:p-16 ${
+          <div className={`rounded-2xl border p-10 md:p-16 ${
             isDark
-              ? "bg-gradient-to-br from-blue-900/40 to-purple-900/40 border border-white/10"
-              : "bg-white border border-slate-200 shadow-sm"
+              ? "border-slate-800 bg-[#111827]"
+              : "border-slate-200 bg-white"
           }`}>
             <FontAwesomeIcon icon={faShieldHalved} className={`text-4xl mb-6 ${
-              isDark ? "text-blue-300" : "text-blue-600"
+              isDark ? "text-slate-200" : "text-slate-700"
             }`} />
             <h2 className={`text-3xl md:text-4xl font-semibold mb-4 ${isDark ? "text-white" : "text-slate-900"}`}>
               Prêt à simplifier ta recherche ?
@@ -428,10 +407,10 @@ export default function HomePage() {
                 href="/register"
                 className={`
                   inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold
-                  transition-all duration-200 transform hover:-translate-y-0.5
+                  transition-colors duration-200
                   ${isDark
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
                   }
                 `}
               >
@@ -443,10 +422,10 @@ export default function HomePage() {
                 href="/dashboard"
                 className={`
                   inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold
-                  transition-all duration-200 transform hover:-translate-y-0.5
+                  transition-colors duration-200
                   ${isDark
-                    ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
                   }
                 `}
               >
