@@ -92,12 +92,55 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [savedOnly, setSavedOnly] = useState(false);
 
+  // Debounce filter text with 500ms delay
   useEffect(() => {
     const handler = window.setTimeout(() => {
       setDebouncedFilterText(filterText);
-    }, 300);
+    }, 500);
     return () => window.clearTimeout(handler);
   }, [filterText]);
+
+  // Debounced versions of other filters for smoother UX
+  const [debouncedMinScore, setDebouncedMinScore] = useState(minScore);
+  const [debouncedSourceFilter, setDebouncedSourceFilter] = useState(sourceFilter);
+  const [debouncedSortBy, setDebouncedSortBy] = useState(sortBy);
+  const [debouncedNewOnly, setDebouncedNewOnly] = useState(newOnly);
+  const [debouncedSavedOnly, setDebouncedSavedOnly] = useState(savedOnly);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedMinScore(minScore);
+    }, 300);
+    return () => window.clearTimeout(handler);
+  }, [minScore]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedSourceFilter(sourceFilter);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [sourceFilter]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedSortBy(sortBy);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [sortBy]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedNewOnly(newOnly);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [newOnly]);
+
+  useEffect(() => {
+    const handler = window.setTimeout(() => {
+      setDebouncedSavedOnly(savedOnly);
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [savedOnly]);
 
   async function load(
     p = page,
@@ -184,7 +227,7 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
-      await load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
+      await load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
       await loadRuns();
       await loadStats();
     } catch (err: any) {
@@ -212,7 +255,7 @@ export default function DashboardPage() {
 
     // Load all data in parallel with individual error handling
     Promise.allSettled([
-      load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly),
+      load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
@@ -225,15 +268,15 @@ export default function DashboardPage() {
     });
   }, [router]);
 
-  // Only reload matches when filters change (not on initial mount)
+  // Only reload matches when debounced filters change (not on initial mount)
   const filtersInitialized = useRef(false);
   useEffect(() => {
     if (!filtersInitialized.current) {
       filtersInitialized.current = true;
       return;
     }
-    load(1, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
-  }, [debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
+    load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
+  }, [debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly]);
 
   useEffect(() => {
     try {
@@ -655,18 +698,7 @@ export default function DashboardPage() {
             isLoading={loading}
           />
 
-          {/* Loading overlay */}
-          {loading && matchesPage && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-[#0f1116]/50 rounded-xl z-10">
-              <div className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"}`}>Chargement...</span>
-              </div>
-            </div>
-          )}
+          {/* Loading indicator is now shown in FilterBar - no blocking overlay */}
 
           {/* Error state */}
           {error && (
@@ -893,7 +925,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       const next = Math.max(1, page - 1);
                       setPage(next);
-                      load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
+                      load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
                     }}
                     disabled={page <= 1 || loading}
                     className={`
@@ -920,7 +952,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
-                        load(next, debouncedFilterText, minScore, sourceFilter, sortBy, newOnly, savedOnly);
+                        load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
                       }
                     }}
                     disabled={loading || page >= maxPage}
