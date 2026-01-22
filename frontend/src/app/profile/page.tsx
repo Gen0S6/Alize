@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getProfile, updateProfile, deleteProfile, requestEmailVerification, type Profile } from "../../lib/api";
+import {
+  getProfile,
+  updateProfile,
+  deleteProfile,
+  requestEmailVerification,
+  getPreferences,
+  updatePreferences,
+  type Preference,
+  type Profile,
+} from "../../lib/api";
 import { clearToken, getToken, clearTokenAndRedirectHome } from "../../lib/auth";
 import { useRouter } from "next/navigation";
 import { useTheme } from "../ThemeProvider";
@@ -15,6 +24,9 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [notificationPref, setNotificationPref] = useState<Preference | null>(null);
+  const [initialNotificationPref, setInitialNotificationPref] = useState<Preference | null>(null);
+  const [notificationSaving, setNotificationSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingNotifications, setSavingNotifications] = useState(false);
@@ -160,6 +172,34 @@ export default function ProfilePage() {
       addToast(err?.message ?? "Erreur lors de la sauvegarde", "error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function updateNotificationField<K extends keyof Preference>(key: K, value: Preference[K]) {
+    setNotificationPref((prev) => (prev ? { ...prev, [key]: value } : prev));
+  }
+
+  function notificationHasChanges() {
+    if (!notificationPref || !initialNotificationPref) return false;
+    const keys: (keyof Preference)[] = ["notification_frequency", "send_empty_digest"];
+    return keys.some((k) => (notificationPref[k] ?? "") !== (initialNotificationPref[k] ?? ""));
+  }
+
+  async function saveNotifications() {
+    if (!notificationPref) return;
+    setNotificationSaving(true);
+    try {
+      const updated = await updatePreferences({
+        notification_frequency: notificationPref.notification_frequency ?? "every_3_days",
+        send_empty_digest: notificationPref.send_empty_digest ?? true,
+      });
+      setNotificationPref(updated);
+      setInitialNotificationPref(updated);
+      addToast("Notifications mises à jour", "success");
+    } catch (err: any) {
+      addToast(err?.message ?? "Erreur lors de la mise à jour", "error");
+    } finally {
+      setNotificationSaving(false);
     }
   }
 
@@ -409,6 +449,100 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+
+            {/* Notifications */}
+            {notificationPref && (
+              <div className={cardClass}>
+                <div className="flex items-center gap-2 mb-6">
+                  <div className={`p-2 rounded-lg ${isDark ? "bg-amber-900/30" : "bg-amber-100"}`}>
+                    <svg className={`w-5 h-5 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                  </div>
+                  <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className={labelClass}>
+                      Fréquence des emails
+                    </label>
+                    <select
+                      className={inputClass}
+                      value={notificationPref.notification_frequency ?? "every_3_days"}
+                      onChange={(e) =>
+                        updateNotificationField(
+                          "notification_frequency",
+                          e.target.value as Preference["notification_frequency"]
+                        )
+                      }
+                    >
+                      <option value="daily">Tous les jours</option>
+                      <option value="every_3_days">Tous les 3 jours</option>
+                      <option value="weekly">Toutes les semaines</option>
+                    </select>
+                    <p className={`text-xs mt-2 ${textMuted}`}>
+                      Définit la cadence de réception des emails de matching.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      Envoyer un email quand aucune offre n'est trouvée
+                    </label>
+                    <div className="mt-1 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateNotificationField(
+                            "send_empty_digest",
+                            !(notificationPref.send_empty_digest ?? true)
+                          )
+                        }
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          (notificationPref.send_empty_digest ?? true)
+                            ? isDark
+                              ? "bg-emerald-600"
+                              : "bg-emerald-500"
+                            : isDark
+                              ? "bg-gray-700"
+                              : "bg-gray-200"
+                        }`}
+                        aria-pressed={notificationPref.send_empty_digest ?? true}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                            (notificationPref.send_empty_digest ?? true) ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                      <span className={`text-sm ${textMuted}`}>
+                        {notificationPref.send_empty_digest ?? true ? "Activé" : "Désactivé"}
+                      </span>
+                    </div>
+                    <p className={`text-xs mt-2 ${textMuted}`}>
+                      Désactive pour ne recevoir un email que lorsqu'il y a de nouvelles offres.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between">
+                  <button
+                    type="button"
+                    className={btnSecondary}
+                    onClick={saveNotifications}
+                    disabled={notificationSaving || !notificationHasChanges()}
+                  >
+                    {notificationSaving ? "Mise à jour..." : "Sauvegarder les notifications"}
+                  </button>
+                  {notificationHasChanges() && (
+                    <span className={`text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}>
+                      Modifications non sauvegardées
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Submit button */}
             <div className="flex items-center justify-between">
