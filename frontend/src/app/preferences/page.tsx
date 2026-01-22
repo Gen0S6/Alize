@@ -138,8 +138,8 @@ export default function PreferencesPage() {
 
   // Styles
   const cardClass = isDark
-    ? "rounded-2xl border border-gray-700/50 bg-gradient-to-br from-[#0f1116] to-[#12141a] p-6 shadow-lg"
-    : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm";
+    ? "rounded-xl border border-slate-800 bg-[#111827] p-6"
+    : "rounded-xl border border-slate-200 bg-white p-6";
 
   const textMuted = isDark ? "text-gray-400" : "text-gray-500";
   const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
@@ -153,8 +153,8 @@ export default function PreferencesPage() {
     : "block text-sm font-medium text-gray-700 mb-2";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -166,7 +166,7 @@ export default function PreferencesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-            <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-purple-600 to-purple-700 shadow-lg shadow-purple-600/20" : "p-2.5 rounded-xl bg-purple-600 shadow-md"}>
+            <span className={isDark ? "p-2.5 rounded-lg bg-slate-700" : "p-2.5 rounded-lg bg-slate-200"}>
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
@@ -375,74 +375,6 @@ export default function PreferencesPage() {
                 />
                 <p className={`text-xs mt-2 ${textMuted}`}>
                   Les offres contenant ces mots-clés seront exclues.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Notifications */}
-          <div className={cardClass}>
-            <div className="flex items-center gap-2 mb-6">
-              <div className={`p-2 rounded-lg ${isDark ? "bg-amber-900/30" : "bg-amber-100"}`}>
-                <svg className={`w-5 h-5 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </div>
-              <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass}>
-                  Fréquence des emails
-                </label>
-                <select
-                  className={inputClass}
-                  value={pref.notification_frequency ?? "every_3_days"}
-                  onChange={(e) =>
-                    updateField("notification_frequency", e.target.value as Preference["notification_frequency"])
-                  }
-                >
-                  <option value="daily">Tous les jours</option>
-                  <option value="every_3_days">Tous les 3 jours</option>
-                  <option value="weekly">Toutes les semaines</option>
-                </select>
-                <p className={`text-xs mt-2 ${textMuted}`}>
-                  Définit la cadence de réception des emails de matching.
-                </p>
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Envoyer un email quand aucune offre n'est trouvée
-                </label>
-                <div className="mt-1 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => updateField("send_empty_digest", !(pref.send_empty_digest ?? true))}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                      (pref.send_empty_digest ?? true)
-                        ? isDark
-                          ? "bg-emerald-600"
-                          : "bg-emerald-500"
-                        : isDark
-                          ? "bg-gray-700"
-                          : "bg-gray-200"
-                    }`}
-                    aria-pressed={pref.send_empty_digest ?? true}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                        (pref.send_empty_digest ?? true) ? "translate-x-5" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                  <span className={`text-sm ${textMuted}`}>
-                    {pref.send_empty_digest ?? true ? "Activé" : "Désactivé"}
-                  </span>
-                </div>
-                <p className={`text-xs mt-2 ${textMuted}`}>
-                  Désactive pour ne recevoir un email que lorsqu'il y a de nouvelles offres.
                 </p>
               </div>
             </div>

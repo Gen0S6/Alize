@@ -122,38 +122,25 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   };
 
   const headerClass = isDark
-    ? "sticky top-0 z-50 border-b border-white/5 bg-[#0a0c14]/80 backdrop-blur-xl shadow-lg shadow-black/20"
-    : "sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl shadow-sm";
+    ? "sticky top-0 z-50 border-b border-slate-800 bg-[#0b0f19]"
+    : "sticky top-0 z-50 border-b border-slate-200 bg-white";
   const linkClass = isDark ? "text-slate-200 hover:text-white" : "text-slate-700 hover:text-slate-900";
   const navClass = isDark ? "flex items-center gap-5 text-sm text-slate-200" : "flex items-center gap-5 text-sm text-slate-600";
   const containerClass = isDark
-    ? "min-h-screen bg-[#06070f] text-slate-100 flex flex-col relative overflow-hidden"
-    : "min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col relative overflow-hidden";
+    ? "min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col"
+    : "min-h-screen bg-slate-50 text-slate-900 flex flex-col";
   const badgeClass = isDark
     ? "fixed bottom-6 right-6 group cursor-pointer"
     : "fixed bottom-6 right-6 group cursor-pointer";
 
   return (
     <div className={containerClass}>
-      <div aria-hidden className="pointer-events-none absolute inset-0 app-grid opacity-50" />
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full blur-3xl ${
-          isDark ? "bg-blue-500/10" : "bg-blue-400/20"
-        }`}
-      />
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute top-[45%] right-[-6rem] h-[22rem] w-[22rem] rounded-full blur-[140px] ${
-          isDark ? "bg-purple-500/10" : "bg-purple-400/20"
-        }`}
-      />
       {!isAuthPage && (
         <header className={headerClass}>
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className={`flex items-center gap-3 text-lg font-semibold ${linkClass}`}>
-              <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${
-                isDark ? "bg-blue-500/15 text-blue-300" : "bg-blue-100 text-blue-700"
+              <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${
+                isDark ? "bg-slate-800 text-slate-200" : "bg-slate-200 text-slate-700"
               }`}>
                 A
               </span>
@@ -181,20 +168,18 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className={`flex items-center gap-2 ml-2 p-1.5 rounded-full transition-all duration-200 ${
+                    className={`flex items-center gap-2 ml-2 p-1.5 rounded-full transition-colors duration-200 ${
                       isDark
-                        ? "hover:bg-white/10"
+                        ? "hover:bg-slate-800"
                         : "hover:bg-slate-100"
                     }`}
                     aria-label="Menu utilisateur"
                     aria-expanded={userDropdownOpen}
                   >
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-transform duration-200 ${
-                      userDropdownOpen ? "scale-95" : ""
-                    } ${
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium ${
                       isDark
-                        ? "bg-blue-500/80 text-white"
-                        : "bg-blue-600 text-white"
+                        ? "bg-slate-700 text-white"
+                        : "bg-slate-700 text-white"
                     }`}>
                       {getUserInitials()}
                     </div>
@@ -202,10 +187,10 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
 
                   {/* Dropdown Menu */}
                   {userDropdownOpen && (
-                    <div className={`absolute right-0 mt-3 w-56 rounded-2xl border py-1 animate-dropdown-in ${
+                    <div className={`absolute right-0 mt-3 w-56 rounded-xl border py-1 animate-dropdown-in ${
                       isDark
-                        ? "bg-[#141621] border-white/10 shadow-xl shadow-black/30"
-                        : "bg-white border-slate-200 shadow-lg"
+                        ? "bg-[#111827] border-slate-800"
+                        : "bg-white border-slate-200"
                     }`}>
                       {/* User Info */}
                       <div className={`px-4 py-3 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}>
@@ -378,20 +363,18 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <Link href="/about" className={badgeClass}>
         <div className={`
-          flex items-center gap-2.5 px-4 py-2.5 rounded-full border backdrop-blur-md
-          transition-all duration-300 ease-out
+          flex items-center gap-2.5 px-4 py-2.5 rounded-full border
+          transition-colors duration-200
           ${isDark
-            ? "bg-gradient-to-r from-gray-900/90 to-gray-800/90 border-gray-700/60 hover:border-gray-600 hover:from-gray-800/95 hover:to-gray-700/95 shadow-lg shadow-black/20"
-            : "bg-gradient-to-r from-white/95 to-gray-50/95 border-gray-200/80 hover:border-gray-300 hover:shadow-md shadow-sm"
+            ? "bg-[#111827] border-slate-800 hover:border-slate-700"
+            : "bg-white border-slate-200 hover:border-slate-300"
           }
-          group-hover:scale-105
         `}>
           <div className={`
             w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-            transition-transform duration-300 group-hover:rotate-12
             ${isDark
-              ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
-              : "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
+              ? "bg-slate-700 text-white"
+              : "bg-slate-700 text-white"
             }
           `}>
             G7
