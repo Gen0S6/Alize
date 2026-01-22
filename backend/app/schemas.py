@@ -23,6 +23,12 @@ class PreferenceIn(BaseModel):
     salary_min: Optional[int] = None
     must_keywords: Optional[str] = None
     avoid_keywords: Optional[str] = None
+    notification_frequency: Optional[str] = Field(
+        default=None,
+        pattern=r"^(daily|weekly|every_3_days)$",
+    )
+    send_empty_digest: Optional[bool] = None
+    notification_max_jobs: Optional[int] = Field(default=None, ge=1, le=20)
 
 
 class PreferenceOut(PreferenceIn):
@@ -53,6 +59,7 @@ class JobOut(BaseModel):
     is_saved: Optional[bool] = None  # Pour indiquer si l'offre est sauvegardée
     status: Optional[str] = None  # new, viewed, saved, deleted
     created_at: Optional[datetime] = None
+    match_reasons: List[str] = []
 
 
 class MatchesPage(BaseModel):
