@@ -61,7 +61,7 @@ export function AIAssistant({
               Assistant IA
             </h2>
             <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              Analyse ton CV et tes preferences pour suggerer des recherches ciblees.
+              Analyse ton CV et tes préférences pour suggérer des recherches ciblées.
             </p>
           </div>
         </div>
@@ -138,7 +138,7 @@ export function AIAssistant({
                   `}>
                     <FontAwesomeIcon icon={faUser} className="text-[10px]" />
                     {analysis.niveau_experience === "senior" ? "Senior" :
-                     analysis.niveau_experience === "confirme" ? "Confirme" : "Junior"}
+                     analysis.niveau_experience === "confirme" ? "Confirmé" : "Junior"}
                   </span>
                 )}
                 {analysis.titre_poste_cible && (
@@ -172,15 +172,67 @@ export function AIAssistant({
               </div>
             )}
 
+            {analysis.cv_present && analysis.cv_quality_score && (
+              <div className={`mt-4 rounded-xl border p-3 ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-gray-50"}`}>
+                <div className="flex items-center justify-between">
+                  <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                    Qualité du CV
+                  </p>
+                  <span className={`text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                    {analysis.cv_quality_score.grade} • {analysis.cv_quality_score.total_score}/100
+                  </span>
+                </div>
+                <p className={`mt-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                  {analysis.cv_quality_score.assessment}
+                </p>
+                {analysis.cv_quality_score.strengths && analysis.cv_quality_score.strengths.length > 0 && (
+                  <div className="mt-3">
+                    <p className={`text-xs font-semibold uppercase ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
+                      Points forts
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {analysis.cv_quality_score.strengths.slice(0, 3).map((strength) => (
+                        <span
+                          key={strength}
+                          className={`rounded-lg px-2.5 py-1 text-xs ${
+                            isDark
+                              ? "bg-emerald-900/30 text-emerald-200 border border-emerald-800"
+                              : "bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
+                          {strength}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {analysis.cv_quality_score.suggestions && analysis.cv_quality_score.suggestions.length > 0 && (
+                  <div className="mt-3">
+                    <p className={`text-xs font-semibold uppercase ${isDark ? "text-orange-400" : "text-orange-600"}`}>
+                      À améliorer
+                    </p>
+                    <ul className={`mt-2 space-y-1 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                      {analysis.cv_quality_score.suggestions.slice(0, 3).map((suggestion) => (
+                        <li key={suggestion} className="flex items-center gap-2">
+                          <span className="text-orange-500">•</span>
+                          <span>{suggestion}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Suggested queries */}
             <div className="mt-4">
               <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                Requetes IA
+                Requêtes IA
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {analysis.suggested_queries.length === 0 && (
                   <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                    Ajoute un CV ou des preferences.
+                    Ajoute un CV ou des préférences.
                   </span>
                 )}
                 {analysis.suggested_queries.map((q) => (
@@ -226,7 +278,7 @@ export function AIAssistant({
             {/* Key skills */}
             <div>
               <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                Competences cles
+                Compétences clés
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {analysis.top_keywords.slice(0, 10).map((kw) => (
@@ -242,7 +294,7 @@ export function AIAssistant({
                 ))}
                 {analysis.top_keywords.length === 0 && (
                   <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                    Aucune competence detectee.
+                    Aucune compétence détectée.
                   </span>
                 )}
               </div>
@@ -253,7 +305,7 @@ export function AIAssistant({
               <div className="mt-4">
                 <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   <FontAwesomeIcon icon={faLaptopCode} className="mr-1" />
-                  Competences techniques
+                  Compétences techniques
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {analysis.competences_techniques.map((skill: string) => (
@@ -323,7 +375,7 @@ export function AIAssistant({
                 <div>
                   <p className={`text-xs font-semibold ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
                     <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
-                    Mots-cles trouves
+                    Mots-clés trouvés
                   </p>
                   <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                     {analysis.must_hits.length === 0 && <li>-</li>}
@@ -337,7 +389,7 @@ export function AIAssistant({
                 <div>
                   <p className={`text-xs font-semibold ${isDark ? "text-orange-400" : "text-orange-600"}`}>
                     <FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />
-                    A completer
+                    À compléter
                   </p>
                   <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                     {analysis.missing_must.length === 0 && <li>-</li>}
