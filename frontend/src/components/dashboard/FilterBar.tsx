@@ -76,7 +76,7 @@ export function FilterBar({
             />
             <input
               className={`
-                w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm transition-all
+                w-full rounded-lg border py-2.5 pl-10 pr-4 text-sm transition-colors
                 focus:outline-none focus:ring-2
                 ${isDark
                   ? "border-gray-700 bg-[#0d1016] text-gray-100 placeholder-gray-500 focus:border-blue-600 focus:ring-blue-600/20"
@@ -97,7 +97,7 @@ export function FilterBar({
           </label>
           <input
             className={`
-              mt-1 w-full rounded-xl border py-2.5 px-3 text-sm transition-all
+              mt-1 w-full rounded-lg border py-2.5 px-3 text-sm transition-colors
               focus:outline-none focus:ring-2
               ${isDark
                 ? "border-gray-700 bg-[#0d1016] text-gray-100 focus:border-blue-600 focus:ring-blue-600/20"
@@ -127,7 +127,7 @@ export function FilterBar({
             />
             <select
               className={`
-                w-full appearance-none rounded-xl border py-2.5 pl-10 pr-8 text-sm transition-all
+                w-full appearance-none rounded-lg border py-2.5 pl-10 pr-8 text-sm transition-colors
                 focus:outline-none focus:ring-2
                 ${isDark
                   ? "border-gray-700 bg-[#0d1016] text-gray-100 focus:border-blue-600 focus:ring-blue-600/20"
@@ -152,11 +152,11 @@ export function FilterBar({
           <label className={`text-xs font-semibold uppercase ${isDark ? "text-gray-400" : "text-gray-500"}`}>
             Affichage
           </label>
-          <div className={`mt-1 flex rounded-xl border p-1 ${isDark ? "border-gray-700 bg-[#0d1016]" : "border-gray-200 bg-white"}`}>
+          <div className={`mt-1 flex rounded-lg border p-1 ${isDark ? "border-gray-700 bg-[#0d1016]" : "border-gray-200 bg-white"}`}>
             <button
               onClick={() => setViewMode("grid")}
               className={`
-                flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm transition-all
+                flex-1 flex items-center justify-center gap-2 rounded-md py-2 text-sm transition-colors
                 ${viewMode === "grid"
                   ? isDark
                     ? "bg-blue-600 text-white"
@@ -172,7 +172,7 @@ export function FilterBar({
             <button
               onClick={() => setViewMode("table")}
               className={`
-                flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm transition-all
+                flex-1 flex items-center justify-center gap-2 rounded-md py-2 text-sm transition-colors
                 ${viewMode === "table"
                   ? isDark
                     ? "bg-blue-600 text-white"
@@ -199,7 +199,7 @@ export function FilterBar({
             </label>
             <select
               className={`
-                rounded-xl border py-2 px-3 text-sm transition-all
+                rounded-lg border py-2 px-3 text-sm transition-colors
                 focus:outline-none focus:ring-2
                 ${isDark
                   ? "border-gray-700 bg-[#0d1016] text-gray-100 focus:border-blue-600 focus:ring-blue-600/20"
