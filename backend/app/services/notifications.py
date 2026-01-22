@@ -36,6 +36,12 @@ log = logging.getLogger("alize.notifications")
 # Intervalle entre les recherches automatiques et emails (3 jours = 4320 minutes)
 NOTIFY_INTERVAL_MINUTES = int(os.getenv("NOTIFY_INTERVAL_MINUTES", "4320"))
 
+FREQUENCY_MINUTES = {
+    "daily": 1440,
+    "weekly": 10080,
+    "every_3_days": 4320,
+}
+
 
 def format_matches(matches: list) -> str:
     """Format des offres en texte simple."""
@@ -307,8 +313,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
     from sqlalchemy import func
 
     now = datetime.now(timezone.utc)
-    cooldown = timedelta(minutes=NOTIFY_INTERVAL_MINUTES)  # 3 jours par défaut
-
     # Uniquement les utilisateurs avec notifications activées
     users = db.query(User).filter(User.notifications_enabled.is_(True)).all()
     if not users:
@@ -321,6 +325,8 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
         try:
             # Récupérer les préférences
             pref = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
+            frequency = (pref.notification_frequency if pref else None) or "every_3_days"
+            cooldown = timedelta(minutes=FREQUENCY_MINUTES.get(frequency, NOTIFY_INTERVAL_MINUTES))
 
             # Vérifier le cooldown (basé sur last_email_at)
             if pref and pref.last_email_at:
@@ -395,11 +401,13 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             # Récupérer les 5 meilleures offres non consultées et non notifiées
             top_jobs = get_top_unnotified_jobs(db, user.id, limit=5)
 
+            email_sent = False
             if not top_jobs:
-                # Envoyer un email vide si aucune offre
-                empty_text, empty_html = build_empty_notification_body()
-                to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
-                send_email_notification(to_email, "Vos offres Alizè", empty_text, empty_html)
+                if pref is None or pref.send_empty_digest:
+                    # Envoyer un email vide si aucune offre
+                    empty_text, empty_html = build_empty_notification_body()
+                    to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
+                    email_sent = send_email_notification(to_email, "Vos offres Alizè", empty_text, empty_html)
             else:
                 # Construire la liste des offres pour l'email
                 jobs_data = []
@@ -417,7 +425,7 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 body_text, body_html = build_notification_body(jobs_data)
                 to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
                 success = send_email_notification(to_email, "Vos 5 meilleures offres Alizè", body_text, body_html)
-
+                email_sent = success
                 if success:
                     # Marquer les offres comme notifiées
                     for user_job, _ in top_jobs:
@@ -426,13 +434,16 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
 
                     send_slack_notification(body_text)
 
-            # Mettre à jour la date du dernier email
-            if pref:
+            # Mettre à jour la date du dernier email seulement si un email a été envoyé
+            if pref and email_sent:
                 pref.last_email_at = now
                 db.add(pref)
                 db.commit()
 
-            log.info("Notification sent to user=%s jobs=%d", user.email, len(top_jobs))
+            if email_sent:
+                log.info("Notification sent to user=%s jobs=%d", user.email, len(top_jobs))
+            else:
+                log.info("Notification skipped for user=%s (no email sent)", user.email)
 
         except Exception as exc:
             log.error("Failed to notify user %s: %s", user.email, exc)
