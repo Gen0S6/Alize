@@ -2196,17 +2196,22 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
     # CALCULATE CV QUALITY SCORE (Local calculation)
     # =========================================================================
 
-    cv_quality = calculate_cv_quality_score(
-        text=cv_text,
-        skills=tech_skills,
-        experiences=work_experiences if work_experiences else llm_experiences,
-        education=education,
-        certifications=certifications,
-        achievements=achievements,
-    )
+    cv_quality = None
+    if cv_text:
+        try:
+            cv_quality = calculate_cv_quality_score(
+                text=cv_text,
+                skills=tech_skills,
+                experiences=work_experiences if work_experiences else llm_experiences,
+                education=education,
+                certifications=certifications,
+                achievements=achievements,
+            )
+        except Exception as exc:
+            log.warning("CV quality score failed: %s", exc)
 
     # Merge LLM score with local score if available
-    if llm_score_cv:
+    if cv_quality and llm_score_cv:
         # Average the scores
         if llm_score_cv.get("note_globale"):
             cv_quality["total_score"] = round(
@@ -2310,7 +2315,7 @@ def analyze_profile(db: Session, user_id: int, pref: UserPreference) -> Dict:
         "cv_quality_score": cv_quality,
         "points_forts": points_forts[:5],
         "axes_amelioration": axes_amelioration[:5],
-        "conseils_personnalises": conseils[:5] if conseils else cv_quality.get("suggestions", [])[:5],
+        "conseils_personnalises": conseils[:5] if conseils else (cv_quality or {}).get("suggestions", [])[:5],
 
         # Job search
         "suggested_queries": queries,
@@ -2371,6 +2376,41 @@ def search_jobs_for_user(
         except Exception:
             return raw
 
+    def normalize_text(text: Optional[str]) -> str:
+        """Normalise le texte pour la comparaison (minuscules, sans accents, sans ponctuation)."""
+        if not text:
+            return ""
+        import unicodedata
+        import re
+        # Convertir en minuscules
+        text = text.lower().strip()
+        # Supprimer les accents
+        text = unicodedata.normalize("NFD", text)
+        text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+        # Garder uniquement les caractères alphanumériques et espaces
+        text = re.sub(r"[^a-z0-9\s]", "", text)
+        # Normaliser les espaces multiples
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    def find_duplicate_job(title: str, company: str) -> Optional[JobListing]:
+        """Recherche un doublon basé sur titre + entreprise normalisés."""
+        norm_title = normalize_text(title)
+        norm_company = normalize_text(company)
+        if not norm_title or not norm_company:
+            return None
+        # Recherche dans la base avec une comparaison approximative
+        candidates = (
+            db.query(JobListing)
+            .filter(JobListing.company.ilike(f"%{norm_company[:20]}%"))
+            .limit(100)
+            .all()
+        )
+        for candidate in candidates:
+            if normalize_text(candidate.title) == norm_title and normalize_text(candidate.company) == norm_company:
+                return candidate
+        return None
+
     providers = [
         ("FranceTravail", lambda q: fetch_francetravail_jobs(q, location=pref.location or "France")),
         ("Adzuna", lambda q: fetch_adzuna_jobs(q, location=pref.location or "France")),
@@ -2393,11 +2433,15 @@ def search_jobs_for_user(
                 norm_url = normalize_url(job.get("url"))
                 if not norm_url:
                     continue
+                # 1. Vérifier d'abord par URL normalisée (match exact)
                 existing = (
                     db.query(JobListing)
-                    .filter(JobListing.url.like(f"{norm_url}%"))
+                    .filter(JobListing.url == norm_url)
                     .first()
                 )
+                # 2. Sinon, vérifier par titre + entreprise pour détecter les doublons cross-plateforme
+                if not existing:
+                    existing = find_duplicate_job(job.get("title"), job.get("company"))
                 if existing:
                     # Le job existe déjà, mais on le collecte pour le dashboard
                     new_jobs.append(existing)
@@ -2407,7 +2451,7 @@ def search_jobs_for_user(
                     title=(job.get("title") or "Sans titre")[:255],
                     company=(job.get("company") or "N/A")[:255],
                     location=job.get("location"),
-                    url=job["url"],
+                    url=norm_url,  # Stocker l'URL normalisée pour éviter les doublons
                     description=job.get("description"),
                     salary_min=job.get("salary_min"),
                 )
