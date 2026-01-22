@@ -52,17 +52,18 @@ export function JobCard({
   return (
     <div
       className={`
-        group relative rounded-xl border p-4 transition-colors duration-200
+        group relative rounded-2xl border p-4 transition-all duration-300
+        hover:shadow-lg hover:scale-[1.01]
         ${isDark
-          ? "border-slate-800 bg-[#111827] hover:border-slate-700"
-          : "border-slate-200 bg-white hover:border-slate-300"
+          ? "border-gray-700 bg-[#0f1116] hover:border-gray-600 hover:shadow-black/30"
+          : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-gray-200"
         }
       `}
     >
       {/* New badge */}
       {isNew && (
         <div className="absolute -right-2 -top-2 z-10">
-          <span className="inline-flex items-center rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-semibold text-white">
+          <span className="inline-flex items-center rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-semibold text-white shadow-lg">
             Nouveau
           </span>
         </div>
@@ -77,7 +78,7 @@ export function JobCard({
         </div>
         <div
           className={`
-            flex-shrink-0 rounded-lg px-3 py-1.5 text-center
+            flex-shrink-0 rounded-xl px-3 py-1.5 text-center
             ${scoreBgColor(match.score)}
           `}
         >
@@ -141,7 +142,7 @@ export function JobCard({
           rel="noreferrer"
           onClick={onVisit}
           className={`
-            inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors
+            inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all
             ${isDark
               ? "bg-blue-600 text-white hover:bg-blue-500"
               : "bg-blue-600 text-white hover:bg-blue-700"
@@ -157,7 +158,7 @@ export function JobCard({
             onClick={onSave}
             disabled={isSaving}
             className={`
-              inline-flex h-10 w-10 items-center justify-center rounded-lg transition-colors
+              inline-flex h-10 w-10 items-center justify-center rounded-xl transition-all
               disabled:opacity-50
               ${isSaved
                 ? isDark
@@ -177,7 +178,7 @@ export function JobCard({
             onClick={onDelete}
             disabled={isDeleting}
             className={`
-              inline-flex h-10 w-10 items-center justify-center rounded-lg transition-colors
+              inline-flex h-10 w-10 items-center justify-center rounded-xl transition-all
               disabled:opacity-50
               ${isDark
                 ? "text-gray-500 hover:bg-red-900/40 hover:text-red-400"
@@ -198,23 +199,23 @@ export function JobCardSkeleton({ isDark }: { isDark: boolean }) {
   return (
     <div
       className={`
-        rounded-xl border p-4
-        ${isDark ? "border-slate-800 bg-[#111827]" : "border-slate-200 bg-white"}
+        rounded-2xl border p-4
+        ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-white"}
       `}
     >
       <div className="flex items-start justify-between gap-3">
         <div className={`h-5 w-3/4 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-        <div className={`h-10 w-14 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+        <div className={`h-10 w-14 rounded-xl animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
       </div>
       <div className="mt-3 space-y-2">
         <div className={`h-4 w-1/2 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
         <div className={`h-4 w-1/3 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
       </div>
       <div className="mt-4 flex items-center justify-between">
-        <div className={`h-10 w-28 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+        <div className={`h-10 w-28 rounded-xl animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
         <div className="flex gap-1">
-          <div className={`h-10 w-10 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-          <div className={`h-10 w-10 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+          <div className={`h-10 w-10 rounded-xl animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+          <div className={`h-10 w-10 rounded-xl animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
         </div>
       </div>
     </div>
