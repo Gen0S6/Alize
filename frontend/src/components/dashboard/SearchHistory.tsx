@@ -42,14 +42,14 @@ export function SearchHistory({
   return (
     <div
       className={`
-        rounded-xl border p-5
-        ${isDark ? "border-slate-800 bg-[#111827]" : "border-slate-200 bg-white"}
+        rounded-2xl border p-5
+        ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-white"}
       `}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`rounded-lg p-2.5 ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
+          <div className={`rounded-xl p-2.5 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
             <FontAwesomeIcon icon={faHistory} className={`text-lg ${isDark ? "text-gray-400" : "text-gray-500"}`} />
           </div>
           <div>
@@ -65,11 +65,11 @@ export function SearchHistory({
           onClick={onRefresh}
           disabled={runsLoading}
           className={`
-            inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors
+            inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all
             disabled:opacity-50
             ${isDark
-              ? "border border-slate-700 text-gray-300 hover:bg-slate-800"
-              : "border border-slate-200 text-gray-700 hover:bg-slate-50"
+              ? "border border-gray-700 text-gray-300 hover:bg-gray-800"
+              : "border border-gray-300 text-gray-700 hover:bg-gray-100"
             }
           `}
         >
@@ -113,10 +113,10 @@ export function SearchHistory({
               <div
                 key={run.id}
                 className={`
-                  rounded-xl border p-4 transition-colors
+                  rounded-xl border p-4 transition-all hover:scale-[1.01]
                   ${isDark
-                    ? "border-slate-800 bg-[#0f172a] hover:border-slate-700"
-                    : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                    ? "border-gray-800 bg-[#0d1016] hover:border-gray-700"
+                    : "border-gray-100 bg-gray-50 hover:border-gray-200"
                   }
                 `}
               >
@@ -170,14 +170,14 @@ export function SearchHistory({
                   {/* Inserted count badge */}
                   <div
                     className={`
-                      flex-shrink-0 rounded-lg px-3 py-2 text-center border
+                      flex-shrink-0 rounded-xl px-3 py-2 text-center
                       ${run.inserted > 0
                         ? isDark
-                          ? "bg-slate-800 border-slate-700"
-                          : "bg-slate-100 border-slate-200"
+                          ? "bg-emerald-900/30 border border-emerald-800"
+                          : "bg-emerald-50 border border-emerald-200"
                         : isDark
-                          ? "bg-slate-900 border-slate-800"
-                          : "bg-slate-100 border-slate-200"
+                          ? "bg-gray-800 border border-gray-700"
+                          : "bg-gray-100 border border-gray-200"
                       }
                     `}
                   >
@@ -185,13 +185,13 @@ export function SearchHistory({
                       <FontAwesomeIcon
                         icon={faPlus}
                         className={`text-xs ${run.inserted > 0
-                          ? isDark ? "text-slate-200" : "text-slate-700"
+                          ? isDark ? "text-emerald-400" : "text-emerald-600"
                           : isDark ? "text-gray-500" : "text-gray-400"
                         }`}
                       />
                       <span
                         className={`text-lg font-bold ${run.inserted > 0
-                          ? isDark ? "text-slate-200" : "text-slate-700"
+                          ? isDark ? "text-emerald-400" : "text-emerald-600"
                           : isDark ? "text-gray-400" : "text-gray-500"
                         }`}
                       >
@@ -220,7 +220,7 @@ function SearchHistorySkeleton({ isDark }: { isDark: boolean }) {
           key={i}
           className={`
             rounded-xl border p-4
-            ${isDark ? "border-slate-800 bg-[#0f172a]" : "border-slate-200 bg-slate-50"}
+            ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-100 bg-gray-50"}
           `}
         >
           <div className="flex items-start justify-between gap-4">

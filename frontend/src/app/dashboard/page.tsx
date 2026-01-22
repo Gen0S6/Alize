@@ -583,10 +583,10 @@ export default function DashboardPage() {
         {searchResult && (
           <div
             className={`
-              mt-4 rounded-xl border p-4 flex items-center justify-between
+              mt-4 rounded-xl p-4 flex items-center justify-between
               ${isDark
-                ? "bg-[#111827] border-slate-800 text-emerald-200"
-                : "bg-white border-slate-200 text-emerald-800"
+                ? "bg-emerald-900/30 border border-emerald-800 text-emerald-200"
+                : "bg-emerald-50 border border-emerald-200 text-emerald-800"
               }
             `}
           >
@@ -617,7 +617,7 @@ export default function DashboardPage() {
         )}
 
         {/* Filters and Job List */}
-        <div className={`mt-6 rounded-xl border p-5 ${isDark ? "border-slate-800 bg-[#111827]" : "border-slate-200 bg-white"}`}>
+        <div className={`mt-6 rounded-2xl border p-5 ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-white"}`}>
           <FilterBar
             isDark={isDark}
             filterText={filterText}
@@ -671,15 +671,15 @@ export default function DashboardPage() {
           {/* Error state */}
           {error && (
             <div className={`
-              mt-4 rounded-xl border p-4 flex items-center justify-between
-              ${isDark ? "bg-[#111827] border-red-900/40 text-red-200" : "bg-white border-red-200 text-red-700"}
+              mt-4 rounded-xl p-4 flex items-center justify-between
+              ${isDark ? "bg-red-900/30 border border-red-800 text-red-200" : "bg-red-50 border border-red-200 text-red-700"}
             `}>
               <span className="text-sm">{error}</span>
               <button
                 onClick={() => load()}
                 className={`
-                  text-sm px-3 py-1 rounded-lg transition-colors
-                  ${isDark ? "bg-red-900/40 hover:bg-red-900/60" : "bg-red-100 hover:bg-red-200"}
+                  text-sm px-3 py-1 rounded-lg transition-all
+                  ${isDark ? "bg-red-800 hover:bg-red-700" : "bg-red-100 hover:bg-red-200"}
                 `}
               >
                 Réessayer
@@ -897,10 +897,10 @@ export default function DashboardPage() {
                     }}
                     disabled={page <= 1 || loading}
                     className={`
-                      inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50
+                      inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all disabled:opacity-50
                       ${isDark
-                        ? "border border-slate-700 text-gray-300 hover:bg-slate-800"
-                        : "border border-slate-200 text-gray-700 hover:bg-slate-50"
+                        ? "border border-gray-700 text-gray-300 hover:bg-gray-800"
+                        : "border border-gray-200 text-gray-700 hover:bg-gray-100"
                       }
                     `}
                   >
@@ -925,10 +925,10 @@ export default function DashboardPage() {
                     }}
                     disabled={loading || page >= maxPage}
                     className={`
-                      inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50
+                      inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all disabled:opacity-50
                       ${isDark
-                        ? "border border-slate-700 text-gray-300 hover:bg-slate-800"
-                        : "border border-slate-200 text-gray-700 hover:bg-slate-50"
+                        ? "border border-gray-700 text-gray-300 hover:bg-gray-800"
+                        : "border border-gray-200 text-gray-700 hover:bg-gray-100"
                       }
                     `}
                   >
@@ -958,8 +958,8 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
           <div
             className={`
-              w-full max-w-md rounded-xl border p-6 animate-scale-in
-              ${isDark ? "bg-[#111827] border-slate-800" : "bg-white border-slate-200"}
+              w-full max-w-md rounded-2xl p-6 shadow-2xl animate-scale-in
+              ${isDark ? "bg-[#0f1116] border border-gray-700" : "bg-white"}
             `}
           >
             <h3 className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}>
