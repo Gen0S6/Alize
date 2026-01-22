@@ -122,23 +122,41 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   };
 
   const headerClass = isDark
-    ? "sticky top-0 z-50 border-b border-gray-800 bg-[#0f1116]/95 backdrop-blur-sm shadow-lg shadow-black/10"
-    : "sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm shadow-sm";
-  const linkClass = isDark ? "text-gray-100 hover:text-white" : "text-gray-800 hover:text-black";
-  const navClass = isDark ? "flex items-center gap-4 text-sm text-gray-200" : "flex items-center gap-4 text-sm text-gray-700";
+    ? "sticky top-0 z-50 border-b border-white/5 bg-[#0a0c14]/80 backdrop-blur-xl shadow-lg shadow-black/20"
+    : "sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl shadow-sm";
+  const linkClass = isDark ? "text-slate-200 hover:text-white" : "text-slate-700 hover:text-slate-900";
+  const navClass = isDark ? "flex items-center gap-5 text-sm text-slate-200" : "flex items-center gap-5 text-sm text-slate-600";
   const containerClass = isDark
-    ? "min-h-screen bg-[#0b0c10] text-gray-100 flex flex-col"
-    : "min-h-screen bg-white text-gray-900 flex flex-col";
+    ? "min-h-screen bg-[#06070f] text-slate-100 flex flex-col relative overflow-hidden"
+    : "min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col relative overflow-hidden";
   const badgeClass = isDark
     ? "fixed bottom-6 right-6 group cursor-pointer"
     : "fixed bottom-6 right-6 group cursor-pointer";
 
   return (
     <div className={containerClass}>
+      <div aria-hidden className="pointer-events-none absolute inset-0 app-grid opacity-50" />
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full blur-3xl ${
+          isDark ? "bg-blue-500/10" : "bg-blue-400/20"
+        }`}
+      />
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute top-[45%] right-[-6rem] h-[22rem] w-[22rem] rounded-full blur-[140px] ${
+          isDark ? "bg-purple-500/10" : "bg-purple-400/20"
+        }`}
+      />
       {!isAuthPage && (
         <header className={headerClass}>
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-            <Link href="/" className={`flex items-center gap-2 text-lg font-semibold ${linkClass}`}>
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            <Link href="/" className={`flex items-center gap-3 text-lg font-semibold ${linkClass}`}>
+              <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${
+                isDark ? "bg-blue-500/15 text-blue-300" : "bg-blue-100 text-blue-700"
+              }`}>
+                A
+              </span>
               <span>Alizè</span>
             </Link>
 
@@ -163,20 +181,20 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className={`flex items-center gap-2 ml-2 p-1 rounded-full transition-all duration-200 ${
+                    className={`flex items-center gap-2 ml-2 p-1.5 rounded-full transition-all duration-200 ${
                       isDark
-                        ? "hover:bg-gray-800"
-                        : "hover:bg-gray-100"
+                        ? "hover:bg-white/10"
+                        : "hover:bg-slate-100"
                     }`}
                     aria-label="Menu utilisateur"
                     aria-expanded={userDropdownOpen}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-transform duration-200 ${
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-transform duration-200 ${
                       userDropdownOpen ? "scale-95" : ""
                     } ${
                       isDark
-                        ? "bg-blue-600 text-white"
-                        : "bg-blue-500 text-white"
+                        ? "bg-blue-500/80 text-white"
+                        : "bg-blue-600 text-white"
                     }`}>
                       {getUserInitials()}
                     </div>
@@ -184,10 +202,10 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
 
                   {/* Dropdown Menu */}
                   {userDropdownOpen && (
-                    <div className={`absolute right-0 mt-2 w-56 rounded-lg border py-1 animate-dropdown-in ${
+                    <div className={`absolute right-0 mt-3 w-56 rounded-2xl border py-1 animate-dropdown-in ${
                       isDark
-                        ? "bg-[#1a1b1f] border-gray-700 shadow-xl shadow-black/30"
-                        : "bg-white border-gray-200 shadow-lg"
+                        ? "bg-[#141621] border-white/10 shadow-xl shadow-black/30"
+                        : "bg-white border-slate-200 shadow-lg"
                     }`}>
                       {/* User Info */}
                       <div className={`px-4 py-3 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}>
