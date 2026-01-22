@@ -3,11 +3,8 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
-  faFilter,
   faTableCells,
   faList,
-  faBolt,
-  faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { SortOption } from "../../lib/api";
 
@@ -60,54 +57,47 @@ export function FilterBar({
   page,
   isLoading,
 }: FilterBarProps) {
+  const inputClass = `w-full rounded-md border py-2 px-3 text-sm focus:outline-none focus:ring-1 ${
+    isDark
+      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-blue-500 focus:ring-blue-500"
+      : "border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+  }`;
+
+  const selectClass = `rounded-md border py-2 px-3 text-sm focus:outline-none focus:ring-1 ${
+    isDark
+      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-blue-500 focus:ring-blue-500"
+      : "border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+  }`;
+
   return (
     <div className="space-y-4">
-      {/* Search and main filters */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-        {/* Search input */}
-        <div className="md:col-span-5">
-          <label className={`text-xs font-semibold uppercase ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Recherche
-          </label>
-          <div className="relative mt-1">
-            <FontAwesomeIcon
-              icon={faSearch}
-              className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-            />
-            <input
-              className={`
-                w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm transition-all
-                focus:outline-none focus:ring-2
-                ${isDark
-                  ? "border-gray-700 bg-[#0d1016] text-gray-100 placeholder-gray-500 focus:border-blue-600 focus:ring-blue-600/20"
-                  : "border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500/20"
-                }
-              `}
-              placeholder="Titre, entreprise, localisation..."
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-            />
-          </div>
+      {/* First row: Search and filters */}
+      <div className="flex flex-wrap gap-3">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <FontAwesomeIcon
+            icon={faSearch}
+            className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm ${
+              isDark ? "text-gray-500" : "text-gray-400"
+            }`}
+          />
+          <input
+            className={`${inputClass} pl-9`}
+            placeholder="Rechercher..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+          />
         </div>
 
         {/* Score min */}
-        <div className="md:col-span-2">
-          <label className={`text-xs font-semibold uppercase ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Score min
-          </label>
+        <div className="w-24">
           <input
-            className={`
-              mt-1 w-full rounded-xl border py-2.5 px-3 text-sm transition-all
-              focus:outline-none focus:ring-2
-              ${isDark
-                ? "border-gray-700 bg-[#0d1016] text-gray-100 focus:border-blue-600 focus:ring-blue-600/20"
-                : "border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500/20"
-              }
-            `}
+            className={inputClass}
             type="number"
             min={0}
             max={10}
-            value={minScore}
+            placeholder="Score min"
+            value={minScore || ""}
             onChange={(e) => {
               const val = Math.max(0, Math.min(10, Number(e.target.value) || 0));
               setMinScore(val);
@@ -115,193 +105,93 @@ export function FilterBar({
           />
         </div>
 
-        {/* Source filter */}
-        <div className="md:col-span-3">
-          <label className={`text-xs font-semibold uppercase ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Source
-          </label>
-          <div className="relative mt-1">
-            <FontAwesomeIcon
-              icon={faFilter}
-              className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? "text-gray-500" : "text-gray-400"}`}
-            />
-            <select
-              className={`
-                w-full appearance-none rounded-xl border py-2.5 pl-10 pr-8 text-sm transition-all
-                focus:outline-none focus:ring-2
-                ${isDark
-                  ? "border-gray-700 bg-[#0d1016] text-gray-100 focus:border-blue-600 focus:ring-blue-600/20"
-                  : "border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500/20"
-                }
-              `}
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-            >
-              <option value="all">Toutes les sources</option>
-              {sources.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        {/* Source */}
+        <select
+          className={selectClass}
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+        >
+          <option value="all">Toutes sources</option>
+          {sources.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
 
-        {/* View mode toggle */}
-        <div className="md:col-span-2">
-          <label className={`text-xs font-semibold uppercase ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-            Affichage
-          </label>
-          <div className={`mt-1 flex rounded-xl border p-1 ${isDark ? "border-gray-700 bg-[#0d1016]" : "border-gray-200 bg-white"}`}>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`
-                flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm transition-all
-                ${viewMode === "grid"
-                  ? isDark
-                    ? "bg-blue-600 text-white"
-                    : "bg-blue-600 text-white"
-                  : isDark
-                    ? "text-gray-400 hover:text-gray-200"
-                    : "text-gray-500 hover:text-gray-700"
-                }
-              `}
-            >
-              <FontAwesomeIcon icon={faTableCells} />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`
-                flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm transition-all
-                ${viewMode === "table"
-                  ? isDark
-                    ? "bg-blue-600 text-white"
-                    : "bg-blue-600 text-white"
-                  : isDark
-                    ? "text-gray-400 hover:text-gray-200"
-                    : "text-gray-500 hover:text-gray-700"
-                }
-              `}
-            >
-              <FontAwesomeIcon icon={faList} />
-            </button>
-          </div>
+        {/* Sort */}
+        <select
+          className={selectClass}
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+        >
+          <option value="new_first">Nouveautés d'abord</option>
+          <option value="newest">Plus récentes</option>
+          <option value="score">Meilleur score</option>
+        </select>
+
+        {/* View toggle */}
+        <div className={`flex rounded-md border ${isDark ? "border-gray-700" : "border-gray-300"}`}>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`px-3 py-2 ${
+              viewMode === "grid"
+                ? "bg-blue-600 text-white"
+                : isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            <FontAwesomeIcon icon={faTableCells} />
+          </button>
+          <button
+            onClick={() => setViewMode("table")}
+            className={`px-3 py-2 ${
+              viewMode === "table"
+                ? "bg-blue-600 text-white"
+                : isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            <FontAwesomeIcon icon={faList} />
+          </button>
         </div>
       </div>
 
-      {/* Second row: Sort and new only toggle */}
+      {/* Second row: Toggles and count */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
-          {/* Sort dropdown */}
-          <div className="flex items-center gap-2">
-            <label className={`text-xs font-semibold uppercase ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-              Trier par
-            </label>
-            <select
-              className={`
-                rounded-xl border py-2 px-3 text-sm transition-all
-                focus:outline-none focus:ring-2
-                ${isDark
-                  ? "border-gray-700 bg-[#0d1016] text-gray-100 focus:border-blue-600 focus:ring-blue-600/20"
-                  : "border-gray-200 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500/20"
-                }
-              `}
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-            >
-              <option value="new_first">Nouveautes d'abord</option>
-              <option value="newest">Plus recentes</option>
-              <option value="score">Meilleur score</option>
-            </select>
-          </div>
-
-          {/* Saved only toggle */}
-          <label className="flex cursor-pointer items-center gap-2">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={savedOnly}
-                onChange={(e) => setSavedOnly(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className={`
-                h-6 w-11 rounded-full transition-all peer-focus:ring-2
-                ${isDark
-                  ? "bg-gray-700 peer-checked:bg-amber-500 peer-focus:ring-amber-500/20"
-                  : "bg-gray-200 peer-checked:bg-amber-400 peer-focus:ring-amber-400/20"
-                }
-              `} />
-              <div className={`
-                absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform
-                peer-checked:translate-x-5
-              `} />
-            </div>
+          {/* Saved only */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={savedOnly}
+              onChange={(e) => setSavedOnly(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
             <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-              Sauvegardées
+              Sauvegardées {savedCount > 0 && `(${savedCount})`}
             </span>
-            {savedCount > 0 && (
-              <span className={`
-                inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold
-                ${isDark
-                  ? "bg-amber-900/40 text-amber-300 border border-amber-700/60"
-                  : "bg-amber-100 text-amber-700"
-                }
-              `}>
-                <FontAwesomeIcon icon={faStar} className="text-[10px]" />
-                {savedCount}
-              </span>
-            )}
           </label>
 
-          {/* New only toggle */}
-          <label className="flex cursor-pointer items-center gap-2">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={newOnly}
-                onChange={(e) => setNewOnly(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className={`
-                h-6 w-11 rounded-full transition-all peer-focus:ring-2
-                ${isDark
-                  ? "bg-gray-700 peer-checked:bg-emerald-600 peer-focus:ring-emerald-600/20"
-                  : "bg-gray-200 peer-checked:bg-emerald-500 peer-focus:ring-emerald-500/20"
-                }
-              `} />
-              <div className={`
-                absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform
-                peer-checked:translate-x-5
-              `} />
-            </div>
+          {/* New only */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={newOnly}
+              onChange={(e) => setNewOnly(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
             <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-              Nouveautes uniquement
+              Nouveautés uniquement {newCount > 0 && `(${newCount})`}
             </span>
-            {newCount > 0 && (
-              <span className={`
-                inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold
-                ${isDark
-                  ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/60"
-                  : "bg-emerald-100 text-emerald-700"
-                }
-              `}>
-                <FontAwesomeIcon icon={faBolt} className="text-[10px]" />
-                {newCount}
-              </span>
-            )}
           </label>
         </div>
 
         {/* Results count */}
         <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
           {isLoading && (
-            <svg className="h-4 w-4 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <svg className="h-4 w-4 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           )}
-          <span className="font-medium">{currentCount}</span> resultats sur{" "}
-          <span className="font-medium">{totalMatches}</span> (page {page})
+          {currentCount} sur {totalMatches}
         </div>
       </div>
     </div>
