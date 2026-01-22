@@ -74,12 +74,14 @@ export default function DashboardPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("new_first");
   const [newOnly, setNewOnly] = useState(false);
+  const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
   const autoSearched = useRef(false);
+  const initialized = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -100,7 +102,6 @@ export default function DashboardPage() {
   const [debouncedSourceFilter, setDebouncedSourceFilter] = useState(sourceFilter);
   const [debouncedSortBy, setDebouncedSortBy] = useState(sortBy);
   const [debouncedNewOnly, setDebouncedNewOnly] = useState(newOnly);
-  const [debouncedSavedOnly, setDebouncedSavedOnly] = useState(savedOnly);
 
   useEffect(() => {
     const handler = window.setTimeout(() => {
@@ -130,13 +131,6 @@ export default function DashboardPage() {
     return () => window.clearTimeout(handler);
   }, [newOnly]);
 
-  useEffect(() => {
-    const handler = window.setTimeout(() => {
-      setDebouncedSavedOnly(savedOnly);
-    }, 150);
-    return () => window.clearTimeout(handler);
-  }, [savedOnly]);
-
   async function load(
     p = page,
     ft = debouncedFilterText,
@@ -144,7 +138,6 @@ export default function DashboardPage() {
     sf = sourceFilter,
     sb = sortBy,
     no = newOnly,
-    so = savedOnly,
     retryCount = 0
   ) {
     setError(null);
@@ -198,7 +191,7 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminee - aucune nouvelle offre", "info");
       }
-      await load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
+      await load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
       await loadRuns();
       await loadStats();
     } catch (err: any) {
@@ -223,7 +216,7 @@ export default function DashboardPage() {
 
     // Load all data in parallel with individual error handling
     Promise.allSettled([
-      load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly),
+      load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly),
       loadAnalysis(),
       loadRuns(),
       loadStats(),
@@ -239,8 +232,8 @@ export default function DashboardPage() {
       filtersInitialized.current = true;
       return;
     }
-    load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
-  }, [debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly]);
+    load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
+  }, [debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly]);
 
   useEffect(() => {
     try {
@@ -751,7 +744,7 @@ export default function DashboardPage() {
                     onClick={() => {
                       const next = Math.max(1, page - 1);
                       setPage(next);
-                      load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
+                      load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
                     }}
                     disabled={page <= 1 || loading}
                     className={`
@@ -778,7 +771,7 @@ export default function DashboardPage() {
                       const next = Math.min(maxPage, page + 1);
                       if (next !== page) {
                         setPage(next);
-                        load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
+                        load(next, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly);
                       }
                     }}
                     disabled={loading || page >= maxPage}
