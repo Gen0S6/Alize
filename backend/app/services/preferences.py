@@ -28,6 +28,12 @@ def _ensure_notification_columns(db: Session) -> None:
             f"ADD COLUMN send_empty_digest BOOLEAN DEFAULT {default_value} NOT NULL"
         )
 
+    if "notification_max_jobs" not in columns:
+        statements.append(
+            "ALTER TABLE user_preferences "
+            "ADD COLUMN notification_max_jobs INTEGER DEFAULT 5 NOT NULL"
+        )
+
     if statements:
         for statement in statements:
             db.execute(text(statement))
@@ -49,6 +55,9 @@ def get_or_create_pref(user: User, db: Session) -> UserPreference:
         updated = True
     if pref.send_empty_digest is None:
         pref.send_empty_digest = True
+        updated = True
+    if pref.notification_max_jobs is None:
+        pref.notification_max_jobs = 5
         updated = True
     if updated:
         db.add(pref)

@@ -199,7 +199,8 @@ export default function ProfilePage() {
     if (!notificationPref || !initialNotificationPref) return false;
     return (
       notificationPref.notification_frequency !== initialNotificationPref.notification_frequency ||
-      notificationPref.send_empty_digest !== initialNotificationPref.send_empty_digest
+      notificationPref.send_empty_digest !== initialNotificationPref.send_empty_digest ||
+      notificationPref.notification_max_jobs !== initialNotificationPref.notification_max_jobs
     );
   }
 
@@ -213,6 +214,7 @@ export default function ProfilePage() {
       const updated = await updatePreferences({
         notification_frequency: payload.notification_frequency ?? "every_3_days",
         send_empty_digest: payload.send_empty_digest ?? true,
+        notification_max_jobs: payload.notification_max_jobs ?? 5,
       });
       setNotificationPref(updated);
       setInitialNotificationPref(updated);
@@ -624,33 +626,10 @@ export default function ProfilePage() {
                   <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
                   <div>
                     <label className={labelClass}>
-                      Fréquence des emails
-                    </label>
-                    <select
-                      className={inputClass}
-                      value={notificationPref.notification_frequency ?? "every_3_days"}
-                      onChange={(e) => {
-                        const nextValue = e.target.value as Preference["notification_frequency"];
-                        const nextPref = { ...notificationPref, notification_frequency: nextValue };
-                        updateNotificationField("notification_frequency", nextValue);
-                        void saveNotifications(nextPref);
-                      }}
-                    >
-                      <option value="daily">Tous les jours</option>
-                      <option value="every_3_days">Tous les 3 jours</option>
-                      <option value="weekly">Toutes les semaines</option>
-                    </select>
-                    <p className={`text-xs mt-2 ${textMuted}`}>
-                      Définit la cadence de réception des emails de matching.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>
-                      Activer l'envoi de nouvelles offres
+                      Activer l'envoi d'emails
                     </label>
                     <div className="mt-1 flex items-center gap-3">
                       <button
@@ -686,9 +665,64 @@ export default function ProfilePage() {
                       )}
                     </div>
                     <p className={`text-xs mt-2 ${textMuted}`}>
-                      Désactive pour arrêter les emails de nouvelles offres.
+                      Active pour recevoir les nouvelles offres par email.
                     </p>
                   </div>
+
+                  {notificationEnabled ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className={labelClass}>
+                          Fréquence des emails
+                        </label>
+                        <select
+                          className={inputClass}
+                          value={notificationPref.notification_frequency ?? "every_3_days"}
+                          onChange={(e) => {
+                            const nextValue = e.target.value as Preference["notification_frequency"];
+                            const nextPref = { ...notificationPref, notification_frequency: nextValue };
+                            updateNotificationField("notification_frequency", nextValue);
+                            void saveNotifications(nextPref);
+                          }}
+                        >
+                          <option value="daily">Tous les jours</option>
+                          <option value="every_3_days">Tous les 3 jours</option>
+                          <option value="weekly">Toutes les semaines</option>
+                        </select>
+                        <p className={`text-xs mt-2 ${textMuted}`}>
+                          Définit la cadence de réception des emails de matching.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>
+                          Nombre d'offres par email
+                        </label>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={notificationPref.notification_max_jobs ?? 5}
+                          onChange={(e) => {
+                            const parsed = Number.parseInt(e.target.value, 10);
+                            if (Number.isNaN(parsed)) return;
+                            const nextValue = Math.min(20, Math.max(1, parsed));
+                            const nextPref = { ...notificationPref, notification_max_jobs: nextValue };
+                            updateNotificationField("notification_max_jobs", nextValue);
+                            void saveNotifications(nextPref);
+                          }}
+                        />
+                        <p className={`text-xs mt-2 ${textMuted}`}>
+                          Entre 1 et 20 offres par envoi.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={`text-sm ${textMuted}`}>
+                      Active les emails pour choisir la fréquence et le nombre d'offres.
+                    </p>
+                  )}
                 </div>
                 {notificationSaving && (
                   <div className={`mt-4 text-xs ${textMuted}`}>

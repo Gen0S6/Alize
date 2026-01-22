@@ -308,7 +308,7 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
     """
     Parcourt les utilisateurs et :
     1. Lance une recherche automatique si le délai de 3 jours est passé
-    2. Envoie un email avec les 5 meilleures offres non consultées
+    2. Envoie un email avec les meilleures offres non consultées
     """
     from sqlalchemy import func
 
@@ -326,6 +326,8 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             # Récupérer les préférences
             pref = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
             frequency = (pref.notification_frequency if pref else None) or "every_3_days"
+            max_jobs = (pref.notification_max_jobs if pref else None) or 5
+            max_jobs = max(1, min(max_jobs, 20))
             cooldown = timedelta(minutes=FREQUENCY_MINUTES.get(frequency, NOTIFY_INTERVAL_MINUTES))
 
             # Vérifier le cooldown (basé sur last_email_at)
@@ -398,8 +400,8 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 except Exception as exc:
                     log.error("Job search failed for user %s: %s", user.email, exc)
 
-            # Récupérer les 5 meilleures offres non consultées et non notifiées
-            top_jobs = get_top_unnotified_jobs(db, user.id, limit=5)
+            # Récupérer les meilleures offres non consultées et non notifiées
+            top_jobs = get_top_unnotified_jobs(db, user.id, limit=max_jobs)
 
             email_sent = False
             if not top_jobs:
@@ -424,7 +426,10 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 # Envoyer l'email
                 body_text, body_html = build_notification_body(jobs_data)
                 to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
-                success = send_email_notification(to_email, "Vos 5 meilleures offres Alizè", body_text, body_html)
+                subject_count = len(jobs_data)
+                subject_label = "offre" if subject_count == 1 else "offres"
+                subject = f"Vos {subject_count} meilleures {subject_label} Alizè"
+                success = send_email_notification(to_email, subject, body_text, body_html)
                 email_sent = success
                 if success:
                     # Marquer les offres comme notifiées

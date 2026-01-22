@@ -86,6 +86,7 @@ export type Preference = {
   avoid_keywords?: string | null;
   notification_frequency?: "daily" | "weekly" | "every_3_days" | null;
   send_empty_digest?: boolean | null;
+  notification_max_jobs?: number | null;
 };
 
 export type CVLatest = {

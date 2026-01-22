@@ -29,6 +29,7 @@ def get_preferences(
         avoid_keywords=pref.avoid_keywords,
         notification_frequency=pref.notification_frequency,
         send_empty_digest=pref.send_empty_digest,
+        notification_max_jobs=pref.notification_max_jobs,
     )
 
 
@@ -40,7 +41,7 @@ def upsert_preferences(
 ):
     pref = get_or_create_pref(user, db)
 
-    for field, value in payload.model_dump().items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(pref, field, value)
     pref.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -58,4 +59,5 @@ def upsert_preferences(
         avoid_keywords=pref.avoid_keywords,
         notification_frequency=pref.notification_frequency,
         send_empty_digest=pref.send_empty_digest,
+        notification_max_jobs=pref.notification_max_jobs,
     )
