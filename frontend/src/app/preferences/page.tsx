@@ -101,7 +101,14 @@ export default function PreferencesPage() {
 
   function hasChanges() {
     if (!pref || !initialPref) return false;
-    const keys: (keyof Preference)[] = ["role", "location", "contract_type", "salary_min", "must_keywords", "avoid_keywords"];
+    const keys: (keyof Preference)[] = [
+      "role",
+      "location",
+      "contract_type",
+      "salary_min",
+      "must_keywords",
+      "avoid_keywords",
+    ];
     return keys.some((k) => {
       const cur = pref[k];
       const initial = initialPref[k];
