@@ -199,16 +199,16 @@ export default function CVPage() {
 
   // Styles
   const cardClass = isDark
-    ? "rounded-2xl border border-gray-700/50 bg-gradient-to-br from-[#0f1116] to-[#12141a] p-6 shadow-lg"
-    : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm";
+    ? "rounded-xl border border-slate-800 bg-[#111827] p-6"
+    : "rounded-xl border border-slate-200 bg-white p-6";
 
   const textMuted = isDark ? "text-gray-400" : "text-gray-500";
   const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
   const textSecondary = isDark ? "text-gray-300" : "text-gray-700";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -231,7 +231,7 @@ export default function CVPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-            <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20" : "p-2.5 rounded-xl bg-blue-600 shadow-md"}>
+            <span className={isDark ? "p-2.5 rounded-lg bg-slate-700" : "p-2.5 rounded-lg bg-slate-200"}>
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -348,7 +348,7 @@ export default function CVPage() {
                 </div>
                 <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-gray-800" : "bg-gray-200"}`}>
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out"
+                    className="h-full bg-blue-600 transition-all duration-300 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -660,8 +660,8 @@ export default function CVPage() {
               href="/dashboard"
               className={`block text-center p-4 rounded-xl transition-all duration-200 ${
                 isDark
-                  ? "bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-700/30 hover:border-blue-600/50"
-                  : "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 hover:border-blue-300"
+                  ? "bg-[#111827] border border-slate-800 hover:border-slate-700"
+                  : "bg-white border border-slate-200 hover:border-slate-300"
               }`}
             >
               <p className={`font-medium ${textPrimary}`}>Voir les offres correspondantes</p>

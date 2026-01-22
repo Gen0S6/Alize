@@ -74,23 +74,18 @@ export default function DashboardPage() {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("new_first");
   const [newOnly, setNewOnly] = useState(false);
-  const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
   const autoSearched = useRef(false);
-  const initialized = useRef(false);
   const [runs, setRuns] = useState<JobRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
-  const [runsError, setRunsError] = useState<string | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [statsError, setStatsError] = useState<string | null>(null);
   const [saving, setSaving] = useState<number | null>(null);
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
-  const [savedOnly, setSavedOnly] = useState(false);
 
   // Debounce filter text with 500ms delay
   useEffect(() => {
@@ -161,54 +156,30 @@ export default function DashboardPage() {
         router.push("/login");
         return;
       }
-      const status = so ? "saved" : undefined;
-      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no, status);
+      const data = await getMatches(p, pageSize, ft, ms, sf, sb, no);
       setMatchesPage(data);
       setPage(data.page);
-      // Synchroniser les offres sauvegardées avec les données du serveur
-      const savedIds = new Set(data.items.filter(m => m.is_saved || m.status === "saved").map(m => m.id).filter((id): id is number => id !== undefined));
-      setSavedJobs(prev => {
-        const merged = new Set(prev);
-        savedIds.forEach(id => merged.add(id));
-        // Supprimer les ids qui ne sont plus sauvegardés dans cette page
-        data.items.forEach(m => {
-          if (m.id && !m.is_saved && m.status !== "saved") {
-            merged.delete(m.id);
-          }
-        });
-        return merged;
-      });
     } catch (err: any) {
-      // Retry on network/fetch errors (up to 2 times)
-      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
-        setTimeout(() => load(p, ft, ms, sf, sb, no, so, retryCount + 1), 1000 * (retryCount + 1));
-        return;
-      }
       const message =
         err?.message === "Not authenticated"
-          ? "Session expirée. Reconnecte-toi."
-          : err?.message ?? "Impossible de charger les offres";
+          ? "Session expiree. Reconnecte-toi."
+          : err?.message ?? "Failed to load matches";
       setError(message);
     } finally {
       setLoading(false);
     }
   }
 
-  async function loadAnalysis(force = false, retryCount = 0) {
+  async function loadAnalysis(force = false) {
     setAnalysisError(null);
     setAnalysisLoading(true);
     try {
       const data = await getAnalysis(force);
       setAnalysis(data);
     } catch (err: any) {
-      // Retry on network/fetch errors (up to 2 times)
-      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network") || err?.message?.includes("Failed to fetch"))) {
-        setTimeout(() => loadAnalysis(force, retryCount + 1), 1000 * (retryCount + 1));
-        return;
-      }
       const message =
         err?.message === "Not authenticated"
-          ? "Session expirée. Reconnecte-toi."
+          ? "Session expiree. Reconnecte-toi."
           : err?.message ?? "Impossible de charger l'analyse";
       setAnalysisError(message);
     } finally {
@@ -223,9 +194,9 @@ export default function DashboardPage() {
       const res = await runJobSearch();
       setSearchResult(res);
       if (res.inserted > 0) {
-        addToast(`${res.inserted} nouvelles offres trouvées !`, "success");
+        addToast(`${res.inserted} nouvelles offres trouvees !`, "success");
       } else {
-        addToast("Recherche terminée - aucune nouvelle offre", "info");
+        addToast("Recherche terminee - aucune nouvelle offre", "info");
       }
       await load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
       await loadRuns();
@@ -233,7 +204,7 @@ export default function DashboardPage() {
     } catch (err: any) {
       const message =
         err?.message === "Not authenticated"
-          ? "Session expirée. Reconnecte-toi."
+          ? "Session expiree. Reconnecte-toi."
           : err?.message ?? "Impossible de lancer la recherche IA";
       addToast(message, "error");
     } finally {
@@ -242,9 +213,6 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    // Prevent duplicate initialization
-    if (initialized.current) return;
-
     const token = getToken();
     if (!token) {
       router.push("/login");
@@ -259,12 +227,8 @@ export default function DashboardPage() {
       loadAnalysis(),
       loadRuns(),
       loadStats(),
-    ]).then((results) => {
-      results.forEach((result, index) => {
-        if (result.status === "rejected") {
-          console.error(`Dashboard load error (${index}):`, result.reason);
-        }
-      });
+    ]).catch((err) => {
+      console.error("Error loading dashboard data:", err);
     });
   }, [router]);
 
@@ -296,10 +260,7 @@ export default function DashboardPage() {
         setMinScore(typeof parsed.minScore === "number" ? parsed.minScore : 0);
         setSourceFilter(parsed.sourceFilter ?? "all");
         setSortBy(parsed.sortBy ?? "new_first");
-        const savedOnlyValue = parsed.savedOnly ?? false;
-        const newOnlyValue = savedOnlyValue ? false : (parsed.newOnly ?? false);
-        setNewOnly(newOnlyValue);
-        setSavedOnly(savedOnlyValue);
+        setNewOnly(parsed.newOnly ?? false);
       }
     } catch (_err) {}
     try {
@@ -314,10 +275,10 @@ export default function DashboardPage() {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly })
+        JSON.stringify({ filterText, minScore, sourceFilter, sortBy, newOnly })
       );
     } catch (_err) {}
-  }, [filterText, minScore, sourceFilter, sortBy, newOnly, savedOnly]);
+  }, [filterText, minScore, sourceFilter, sortBy, newOnly]);
 
   useEffect(() => {
     try {
@@ -356,7 +317,7 @@ export default function DashboardPage() {
         prev ? { ...prev, items: prev.items.filter((m) => m.id !== id), total: Math.max(0, prev.total - 1) } : prev
       );
       await loadStats();
-      addToast("Offre supprimée avec succes", "success");
+      addToast("Offre supprimee avec succes", "success");
     } catch (err: any) {
       addToast(err?.message ?? "Impossible de supprimer l'offre.", "error");
     } finally {
@@ -377,17 +338,6 @@ export default function DashboardPage() {
     if (id) {
       try {
         await markMatchVisited(id);
-        // Mettre à jour l'état local de l'offre (status devient "viewed" si c'était "new")
-        setMatchesPage((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((m) =>
-                  m.id === id && m.status === "new" ? { ...m, is_new: false, status: "viewed" as const } : m
-                ),
-              }
-            : prev
-        );
         await loadStats();
       } catch (_err) {}
     }
@@ -401,43 +351,22 @@ export default function DashboardPage() {
   const totalMatches = matchesPage?.total ?? 0;
   const newOffers = matches.filter((m) => m.is_new && !visitedMatches.has(m.url));
 
-  async function loadRuns(retryCount = 0) {
+  async function loadRuns() {
     setRunsLoading(true);
-    setRunsError(null);
     try {
       const data = await getJobRuns();
       setRuns(data);
-    } catch (err: any) {
-      // Retry on network errors (up to 2 times)
-      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network"))) {
-        setTimeout(() => loadRuns(retryCount + 1), 1000 * (retryCount + 1));
-        return;
-      }
-      const message = err?.message === "Not authenticated"
-        ? "Session expirée"
-        : "Impossible de charger l'historique";
-      setRunsError(message);
+    } catch (_err) {
     } finally {
       setRunsLoading(false);
     }
   }
 
-  async function loadStats(retryCount = 0) {
-    setStatsError(null);
+  async function loadStats() {
     try {
       const data = await getDashboardStats();
       setStats(data);
-    } catch (err: any) {
-      // Retry on network errors (up to 2 times)
-      if (retryCount < 2 && (err?.message?.includes("fetch") || err?.message?.includes("network"))) {
-        setTimeout(() => loadStats(retryCount + 1), 1000 * (retryCount + 1));
-        return;
-      }
-      const message = err?.message === "Not authenticated"
-        ? "Session expirée"
-        : "Impossible de charger les statistiques";
-      setStatsError(message);
-    }
+    } catch (_err) {}
   }
 
   async function toggleSaveJob(id: number) {
@@ -451,33 +380,11 @@ export default function DashboardPage() {
           next.delete(id);
           return next;
         });
-        // Mettre à jour l'état local de l'offre
-        setMatchesPage((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((m) =>
-                  m.id === id ? { ...m, is_saved: false, status: "viewed" as const } : m
-                ),
-              }
-            : prev
-        );
-        addToast("Offre retirée des favoris", "info");
+        addToast("Offre retiree des favoris", "info");
       } else {
         await saveMatch(id);
         setSavedJobs((prev) => new Set(prev).add(id));
-        // Mettre à jour l'état local de l'offre
-        setMatchesPage((prev) =>
-          prev
-            ? {
-                ...prev,
-                items: prev.items.map((m) =>
-                  m.id === id ? { ...m, is_saved: true, status: "saved" as const } : m
-                ),
-              }
-            : prev
-        );
-        addToast("Offre sauvegardée", "success");
+        addToast("Offre sauvegardee", "success");
       }
       await loadStats();
     } catch (err: any) {
@@ -497,7 +404,7 @@ export default function DashboardPage() {
   const maxPage = Math.max(1, Math.ceil(totalMatches / pageSize));
 
   return (
-    <main className={isDark ? "min-h-screen p-4 md:p-6 bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 bg-white text-gray-900"}>
+    <main className={isDark ? "min-h-screen p-4 md:p-6 bg-[#0b0c10] text-gray-100" : "min-h-screen p-4 md:p-6 bg-gray-50 text-gray-900"}>
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -506,7 +413,7 @@ export default function DashboardPage() {
               Tableau de bord
             </h1>
             <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              Tes dernières opportunités proposées
+              Tes dernieres opportunites proposees
             </p>
           </div>
 
@@ -522,7 +429,7 @@ export default function DashboardPage() {
               `}
             >
               <FontAwesomeIcon icon={faSliders} className="text-xs" />
-              Préférences
+              Preferences
             </Link>
             <Link
               href="/cv"
@@ -555,21 +462,7 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {statsError ? (
-            <div className={`col-span-2 md:col-span-4 rounded-xl p-4 flex items-center justify-between ${
-              isDark ? "bg-red-900/20 border border-red-800/50 text-red-300" : "bg-red-50 border border-red-200 text-red-600"
-            }`}>
-              <span className="text-sm">{statsError}</span>
-              <button
-                onClick={() => loadStats()}
-                className={`text-sm px-3 py-1 rounded-lg transition-all ${
-                  isDark ? "bg-red-800/50 hover:bg-red-800" : "bg-red-100 hover:bg-red-200"
-                }`}
-              >
-                Réessayer
-              </button>
-            </div>
-          ) : !stats ? (
+          {!stats ? (
             <>
               {[...Array(4)].map((_, i) => (
                 <StatCardSkeleton key={i} isDark={isDark} />
@@ -586,21 +479,21 @@ export default function DashboardPage() {
               />
               <StatCard
                 value={stats.new_jobs}
-                label="Non consultées"
+                label="Non consultees"
                 icon={faBolt}
                 color="green"
                 isDark={isDark}
               />
               <StatCard
                 value={stats.viewed_jobs}
-                label="Consultées"
+                label="Consultees"
                 icon={faEye}
                 color="gray"
                 isDark={isDark}
               />
               <StatCard
                 value={stats.saved_jobs}
-                label="Sauvegardées"
+                label="Sauvegardees"
                 icon={faStar}
                 color="amber"
                 isDark={isDark}
@@ -638,7 +531,7 @@ export default function DashboardPage() {
               <span className="text-sm">
                 {searchResult.inserted > 0 ? (
                   <>
-                    <span className="font-semibold">{searchResult.inserted}</span> nouvelles offres ajoutées
+                    <span className="font-semibold">{searchResult.inserted}</span> nouvelles offres ajoutees
                     {searchResult.tried_queries.length > 0 && (
                       <span className={isDark ? "text-emerald-400" : "text-emerald-600"}>
                         {" "}• Requetes: {searchResult.tried_queries.join(", ")}
@@ -646,7 +539,7 @@ export default function DashboardPage() {
                     )}
                   </>
                 ) : (
-                  <>Aucune nouvelle offre trouvée</>
+                  <>Aucune nouvelle offre trouvee</>
                 )}
               </span>
             </div>
@@ -672,30 +565,14 @@ export default function DashboardPage() {
             sortBy={sortBy}
             setSortBy={(v) => { setPage(1); setSortBy(v); }}
             newOnly={newOnly}
-            setNewOnly={(v) => {
-              setPage(1);
-              setNewOnly(v);
-              if (v) {
-                setSavedOnly(false);
-              }
-            }}
-            savedOnly={savedOnly}
-            setSavedOnly={(v) => {
-              setPage(1);
-              setSavedOnly(v);
-              if (v) {
-                setNewOnly(false);
-              }
-            }}
+            setNewOnly={(v) => { setPage(1); setNewOnly(v); }}
             sources={sources}
             newCount={matchesPage?.new_count ?? 0}
-            savedCount={stats?.saved_jobs ?? 0}
             viewMode={viewMode}
             setViewMode={setViewMode}
             totalMatches={totalMatches}
             currentCount={matches.length}
             page={page}
-            isLoading={loading}
           />
 
           {/* Loading indicator is now shown in FilterBar - no blocking overlay */}
@@ -714,7 +591,7 @@ export default function DashboardPage() {
                   ${isDark ? "bg-red-800 hover:bg-red-700" : "bg-red-100 hover:bg-red-200"}
                 `}
               >
-                Réessayer
+                Reessayer
               </button>
             </div>
           )}
@@ -735,42 +612,7 @@ export default function DashboardPage() {
                 `}>
                   <FontAwesomeIcon icon={faBriefcase} className="text-5xl mb-4" />
                   <p className="text-lg font-medium">Pas encore d'offres</p>
-                  <p className="text-sm mt-1">
-                    Mets à jour ton CV et tes préférences pour obtenir de meilleurs résultats.
-                  </p>
-                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                    <Link
-                      href="/cv"
-                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
-                        isDark
-                          ? "bg-white text-gray-900 hover:bg-gray-100"
-                          : "bg-gray-900 text-white hover:bg-gray-800"
-                      }`}
-                    >
-                      Uploader mon CV
-                    </Link>
-                    <Link
-                      href="/preferences"
-                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
-                        isDark
-                          ? "border border-gray-700 text-gray-200 hover:bg-gray-800"
-                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      Définir mes préférences
-                    </Link>
-                    <button
-                      onClick={launchSearch}
-                      disabled={searching}
-                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${
-                        isDark
-                          ? "bg-blue-600 text-white hover:bg-blue-500"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
-                      }`}
-                    >
-                      {searching ? "Recherche..." : "Lancer la recherche IA"}
-                    </button>
-                  </div>
+                  <p className="text-sm mt-1">Relance une recherche IA ou repasse dans quelques jours</p>
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -780,7 +622,7 @@ export default function DashboardPage() {
                       match={m}
                       isDark={isDark}
                       isNew={!!m.is_new && !visitedMatches.has(m.url)}
-                      isSaved={m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)}
+                      isSaved={savedJobs.has(m.id ?? 0)}
                       isSaving={saving === m.id}
                       isDeleting={deleting === m.id}
                       onSave={() => m.id && toggleSaveJob(m.id)}
@@ -818,22 +660,6 @@ export default function DashboardPage() {
                                   </span>
                                 )}
                               </div>
-                              {m.match_reasons && m.match_reasons.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-1.5">
-                                  {m.match_reasons.map((reason) => (
-                                    <span
-                                      key={reason}
-                                      className={`rounded-md px-2 py-0.5 text-[10px] ${
-                                        isDark
-                                          ? "bg-[#111621] text-gray-300 border border-gray-700"
-                                          : "bg-gray-100 text-gray-600"
-                                      }`}
-                                    >
-                                      {reason}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
                             </td>
                             <td className={`py-3 pr-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                               <div className="flex items-center gap-1.5">
@@ -888,14 +714,14 @@ export default function DashboardPage() {
                                   disabled={saving === m.id}
                                   className={`
                                     inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50
-                                    ${(m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0))
+                                    ${savedJobs.has(m.id ?? 0)
                                       ? isDark ? "bg-amber-900/40 text-amber-400" : "bg-amber-100 text-amber-600"
                                       : isDark ? "text-gray-500 hover:bg-gray-800 hover:text-amber-400" : "text-gray-400 hover:bg-gray-100 hover:text-amber-500"
                                     }
                                   `}
-                                  title={(m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)) ? "Retirer des favoris" : "Sauvegarder"}
+                                  title={savedJobs.has(m.id ?? 0) ? "Retirer des favoris" : "Sauvegarder"}
                                 >
-                                  <FontAwesomeIcon icon={((m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)) ? faStar : faStarRegular) as any} />
+                                  <FontAwesomeIcon icon={(savedJobs.has(m.id ?? 0) ? faStar : faStarRegular) as any} />
                                 </button>
                                 <button
                                   onClick={() => requestDelete(m)}
@@ -937,7 +763,7 @@ export default function DashboardPage() {
                     `}
                   >
                     <FontAwesomeIcon icon={faChevronLeft} className="text-xs" />
-                    Précédent
+                    Precedent
                   </button>
 
                   <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
@@ -979,7 +805,6 @@ export default function DashboardPage() {
             isDark={isDark}
             runs={runs}
             runsLoading={runsLoading}
-            runsError={runsError}
             onRefresh={loadRuns}
           />
         </div>
@@ -1008,7 +833,7 @@ export default function DashboardPage() {
               )}
             </div>
             <p className={`mt-3 text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-              Cette action est irréversible.
+              Cette action est irreversible.
             </p>
             <div className="mt-5 flex justify-end gap-3">
               <button

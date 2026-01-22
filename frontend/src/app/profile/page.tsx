@@ -199,8 +199,7 @@ export default function ProfilePage() {
     if (!notificationPref || !initialNotificationPref) return false;
     return (
       notificationPref.notification_frequency !== initialNotificationPref.notification_frequency ||
-      notificationPref.send_empty_digest !== initialNotificationPref.send_empty_digest ||
-      notificationPref.notification_max_jobs !== initialNotificationPref.notification_max_jobs
+      notificationPref.send_empty_digest !== initialNotificationPref.send_empty_digest
     );
   }
 
@@ -214,7 +213,6 @@ export default function ProfilePage() {
       const updated = await updatePreferences({
         notification_frequency: payload.notification_frequency ?? "every_3_days",
         send_empty_digest: payload.send_empty_digest ?? true,
-        notification_max_jobs: payload.notification_max_jobs ?? 5,
       });
       setNotificationPref(updated);
       setInitialNotificationPref(updated);
@@ -244,8 +242,8 @@ export default function ProfilePage() {
 
   // Styles cohérents avec les autres pages
   const cardClass = isDark
-    ? "rounded-2xl border border-gray-700/50 bg-gradient-to-br from-[#0f1116] to-[#12141a] p-6 shadow-lg"
-    : "rounded-2xl border border-gray-200 bg-white p-6 shadow-sm";
+    ? "rounded-xl border border-slate-800 bg-[#111827] p-6"
+    : "rounded-xl border border-slate-200 bg-white p-6";
 
   const textMuted = isDark ? "text-gray-400" : "text-gray-500";
   const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
@@ -259,8 +257,8 @@ export default function ProfilePage() {
     : "block text-sm font-medium text-gray-700 mb-2";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -277,7 +275,7 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-              <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 shadow-lg shadow-indigo-600/20" : "p-2.5 rounded-xl bg-indigo-600 shadow-md"}>
+            <span className={isDark ? "p-2.5 rounded-lg bg-slate-700" : "p-2.5 rounded-lg bg-slate-200"}>
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -626,10 +624,33 @@ export default function ProfilePage() {
                   <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
                 </div>
 
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelClass}>
-                      Activer l'envoi d'emails
+                      Fréquence des emails
+                    </label>
+                    <select
+                      className={inputClass}
+                      value={notificationPref.notification_frequency ?? "every_3_days"}
+                      onChange={(e) => {
+                        const nextValue = e.target.value as Preference["notification_frequency"];
+                        const nextPref = { ...notificationPref, notification_frequency: nextValue };
+                        updateNotificationField("notification_frequency", nextValue);
+                        void saveNotifications(nextPref);
+                      }}
+                    >
+                      <option value="daily">Tous les jours</option>
+                      <option value="every_3_days">Tous les 3 jours</option>
+                      <option value="weekly">Toutes les semaines</option>
+                    </select>
+                    <p className={`text-xs mt-2 ${textMuted}`}>
+                      Définit la cadence de réception des emails de matching.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      Activer l'envoi de nouvelles offres
                     </label>
                     <div className="mt-1 flex items-center gap-3">
                       <button
@@ -665,64 +686,9 @@ export default function ProfilePage() {
                       )}
                     </div>
                     <p className={`text-xs mt-2 ${textMuted}`}>
-                      Active pour recevoir les nouvelles offres par email.
+                      Désactive pour arrêter les emails de nouvelles offres.
                     </p>
                   </div>
-
-                  {notificationEnabled ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className={labelClass}>
-                          Fréquence des emails
-                        </label>
-                        <select
-                          className={inputClass}
-                          value={notificationPref.notification_frequency ?? "every_3_days"}
-                          onChange={(e) => {
-                            const nextValue = e.target.value as Preference["notification_frequency"];
-                            const nextPref = { ...notificationPref, notification_frequency: nextValue };
-                            updateNotificationField("notification_frequency", nextValue);
-                            void saveNotifications(nextPref);
-                          }}
-                        >
-                          <option value="daily">Tous les jours</option>
-                          <option value="every_3_days">Tous les 3 jours</option>
-                          <option value="weekly">Toutes les semaines</option>
-                        </select>
-                        <p className={`text-xs mt-2 ${textMuted}`}>
-                          Définit la cadence de réception des emails de matching.
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className={labelClass}>
-                          Nombre d'offres par email
-                        </label>
-                        <input
-                          className={inputClass}
-                          type="number"
-                          min={1}
-                          max={20}
-                          value={notificationPref.notification_max_jobs ?? 5}
-                          onChange={(e) => {
-                            const parsed = Number.parseInt(e.target.value, 10);
-                            if (Number.isNaN(parsed)) return;
-                            const nextValue = Math.min(20, Math.max(1, parsed));
-                            const nextPref = { ...notificationPref, notification_max_jobs: nextValue };
-                            updateNotificationField("notification_max_jobs", nextValue);
-                            void saveNotifications(nextPref);
-                          }}
-                        />
-                        <p className={`text-xs mt-2 ${textMuted}`}>
-                          Entre 1 et 20 offres par envoi.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={`text-sm ${textMuted}`}>
-                      Active les emails pour choisir la fréquence et le nombre d'offres.
-                    </p>
-                  )}
                 </div>
                 {notificationSaving && (
                   <div className={`mt-4 text-xs ${textMuted}`}>
