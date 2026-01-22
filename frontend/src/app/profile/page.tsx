@@ -20,6 +20,7 @@ import { useToast } from "../../components/Toast";
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [initialEmail, setInitialEmail] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -28,11 +29,13 @@ export default function ProfilePage() {
   const [notificationSaving, setNotificationSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [sendingVerification, setSendingVerification] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { theme, toggle } = useTheme();
   const isDark = theme === "dark";
   const { addToast } = useToast();
@@ -47,6 +50,33 @@ export default function ProfilePage() {
     } finally {
       setSendingVerification(false);
     }
+  }
+
+  // Sauvegarde automatique des notifications
+  async function handleToggleNotifications() {
+    if (!profile) return;
+    const newValue = !notificationsEnabled;
+    setNotificationsEnabled(newValue);
+    setSavingNotifications(true);
+    try {
+      const updated = await updateProfile({ notifications_enabled: newValue });
+      setProfile(updated);
+      addToast(newValue ? "Notifications activées" : "Notifications désactivées", "success");
+    } catch (err: any) {
+      // Revert on error
+      setNotificationsEnabled(!newValue);
+      addToast(err?.message ?? "Erreur lors de la mise à jour", "error");
+    } finally {
+      setSavingNotifications(false);
+    }
+  }
+
+  // Détection des changements pour griser le bouton
+  function hasChanges(): boolean {
+    if (!profile) return false;
+    const emailChanged = email.trim() !== initialEmail.trim();
+    const passwordChanged = newPassword.length > 0;
+    return emailChanged || passwordChanged;
   }
 
   // Raccourcis clavier pour le modal de confirmation
@@ -91,22 +121,16 @@ export default function ProfilePage() {
     }
     (async () => {
       try {
-        const [profileResult, prefResult] = await Promise.allSettled([getProfile(), getPreferences()]);
-        if (profileResult.status === "fulfilled") {
-          setProfile(profileResult.value);
-          setEmail(profileResult.value.email);
-        } else {
-          setError(profileResult.reason?.message ?? "Impossible de charger le profil");
-          if (profileResult.reason?.message === "Not authenticated") {
-            clearToken();
-            router.push("/login");
-          }
-        }
-        if (prefResult.status === "fulfilled") {
-          setNotificationPref(prefResult.value);
-          setInitialNotificationPref(prefResult.value);
-        } else {
-          addToast(prefResult.reason?.message ?? "Impossible de charger les notifications", "error");
+        const data = await getProfile();
+        setProfile(data);
+        setEmail(data.email);
+        setInitialEmail(data.email);
+        setNotificationsEnabled(data.notifications_enabled);
+      } catch (err: any) {
+        setError(err?.message ?? "Impossible de charger le profil");
+        if (err?.message === "Not authenticated") {
+          clearToken();
+          router.push("/login");
         }
       } finally {
         setLoading(false);
@@ -136,6 +160,7 @@ export default function ProfilePage() {
         new_password: newPassword || undefined,
       });
       setProfile(updated);
+      setInitialEmail(updated.email);
       setSuccess("Profil sauvegardé");
       addToast("Profil sauvegardé avec succès", "success");
       // Notifier le header que le profil a été mis à jour
@@ -524,7 +549,7 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 className={btnPrimary}
-                disabled={saving}
+                disabled={saving || !hasChanges()}
               >
                 {saving ? (
                   <span className="flex items-center gap-2">
@@ -543,6 +568,48 @@ export default function ProfilePage() {
                   </span>
                 )}
               </button>
+              {hasChanges() && (
+                <span className={`text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}>
+                  Modifications non sauvegardées
+                </span>
+              )}
+            </div>
+
+            {/* Notifications */}
+            <div className={cardClass}>
+              <div className="flex items-center gap-2 mb-6">
+                <div className={`p-2 rounded-lg ${isDark ? "bg-emerald-900/30" : "bg-emerald-100"}`}>
+                  <svg className={`w-5 h-5 ${isDark ? "text-emerald-400" : "text-emerald-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`font-medium ${textPrimary}`}>Activer l'envoi de nouvelles offres</p>
+                  <p className={`text-sm ${textMuted}`}>Recevoir un email quand de nouvelles offres correspondent à tes critères</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleNotifications}
+                  disabled={savingNotifications}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    notificationsEnabled
+                      ? "bg-blue-600"
+                      : isDark
+                      ? "bg-gray-700"
+                      : "bg-gray-300"
+                  } ${savingNotifications ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      notificationsEnabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Zone de danger */}
