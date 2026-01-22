@@ -1,5 +1,41 @@
 @import "tailwindcss";
 
+/* Base typography & smoothing */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Inter", "SF Pro Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle grid background helper */
+.app-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+html.dark .app-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+}
+
+/* Glass panel helper */
+.glass-panel {
+  backdrop-filter: blur(18px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+html:not(.dark) .glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
 /* Hover behavior adapting to light/dark (only when .theme-hover is present) */
 html.dark body .theme-hover a:hover {
   color: #e5e7eb;
