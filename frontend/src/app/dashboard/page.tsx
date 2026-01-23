@@ -790,131 +790,129 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                /* Table view */
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className={`border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
-                        <th className={`py-3 pr-4 text-left font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Role</th>
-                        <th className={`py-3 pr-4 text-left font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Entreprise</th>
-                        <th className={`py-3 pr-4 text-left font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Localisation</th>
-                        <th className={`py-3 pr-4 text-left font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Source</th>
-                        <th className={`py-3 pr-4 text-left font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Score</th>
-                        <th className={`py-3 pr-4 text-left font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Lien</th>
-                        <th className={`py-3 pr-4 text-center font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {matches.map((m) => {
-                        const showNew = m.is_new && !visitedMatches.has(m.url);
-                        return (
-                          <tr key={m.id} className={`border-b ${isDark ? "border-gray-800 hover:bg-gray-800/50" : "border-gray-100 hover:bg-gray-50"} transition-colors`}>
-                            <td className="py-3 pr-4">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-medium ${isDark ? "text-gray-100" : "text-gray-900"}`}>{m.title}</span>
-                                {showNew && (
-                                  <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                    Nouveau
-                                  </span>
-                                )}
-                              </div>
-                              {m.match_reasons && m.match_reasons.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-1.5">
-                                  {m.match_reasons.map((reason) => (
-                                    <span
-                                      key={reason}
-                                      className={`rounded-md px-2 py-0.5 text-[10px] ${
-                                        isDark
-                                          ? "bg-[#111621] text-gray-300 border border-gray-700"
-                                          : "bg-gray-100 text-gray-600"
-                                      }`}
-                                    >
-                                      {reason}
-                                    </span>
-                                  ))}
-                                </div>
+                /* Table view - Modern card-row design */
+                <div className="space-y-2">
+                  {matches.map((m) => {
+                    const showNew = m.is_new && !visitedMatches.has(m.url);
+                    const isSavedJob = m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0);
+                    const getScoreStyle = () => {
+                      if (m.score === null) return isDark ? "bg-gray-800 text-gray-500" : "bg-gray-100 text-gray-400";
+                      if (m.score >= 8) return isDark ? "bg-emerald-900/50 text-emerald-400" : "bg-emerald-50 text-emerald-600";
+                      if (m.score >= 6) return isDark ? "bg-amber-900/50 text-amber-400" : "bg-amber-50 text-amber-600";
+                      return isDark ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-500";
+                    };
+                    return (
+                      <div
+                        key={m.id}
+                        className={`rounded-xl border p-4 transition-all hover:shadow-sm ${
+                          isDark
+                            ? "border-gray-800 bg-[#0d1117] hover:border-gray-700"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Main content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2">
+                              <h3 className={`font-semibold leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
+                                {m.title}
+                              </h3>
+                              {showNew && (
+                                <span className="flex-shrink-0 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                                  New
+                                </span>
                               )}
-                            </td>
-                            <td className={`py-3 pr-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                              <div className="flex items-center gap-1.5">
-                                <FontAwesomeIcon icon={faBuilding} className="text-xs text-gray-500" />
-                                {m.company || "-"}
+                            </div>
+
+                            {/* Meta info */}
+                            <div className={`mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                              {m.company && (
+                                <span className="flex items-center gap-1.5">
+                                  <FontAwesomeIcon icon={faBuilding} className="text-xs opacity-60" />
+                                  {m.company}
+                                </span>
+                              )}
+                              {m.location && (
+                                <span className="flex items-center gap-1.5">
+                                  <FontAwesomeIcon icon={faLocationDot} className="text-xs opacity-60" />
+                                  {m.location}
+                                </span>
+                              )}
+                              {m.source && (
+                                <span className={`rounded-full px-2 py-0.5 text-xs ${
+                                  isDark ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-500"
+                                }`}>
+                                  {m.source}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Match reasons */}
+                            {m.match_reasons && m.match_reasons.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {m.match_reasons.slice(0, 4).map((reason) => (
+                                  <span
+                                    key={reason}
+                                    className={`rounded-md px-2 py-0.5 text-xs ${
+                                      isDark
+                                        ? "bg-blue-900/30 text-blue-300"
+                                        : "bg-blue-50 text-blue-700"
+                                    }`}
+                                  >
+                                    {reason}
+                                  </span>
+                                ))}
                               </div>
-                            </td>
-                            <td className={`py-3 pr-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                              <div className="flex items-center gap-1.5">
-                                <FontAwesomeIcon icon={faLocationDot} className="text-xs text-gray-500" />
-                                {m.location || "-"}
-                              </div>
-                            </td>
-                            <td className={`py-3 pr-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                              <div className="flex items-center gap-1.5">
-                                <FontAwesomeIcon icon={faGlobe} className="text-xs text-gray-500" />
-                                {m.source || "-"}
-                              </div>
-                            </td>
-                            <td className="py-3 pr-4">
-                              <span className={`
-                                inline-flex items-center rounded-lg px-2 py-1 text-xs font-semibold
-                                ${m.score !== null && m.score >= 8
-                                  ? isDark ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-100 text-emerald-700"
-                                  : m.score !== null && m.score >= 6
-                                    ? isDark ? "bg-amber-900/40 text-amber-300" : "bg-amber-100 text-amber-700"
-                                    : isDark ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-600"
-                                }
-                              `}>
-                                {m.score ?? "-"}/10
-                              </span>
-                            </td>
-                            <td className="py-3 pr-4">
-                              <a
-                                href={m.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={() => markVisited(m.url, m.id)}
-                                className={`
-                                  inline-flex items-center gap-1.5 text-sm font-medium transition-colors
-                                  ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}
-                                `}
-                              >
-                                <FontAwesomeIcon icon={faExternalLink} className="text-xs" />
-                                Ouvrir
-                              </a>
-                            </td>
-                            <td className="py-3 pr-4 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  onClick={() => m.id && toggleSaveJob(m.id)}
-                                  disabled={saving === m.id}
-                                  className={`
-                                    inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50
-                                    ${(m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0))
-                                      ? isDark ? "bg-amber-900/40 text-amber-400" : "bg-amber-100 text-amber-600"
-                                      : isDark ? "text-gray-500 hover:bg-gray-800 hover:text-amber-400" : "text-gray-400 hover:bg-gray-100 hover:text-amber-500"
-                                    }
-                                  `}
-                                  title={(m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)) ? "Retirer des favoris" : "Sauvegarder"}
-                                >
-                                  <FontAwesomeIcon icon={((m.is_saved || m.status === "saved" || savedJobs.has(m.id ?? 0)) ? faStar : faStarRegular) as any} />
-                                </button>
-                                <button
-                                  onClick={() => requestDelete(m)}
-                                  disabled={deleting === m.id}
-                                  className={`
-                                    inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50
-                                    ${isDark ? "text-gray-500 hover:bg-red-900/40 hover:text-red-400" : "text-gray-400 hover:bg-red-100 hover:text-red-500"}
-                                  `}
-                                  title="Supprimer"
-                                >
-                                  <FontAwesomeIcon icon={faTrash} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            )}
+                          </div>
+
+                          {/* Score */}
+                          <div className={`flex-shrink-0 rounded-lg px-3 py-2 text-center ${getScoreStyle()}`}>
+                            <div className="text-xl font-bold leading-none">{m.score ?? "-"}</div>
+                            <div className="text-[10px] uppercase tracking-wide opacity-70">/10</div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex-shrink-0 flex items-center gap-2">
+                            <a
+                              href={m.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => markVisited(m.url, m.id)}
+                              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                            >
+                              <FontAwesomeIcon icon={faExternalLink} className="text-xs" />
+                              Ouvrir
+                            </a>
+
+                            <button
+                              onClick={() => m.id && toggleSaveJob(m.id)}
+                              disabled={saving === m.id}
+                              className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all disabled:opacity-50 ${
+                                isSavedJob
+                                  ? isDark ? "bg-amber-900/40 text-amber-400" : "bg-amber-100 text-amber-600"
+                                  : isDark ? "text-gray-500 hover:text-amber-400 hover:bg-gray-800" : "text-gray-400 hover:text-amber-500 hover:bg-gray-100"
+                              }`}
+                              title={isSavedJob ? "Retirer des favoris" : "Sauvegarder"}
+                            >
+                              <FontAwesomeIcon icon={(isSavedJob ? faStar : faStarRegular) as any} />
+                            </button>
+
+                            <button
+                              onClick={() => requestDelete(m)}
+                              disabled={deleting === m.id}
+                              className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all disabled:opacity-50 ${
+                                isDark ? "text-gray-500 hover:text-red-400 hover:bg-gray-800" : "text-gray-400 hover:text-red-500 hover:bg-gray-100"
+                              }`}
+                              title="Supprimer"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
