@@ -70,7 +70,7 @@ export default function AboutPage() {
               </h2>
               <p className={`leading-relaxed ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                 Chez <strong>Gen0S7</strong>, nous croyons que la recherche d'emploi ne devrait pas être
-                une source de stress. C'est pourquoi nous avons créé <strong>Alizé</strong>, une plateforme
+                une source de stress. C'est pourquoi nous avons cree <strong>Alizè</strong>, une plateforme
                 intelligente qui simplifie et automatise la recherche d'offres d'emploi en France.
               </p>
               <p className={`mt-3 leading-relaxed ${isDark ? "text-gray-300" : "text-gray-600"}`}>
@@ -151,13 +151,13 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* About Alizé */}
+        {/* About Alizè */}
         <div className={cardClass + " mb-8"}>
           <h2 className={`text-xl font-semibold mb-4 ${isDark ? "text-gray-100" : "text-gray-900"}`}>
-            À propos d'Alizé
+            A propos d'Alizè
           </h2>
           <p className={`leading-relaxed mb-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-            <strong>Alizé</strong> est notre projet phare : une plateforme de matching d'emploi
+            <strong>Alizè</strong> est notre projet phare : une plateforme de matching d'emploi
             alimentée par l'IA. Elle analyse votre CV, comprend vos préférences et recherche
             automatiquement les meilleures offres sur France Travail, Adzuna et LinkedIn.
           </p>

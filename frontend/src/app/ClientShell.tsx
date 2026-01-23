@@ -397,11 +397,11 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
             G7
           </div>
           <div className="flex flex-col">
-            <span className={`text-[10px] leading-tight ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-              Créé par
+            <span className={`text-[10px] uppercase tracking-wider leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              Built by
             </span>
-            <span className={`text-sm font-semibold leading-tight ${isDark ? "text-gray-100" : "text-gray-800"}`}>
-              Gen0S7
+            <span className={`text-sm font-bold leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
+              a Gen0S7 member
             </span>
           </div>
         </div>

@@ -46,7 +46,7 @@ export default function HomePage() {
           <p className={`mx-auto mt-6 max-w-2xl text-lg ${
             isDark ? "text-gray-400" : "text-gray-600"
           }`}>
-            Alizé analyse ton CV et recherche automatiquement les offres qui te correspondent
+            Alizè analyse ton CV et recherche automatiquement les offres qui te correspondent
             sur France Travail, Adzuna et LinkedIn.
           </p>
 
@@ -254,7 +254,7 @@ export default function HomePage() {
       <footer className={`py-8 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}>
         <div className="mx-auto max-w-5xl px-6">
           <p className={`text-center text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-            Alizé utilise uniquement des sources légales. Tes données restent privées et sécurisées.
+            Alizè utilise uniquement des sources legales. Tes donnees restent privees et securisees.
           </p>
         </div>
       </footer>
