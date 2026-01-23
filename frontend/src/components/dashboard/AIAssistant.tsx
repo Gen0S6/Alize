@@ -65,7 +65,7 @@ export function AIAssistant({
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             <FontAwesomeIcon icon={faSearch} className={searching ? "animate-pulse" : ""} />
-            {searching ? "Recherche..." : "Recherche IA"}
+            {searching ? "Recherche..." : "Lancer"}
           </button>
         </div>
       </div>
@@ -175,6 +175,7 @@ export function AIAssistant({
                 ))}
               </div>
             </div>
+          )}
 
             {/* Sectors */}
             {analysis.secteurs_cibles && analysis.secteurs_cibles.length > 0 && (
@@ -207,11 +208,6 @@ export function AIAssistant({
                     isDark ? "bg-gray-800 text-gray-200" : "bg-gray-200 text-gray-800"
                   }`}>{kw}</span>
                 ))}
-                {analysis.top_keywords.length === 0 && (
-                  <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                    Aucune compétence détectée.
-                  </span>
-                )}
               </div>
             </div>
 
@@ -294,8 +290,8 @@ export function AIAssistant({
                   </ul>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

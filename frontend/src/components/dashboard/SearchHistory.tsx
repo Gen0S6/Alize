@@ -19,7 +19,6 @@ function formatDate(dateVal: string | Date) {
   return d.toLocaleString("fr-FR", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -77,11 +76,10 @@ export function SearchHistory({
           <div className={`text-center py-8 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
             <FontAwesomeIcon icon={faHistory} className="text-3xl mb-2" />
             <p className="text-sm">Pas encore d'historique</p>
-            <p className="text-xs mt-1">Lancez une recherche IA pour commencer</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {runs.map((run) => (
+          <div className="space-y-2">
+            {runs.slice(0, 5).map((run) => (
               <div
                 key={run.id}
                 className={`rounded-md border p-3 ${
@@ -140,6 +138,13 @@ export function SearchHistory({
                     <div className="text-[10px]">offres</div>
                   </div>
                 </div>
+                <span className={`flex-shrink-0 ml-2 text-sm font-medium ${
+                  run.inserted > 0
+                    ? "text-green-600"
+                    : isDark ? "text-gray-500" : "text-gray-400"
+                }`}>
+                  +{run.inserted}
+                </span>
               </div>
             ))}
           </div>
