@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faRotate,
@@ -11,6 +12,7 @@ import {
   faCheckCircle,
   faExclamationCircle,
   faBriefcase,
+  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 import { Analysis } from "../../lib/api";
 
@@ -33,6 +35,8 @@ export function AIAssistant({
   onReloadAnalysis,
   onLaunchSearch,
 }: AIAssistantProps) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <div className={`rounded-lg border p-4 ${isDark ? "border-gray-800 bg-[#0a0b0f]" : "border-gray-200 bg-white"}`}>
       {/* Header */}
@@ -82,8 +86,8 @@ export function AIAssistant({
 
       {/* Content */}
       {analysis && (
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          {/* Left column: Profile */}
+        <div className="mt-4">
+          {/* Summary - Always visible */}
           <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
             <p className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
               {analysis.summary}
@@ -110,55 +114,18 @@ export function AIAssistant({
               </div>
             )}
 
-            {/* Formation */}
-            {analysis.formation && (
-              <div className={`mt-3 flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                <FontAwesomeIcon icon={faGraduationCap} className="text-xs" />
-                {analysis.formation}
-              </div>
-            )}
-
-            {/* CV Quality */}
+            {/* CV Quality Score - compact */}
             {analysis.cv_quality_score && (
-              <div className={`mt-4 rounded-md p-3 ${isDark ? "bg-gray-800/50" : "bg-white border border-gray-200"}`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                    Qualite du CV
-                  </span>
-                  <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
-                    {analysis.cv_quality_score.grade} - {analysis.cv_quality_score.total_score}/100
-                  </span>
-                </div>
-                <p className={`mt-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-                  {analysis.cv_quality_score.assessment}
-                </p>
-                {analysis.cv_quality_score.strengths && analysis.cv_quality_score.strengths.length > 0 && (
-                  <div className="mt-2">
-                    <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>Points forts</p>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {analysis.cv_quality_score.strengths.slice(0, 3).map((s) => (
-                        <span key={s} className={`rounded px-2 py-0.5 text-xs ${
-                          isDark ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-700"
-                        }`}>{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {analysis.cv_quality_score.suggestions && analysis.cv_quality_score.suggestions.length > 0 && (
-                  <div className="mt-2">
-                    <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>A ameliorer</p>
-                    <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                      {analysis.cv_quality_score.suggestions.slice(0, 2).map((s) => (
-                        <li key={s}>- {s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              <div className={`mt-3 flex items-center gap-3 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                <span>Qualite CV:</span>
+                <span className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+                  {analysis.cv_quality_score.grade} ({analysis.cv_quality_score.total_score}/100)
+                </span>
               </div>
             )}
 
             {/* Suggested queries */}
-            <div className="mt-4">
+            <div className="mt-3">
               <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                 Requetes IA
               </p>
@@ -175,126 +142,193 @@ export function AIAssistant({
                 ))}
               </div>
             </div>
-
-            {/* Sectors */}
-            {analysis.secteurs_cibles && analysis.secteurs_cibles.length > 0 && (
-              <div className="mt-4">
-                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                  <FontAwesomeIcon icon={faBriefcase} className="mr-1" />
-                  Secteurs cibles
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {analysis.secteurs_cibles.map((s: string) => (
-                    <span key={s} className={`rounded px-2 py-0.5 text-xs ${
-                      isDark ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"
-                    }`}>{s}</span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Right column: Skills */}
-          <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
-            {/* Key skills */}
-            <div>
-              <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                Competences cles
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {analysis.top_keywords.slice(0, 10).map((kw) => (
-                  <span key={kw} className={`rounded px-2 py-0.5 text-xs font-medium ${
-                    isDark ? "bg-gray-800 text-gray-200" : "bg-gray-200 text-gray-800"
-                  }`}>{kw}</span>
-                ))}
-                {analysis.top_keywords.length === 0 && (
-                  <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                    Aucune competence detectee.
-                  </span>
+          {/* Toggle button */}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className={`mt-3 w-full flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-colors ${
+              isDark
+                ? "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            <span>{expanded ? "Masquer les details" : "Voir les details"}</span>
+            <FontAwesomeIcon
+              icon={faChevronDown}
+              className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {/* Collapsible detailed content */}
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              expanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
+              {/* Left column: Profile details */}
+              <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
+                {/* Formation */}
+                {analysis.formation && (
+                  <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                    <FontAwesomeIcon icon={faGraduationCap} className="text-xs" />
+                    {analysis.formation}
+                  </div>
+                )}
+
+                {/* CV Quality details */}
+                {analysis.cv_quality_score && (
+                  <div className={`mt-4 rounded-md p-3 ${isDark ? "bg-gray-800/50" : "bg-white border border-gray-200"}`}>
+                    <p className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                      {analysis.cv_quality_score.assessment}
+                    </p>
+                    {analysis.cv_quality_score.strengths && analysis.cv_quality_score.strengths.length > 0 && (
+                      <div className="mt-2">
+                        <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>Points forts</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {analysis.cv_quality_score.strengths.slice(0, 3).map((s) => (
+                            <span key={s} className={`rounded px-2 py-0.5 text-xs ${
+                              isDark ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-700"
+                            }`}>{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {analysis.cv_quality_score.suggestions && analysis.cv_quality_score.suggestions.length > 0 && (
+                      <div className="mt-2">
+                        <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>A ameliorer</p>
+                        <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                          {analysis.cv_quality_score.suggestions.slice(0, 2).map((s) => (
+                            <li key={s}>- {s}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Sectors */}
+                {analysis.secteurs_cibles && analysis.secteurs_cibles.length > 0 && (
+                  <div className="mt-4">
+                    <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                      <FontAwesomeIcon icon={faBriefcase} className="mr-1" />
+                      Secteurs cibles
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {analysis.secteurs_cibles.map((s: string) => (
+                        <span key={s} className={`rounded px-2 py-0.5 text-xs ${
+                          isDark ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"
+                        }`}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right column: Skills */}
+              <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
+                {/* Key skills */}
+                <div>
+                  <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                    Competences cles
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {analysis.top_keywords.slice(0, 10).map((kw) => (
+                      <span key={kw} className={`rounded px-2 py-0.5 text-xs font-medium ${
+                        isDark ? "bg-gray-800 text-gray-200" : "bg-gray-200 text-gray-800"
+                      }`}>{kw}</span>
+                    ))}
+                    {analysis.top_keywords.length === 0 && (
+                      <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                        Aucune competence detectee.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Technical skills */}
+                {analysis.competences_techniques && analysis.competences_techniques.length > 0 && (
+                  <div className="mt-4">
+                    <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                      <FontAwesomeIcon icon={faLaptopCode} className="mr-1" />
+                      Techniques
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {analysis.competences_techniques.map((skill: string) => (
+                        <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
+                          isDark ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-700"
+                        }`}>{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Soft skills */}
+                {analysis.competences_transversales && analysis.competences_transversales.length > 0 && (
+                  <div className="mt-4">
+                    <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                      <FontAwesomeIcon icon={faHandshake} className="mr-1" />
+                      Soft skills
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {analysis.competences_transversales.map((skill: string) => (
+                        <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
+                          isDark ? "bg-amber-900/30 text-amber-300" : "bg-amber-100 text-amber-700"
+                        }`}>{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Languages */}
+                {analysis.langues && analysis.langues.length > 0 && (
+                  <div className="mt-4">
+                    <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                      <FontAwesomeIcon icon={faGlobe} className="mr-1" />
+                      Langues
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {analysis.langues.map((lang: string) => (
+                        <span key={lang} className={`rounded px-2 py-0.5 text-xs ${
+                          isDark ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-700"
+                        }`}>{lang}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Must hits / missing */}
+                {(analysis.must_hits.length > 0 || analysis.missing_must.length > 0) && (
+                  <div className="mt-4 grid gap-3 grid-cols-2">
+                    <div>
+                      <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>
+                        <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
+                        Mots-cles trouves
+                      </p>
+                      <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                        {analysis.must_hits.length === 0 && <li>-</li>}
+                        {analysis.must_hits.map((kw) => (
+                          <li key={kw}>- {kw}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>
+                        <FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />
+                        A completer
+                      </p>
+                      <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                        {analysis.missing_must.length === 0 && <li>-</li>}
+                        {analysis.missing_must.map((kw) => (
+                          <li key={kw}>- {kw}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-
-            {/* Technical skills */}
-            {analysis.competences_techniques && analysis.competences_techniques.length > 0 && (
-              <div className="mt-4">
-                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                  <FontAwesomeIcon icon={faLaptopCode} className="mr-1" />
-                  Techniques
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {analysis.competences_techniques.map((skill: string) => (
-                    <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
-                      isDark ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-700"
-                    }`}>{skill}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Soft skills */}
-            {analysis.competences_transversales && analysis.competences_transversales.length > 0 && (
-              <div className="mt-4">
-                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                  <FontAwesomeIcon icon={faHandshake} className="mr-1" />
-                  Soft skills
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {analysis.competences_transversales.map((skill: string) => (
-                    <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
-                      isDark ? "bg-amber-900/30 text-amber-300" : "bg-amber-100 text-amber-700"
-                    }`}>{skill}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Languages */}
-            {analysis.langues && analysis.langues.length > 0 && (
-              <div className="mt-4">
-                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                  <FontAwesomeIcon icon={faGlobe} className="mr-1" />
-                  Langues
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {analysis.langues.map((lang: string) => (
-                    <span key={lang} className={`rounded px-2 py-0.5 text-xs ${
-                      isDark ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-700"
-                    }`}>{lang}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Must hits / missing */}
-            {(analysis.must_hits.length > 0 || analysis.missing_must.length > 0) && (
-              <div className="mt-4 grid gap-3 grid-cols-2">
-                <div>
-                  <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>
-                    <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
-                    Mots-cles trouves
-                  </p>
-                  <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                    {analysis.must_hits.length === 0 && <li>-</li>}
-                    {analysis.must_hits.map((kw) => (
-                      <li key={kw}>- {kw}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>
-                    <FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />
-                    A completer
-                  </p>
-                  <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                    {analysis.missing_must.length === 0 && <li>-</li>}
-                    {analysis.missing_must.map((kw) => (
-                      <li key={kw}>- {kw}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -304,21 +338,13 @@ export function AIAssistant({
 
 function AIAssistantSkeleton({ isDark }: { isDark: boolean }) {
   return (
-    <div className="mt-4 grid gap-4 md:grid-cols-2">
+    <div className="mt-4">
       <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
         <div className={`h-4 w-full rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className={`h-4 w-3/4 rounded animate-pulse mt-2 ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className="mt-4 flex flex-wrap gap-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className={`h-6 w-16 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
-          ))}
-        </div>
-      </div>
-      <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
-        <div className={`h-3 w-24 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className={`h-6 w-14 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
           ))}
         </div>
       </div>
