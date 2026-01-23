@@ -487,100 +487,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Notifications */}
-            {notificationPref && (
-              <div className={cardClass}>
-                <div className="flex items-center gap-2 mb-6">
-                  <div className={`p-2 rounded-lg ${isDark ? "bg-amber-900/30" : "bg-amber-100"}`}>
-                    <svg className={`w-5 h-5 ${isDark ? "text-amber-400" : "text-amber-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                  </div>
-                  <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={labelClass}>
-                      Fréquence des emails
-                    </label>
-                    <select
-                      className={inputClass}
-                      value={notificationPref.notification_frequency ?? "every_3_days"}
-                      onChange={(e) =>
-                        updateNotificationField(
-                          "notification_frequency",
-                          e.target.value as Preference["notification_frequency"]
-                        )
-                      }
-                    >
-                      <option value="daily">Tous les jours</option>
-                      <option value="every_3_days">Tous les 3 jours</option>
-                      <option value="weekly">Toutes les semaines</option>
-                    </select>
-                    <p className={`text-xs mt-2 ${textMuted}`}>
-                      Définit la cadence de réception des emails de matching.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>
-                      Envoyer un email quand aucune offre n'est trouvée
-                    </label>
-                    <div className="mt-1 flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateNotificationField(
-                            "send_empty_digest",
-                            !(notificationPref.send_empty_digest ?? true)
-                          )
-                        }
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                          (notificationPref.send_empty_digest ?? true)
-                            ? isDark
-                              ? "bg-emerald-600"
-                              : "bg-emerald-500"
-                            : isDark
-                              ? "bg-gray-700"
-                              : "bg-gray-200"
-                        }`}
-                        aria-pressed={notificationPref.send_empty_digest ?? true}
-                      >
-                        <span
-                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                            (notificationPref.send_empty_digest ?? true) ? "translate-x-5" : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                      <span className={`text-sm ${textMuted}`}>
-                        {notificationPref.send_empty_digest ?? true ? "Activé" : "Désactivé"}
-                      </span>
-                    </div>
-                    <p className={`text-xs mt-2 ${textMuted}`}>
-                      Désactive pour ne recevoir un email que lorsqu'il y a de nouvelles offres.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between">
-                  <button
-                    type="button"
-                    className={btnSecondary}
-                    onClick={saveNotifications}
-                    disabled={notificationSaving || !notificationHasChanges()}
-                  >
-                    {notificationSaving ? "Mise à jour..." : "Sauvegarder les notifications"}
-                  </button>
-                  {notificationHasChanges() && (
-                    <span className={`text-sm ${isDark ? "text-amber-400" : "text-amber-600"}`}>
-                      Modifications non sauvegardées
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Submit button */}
             <div className="flex items-center justify-between">
               <button
@@ -624,35 +530,18 @@ export default function ProfilePage() {
                   <h2 className={`text-lg font-semibold ${textPrimary}`}>Notifications</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={labelClass}>
-                      Fréquence des emails
-                    </label>
-                    <select
-                      className={inputClass}
-                      value={notificationPref.notification_frequency ?? "every_3_days"}
-                      onChange={(e) => {
-                        const nextValue = e.target.value as Preference["notification_frequency"];
-                        const nextPref = { ...notificationPref, notification_frequency: nextValue };
-                        updateNotificationField("notification_frequency", nextValue);
-                        void saveNotifications(nextPref);
-                      }}
-                    >
-                      <option value="daily">Tous les jours</option>
-                      <option value="every_3_days">Tous les 3 jours</option>
-                      <option value="weekly">Toutes les semaines</option>
-                    </select>
-                    <p className={`text-xs mt-2 ${textMuted}`}>
-                      Définit la cadence de réception des emails de matching.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className={labelClass}>
-                      Activer l'envoi de nouvelles offres
-                    </label>
-                    <div className="mt-1 flex items-center gap-3">
+                <div className="space-y-4">
+                  {/* Toggle for enabling emails */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className={`font-medium ${textPrimary}`}>
+                        Activer l'envoi de nouvelles offres
+                      </label>
+                      <p className={`text-xs mt-1 ${textMuted}`}>
+                        Désactive pour arrêter les emails de nouvelles offres.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -681,16 +570,45 @@ export default function ProfilePage() {
                       <span className={`text-sm ${textMuted}`}>
                         {notificationEnabled ? "Activé" : "Désactivé"}
                       </span>
-                      {notificationEnabledSaving && (
-                        <span className={`text-xs ${textMuted}`}>Mise à jour...</span>
-                      )}
                     </div>
-                    <p className={`text-xs mt-2 ${textMuted}`}>
-                      Désactive pour arrêter les emails de nouvelles offres.
-                    </p>
+                  </div>
+
+                  {/* Collapsible panel for email settings */}
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      notificationEnabled ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className={`pt-4 border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className={labelClass}>
+                            Fréquence des emails
+                          </label>
+                          <select
+                            className={inputClass}
+                            value={notificationPref.notification_frequency ?? "every_3_days"}
+                            onChange={(e) => {
+                              const nextValue = e.target.value as Preference["notification_frequency"];
+                              const nextPref = { ...notificationPref, notification_frequency: nextValue };
+                              updateNotificationField("notification_frequency", nextValue);
+                              void saveNotifications(nextPref);
+                            }}
+                          >
+                            <option value="daily">Tous les jours</option>
+                            <option value="every_3_days">Tous les 3 jours</option>
+                            <option value="weekly">Toutes les semaines</option>
+                          </select>
+                          <p className={`text-xs mt-2 ${textMuted}`}>
+                            Définit la cadence de réception des emails de matching.
+                          </p>
+                        </div>
+
+                      </div>
+                    </div>
                   </div>
                 </div>
-                {notificationSaving && (
+                {(notificationSaving || notificationEnabledSaving) && (
                   <div className={`mt-4 text-xs ${textMuted}`}>
                     Mise à jour des notifications...
                   </div>
