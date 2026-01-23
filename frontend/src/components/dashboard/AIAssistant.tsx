@@ -2,19 +2,15 @@
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faWandMagicSparkles,
   faRotate,
   faSearch,
-  faBriefcase,
   faGraduationCap,
   faLaptopCode,
   faHandshake,
   faGlobe,
   faCheckCircle,
   faExclamationCircle,
-  faBullseye,
-  faUser,
-  faBolt,
+  faBriefcase,
 } from "@fortawesome/free-solid-svg-icons";
 import { Analysis } from "../../lib/api";
 
@@ -38,61 +34,35 @@ export function AIAssistant({
   onLaunchSearch,
 }: AIAssistantProps) {
   return (
-    <div
-      className={`
-        rounded-2xl border p-5 transition-all
-        ${isDark
-          ? "border-gray-700 bg-gradient-to-br from-[#0f1116] to-[#131720]"
-          : "border-gray-200 bg-gradient-to-br from-white to-gray-50"
-        }
-      `}
-    >
+    <div className={`rounded-lg border p-4 ${isDark ? "border-gray-800 bg-[#0a0b0f]" : "border-gray-200 bg-white"}`}>
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex items-start gap-3">
-          <div className={`
-            rounded-xl p-3
-            ${isDark ? "bg-purple-900/30" : "bg-purple-100"}
-          `}>
-            <FontAwesomeIcon icon={faWandMagicSparkles} className={`text-xl ${isDark ? "text-purple-400" : "text-purple-600"}`} />
-          </div>
-          <div>
-            <h2 className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}>
-              Assistant IA
-            </h2>
-            <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              Analyse ton CV et tes préférences pour suggérer des recherches ciblées.
-            </p>
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+            Assistant IA
+          </h2>
+          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            Analyse ton CV et tes préférences pour des recherches ciblées
+          </p>
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={onReloadAnalysis}
             disabled={analysisLoading}
-            className={`
-              inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all
-              disabled:opacity-50
-              ${isDark
-                ? "border border-gray-600 text-gray-300 hover:bg-gray-800"
+            className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+              isDark
+                ? "border border-gray-700 text-gray-300 hover:bg-gray-800"
                 : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-              }
-            `}
+            }`}
           >
             <FontAwesomeIcon icon={faRotate} className={analysisLoading ? "animate-spin" : ""} />
-            {analysisLoading ? "Analyse..." : "Relancer"}
+            Relancer
           </button>
           <button
             onClick={onLaunchSearch}
             disabled={searching}
-            className={`
-              inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all
-              disabled:opacity-50
-              ${isDark
-                ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-              }
-            `}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             <FontAwesomeIcon icon={faSearch} className={searching ? "animate-pulse" : ""} />
             {searching ? "Recherche..." : "Recherche IA"}
@@ -100,26 +70,22 @@ export function AIAssistant({
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error */}
       {analysisError && (
-        <div className={`
-          mt-4 rounded-xl p-3 flex items-center gap-2
-          ${isDark ? "bg-red-900/30 text-red-300" : "bg-red-50 text-red-700"}
-        `}>
-          <FontAwesomeIcon icon={faExclamationCircle} />
-          <span className="text-sm">{analysisError}</span>
+        <div className={`mt-3 rounded-md p-2 text-sm ${isDark ? "bg-red-900/30 text-red-300" : "bg-red-50 text-red-700"}`}>
+          {analysisError}
         </div>
       )}
 
-      {/* Loading skeleton */}
+      {/* Loading */}
       {analysisLoading && !analysis && <AIAssistantSkeleton isDark={isDark} />}
 
       {/* Content */}
       {analysis && (
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           {/* Left column: Profile */}
-          <div className={`rounded-xl border p-4 ${isDark ? "border-gray-700 bg-[#0d1016]/50" : "border-gray-200 bg-white"}`}>
-            <p className={`text-sm leading-relaxed ${isDark ? "text-gray-200" : "text-gray-700"}`}>
+          <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
+            <p className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
               {analysis.summary}
             </p>
 
@@ -127,26 +93,17 @@ export function AIAssistant({
             {(analysis.niveau_experience || analysis.titre_poste_cible) && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {analysis.niveau_experience && (
-                  <span className={`
-                    inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
-                    ${analysis.niveau_experience === "senior"
-                      ? isDark ? "bg-purple-900/40 text-purple-300 border border-purple-700" : "bg-purple-100 text-purple-800"
-                      : analysis.niveau_experience === "confirme"
-                        ? isDark ? "bg-blue-900/40 text-blue-300 border border-blue-700" : "bg-blue-100 text-blue-800"
-                        : isDark ? "bg-green-900/40 text-green-300 border border-green-700" : "bg-green-100 text-green-800"
-                    }
-                  `}>
-                    <FontAwesomeIcon icon={faUser} className="text-[10px]" />
+                  <span className={`rounded px-2 py-1 text-xs font-medium ${
+                    isDark ? "bg-gray-800 text-gray-300" : "bg-gray-200 text-gray-700"
+                  }`}>
                     {analysis.niveau_experience === "senior" ? "Senior" :
                      analysis.niveau_experience === "confirme" ? "Confirmé" : "Junior"}
                   </span>
                 )}
                 {analysis.titre_poste_cible && (
-                  <span className={`
-                    inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
-                    ${isDark ? "bg-gray-800 text-gray-200 border border-gray-700" : "bg-gray-100 text-gray-800"}
-                  `}>
-                    <FontAwesomeIcon icon={faBullseye} className="text-[10px]" />
+                  <span className={`rounded px-2 py-1 text-xs font-medium ${
+                    isDark ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-700"
+                  }`}>
                     {analysis.titre_poste_cible}
                   </span>
                 )}
@@ -156,29 +113,19 @@ export function AIAssistant({
             {/* Formation */}
             {analysis.formation && (
               <div className={`mt-3 flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                <FontAwesomeIcon icon={faGraduationCap} className="text-gray-500" />
+                <FontAwesomeIcon icon={faGraduationCap} className="text-xs" />
                 {analysis.formation}
               </div>
             )}
 
-            {/* LLM badge */}
-            {analysis.llm_used && (
-              <div className={`
-                mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium
-                ${isDark ? "bg-emerald-900/30 text-emerald-300" : "bg-emerald-100 text-emerald-700"}
-              `}>
-                <FontAwesomeIcon icon={faBolt} className="text-[10px]" />
-                Analyse enrichie par IA
-              </div>
-            )}
-
-            {analysis.cv_present && analysis.cv_quality_score && (
-              <div className={`mt-4 rounded-xl border p-3 ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-gray-50"}`}>
+            {/* CV Quality */}
+            {analysis.cv_quality_score && (
+              <div className={`mt-4 rounded-md p-3 ${isDark ? "bg-gray-800/50" : "bg-white border border-gray-200"}`}>
                 <div className="flex items-center justify-between">
-                  <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                  <span className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                     Qualité du CV
-                  </p>
-                  <span className={`text-xs font-semibold ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                  </span>
+                  <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
                     {analysis.cv_quality_score.grade} • {analysis.cv_quality_score.total_score}/100
                   </span>
                 </div>
@@ -186,37 +133,23 @@ export function AIAssistant({
                   {analysis.cv_quality_score.assessment}
                 </p>
                 {analysis.cv_quality_score.strengths && analysis.cv_quality_score.strengths.length > 0 && (
-                  <div className="mt-3">
-                    <p className={`text-xs font-semibold uppercase ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
-                      Points forts
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {analysis.cv_quality_score.strengths.slice(0, 3).map((strength) => (
-                        <span
-                          key={strength}
-                          className={`rounded-lg px-2.5 py-1 text-xs ${
-                            isDark
-                              ? "bg-emerald-900/30 text-emerald-200 border border-emerald-800"
-                              : "bg-emerald-50 text-emerald-700"
-                          }`}
-                        >
-                          {strength}
-                        </span>
+                  <div className="mt-2">
+                    <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>Points forts</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {analysis.cv_quality_score.strengths.slice(0, 3).map((s) => (
+                        <span key={s} className={`rounded px-2 py-0.5 text-xs ${
+                          isDark ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-700"
+                        }`}>{s}</span>
                       ))}
                     </div>
                   </div>
                 )}
                 {analysis.cv_quality_score.suggestions && analysis.cv_quality_score.suggestions.length > 0 && (
-                  <div className="mt-3">
-                    <p className={`text-xs font-semibold uppercase ${isDark ? "text-orange-400" : "text-orange-600"}`}>
-                      À améliorer
-                    </p>
-                    <ul className={`mt-2 space-y-1 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
-                      {analysis.cv_quality_score.suggestions.slice(0, 3).map((suggestion) => (
-                        <li key={suggestion} className="flex items-center gap-2">
-                          <span className="text-orange-500">•</span>
-                          <span>{suggestion}</span>
-                        </li>
+                  <div className="mt-2">
+                    <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>À améliorer</p>
+                    <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                      {analysis.cv_quality_score.suggestions.slice(0, 2).map((s) => (
+                        <li key={s}>• {s}</li>
                       ))}
                     </ul>
                   </div>
@@ -226,47 +159,35 @@ export function AIAssistant({
 
             {/* Suggested queries */}
             <div className="mt-4">
-              <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                 Requêtes IA
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {analysis.suggested_queries.length === 0 && (
                   <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                     Ajoute un CV ou des préférences.
                   </span>
                 )}
                 {analysis.suggested_queries.map((q) => (
-                  <span
-                    key={q}
-                    className={`
-                      rounded-lg px-3 py-1.5 text-xs
-                      ${isDark ? "bg-[#111621] text-gray-200 border border-gray-700" : "bg-gray-100 text-gray-700"}
-                    `}
-                  >
-                    {q}
-                  </span>
+                  <span key={q} className={`rounded px-2 py-0.5 text-xs ${
+                    isDark ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-700"
+                  }`}>{q}</span>
                 ))}
               </div>
             </div>
 
-            {/* Target sectors */}
+            {/* Sectors */}
             {analysis.secteurs_cibles && analysis.secteurs_cibles.length > 0 && (
               <div className="mt-4">
-                <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   <FontAwesomeIcon icon={faBriefcase} className="mr-1" />
                   Secteurs cibles
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {analysis.secteurs_cibles.map((s: string) => (
-                    <span
-                      key={s}
-                      className={`
-                        rounded-lg px-3 py-1.5 text-xs
-                        ${isDark ? "bg-gray-800/50 text-gray-300 border border-gray-700" : "bg-gray-50 text-gray-600 border border-gray-200"}
-                      `}
-                    >
-                      {s}
-                    </span>
+                    <span key={s} className={`rounded px-2 py-0.5 text-xs ${
+                      isDark ? "bg-gray-800 text-gray-300" : "bg-gray-100 text-gray-600"
+                    }`}>{s}</span>
                   ))}
                 </div>
               </div>
@@ -274,23 +195,17 @@ export function AIAssistant({
           </div>
 
           {/* Right column: Skills */}
-          <div className={`rounded-xl border p-4 ${isDark ? "border-gray-700 bg-[#0d1016]/50" : "border-gray-200 bg-white"}`}>
+          <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
             {/* Key skills */}
             <div>
-              <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                 Compétences clés
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {analysis.top_keywords.slice(0, 10).map((kw) => (
-                  <span
-                    key={kw}
-                    className={`
-                      rounded-lg px-3 py-1.5 text-xs font-medium
-                      ${isDark ? "bg-[#111621] text-gray-100 border border-gray-700" : "bg-gray-100 text-gray-800"}
-                    `}
-                  >
-                    {kw}
-                  </span>
+                  <span key={kw} className={`rounded px-2 py-0.5 text-xs font-medium ${
+                    isDark ? "bg-gray-800 text-gray-200" : "bg-gray-200 text-gray-800"
+                  }`}>{kw}</span>
                 ))}
                 {analysis.top_keywords.length === 0 && (
                   <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
@@ -303,21 +218,15 @@ export function AIAssistant({
             {/* Technical skills */}
             {analysis.competences_techniques && analysis.competences_techniques.length > 0 && (
               <div className="mt-4">
-                <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   <FontAwesomeIcon icon={faLaptopCode} className="mr-1" />
-                  Compétences techniques
+                  Techniques
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {analysis.competences_techniques.map((skill: string) => (
-                    <span
-                      key={skill}
-                      className={`
-                        rounded-lg px-3 py-1.5 text-xs
-                        ${isDark ? "bg-blue-900/30 text-blue-300 border border-blue-800" : "bg-blue-50 text-blue-700"}
-                      `}
-                    >
-                      {skill}
-                    </span>
+                    <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
+                      isDark ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-700"
+                    }`}>{skill}</span>
                   ))}
                 </div>
               </div>
@@ -326,21 +235,15 @@ export function AIAssistant({
             {/* Soft skills */}
             {analysis.competences_transversales && analysis.competences_transversales.length > 0 && (
               <div className="mt-4">
-                <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   <FontAwesomeIcon icon={faHandshake} className="mr-1" />
                   Soft skills
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {analysis.competences_transversales.map((skill: string) => (
-                    <span
-                      key={skill}
-                      className={`
-                        rounded-lg px-3 py-1.5 text-xs
-                        ${isDark ? "bg-amber-900/30 text-amber-300 border border-amber-800" : "bg-amber-50 text-amber-700"}
-                      `}
-                    >
-                      {skill}
-                    </span>
+                    <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
+                      isDark ? "bg-amber-900/30 text-amber-300" : "bg-amber-100 text-amber-700"
+                    }`}>{skill}</span>
                   ))}
                 </div>
               </div>
@@ -349,21 +252,15 @@ export function AIAssistant({
             {/* Languages */}
             {analysis.langues && analysis.langues.length > 0 && (
               <div className="mt-4">
-                <p className={`text-xs font-semibold uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   <FontAwesomeIcon icon={faGlobe} className="mr-1" />
                   Langues
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {analysis.langues.map((lang: string) => (
-                    <span
-                      key={lang}
-                      className={`
-                        rounded-lg px-3 py-1.5 text-xs
-                        ${isDark ? "bg-emerald-900/30 text-emerald-300 border border-emerald-800" : "bg-emerald-50 text-emerald-700"}
-                      `}
-                    >
-                      {lang}
-                    </span>
+                    <span key={lang} className={`rounded px-2 py-0.5 text-xs ${
+                      isDark ? "bg-green-900/30 text-green-300" : "bg-green-100 text-green-700"
+                    }`}>{lang}</span>
                   ))}
                 </div>
               </div>
@@ -371,32 +268,28 @@ export function AIAssistant({
 
             {/* Must hits / missing */}
             {(analysis.must_hits.length > 0 || analysis.missing_must.length > 0) && (
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="mt-4 grid gap-3 grid-cols-2">
                 <div>
-                  <p className={`text-xs font-semibold ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
+                  <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>
                     <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
                     Mots-clés trouvés
                   </p>
-                  <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                  <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                     {analysis.must_hits.length === 0 && <li>-</li>}
                     {analysis.must_hits.map((kw) => (
-                      <li key={kw} className="flex items-center gap-1">
-                        <span className="text-emerald-500">•</span> {kw}
-                      </li>
+                      <li key={kw}>• {kw}</li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <p className={`text-xs font-semibold ${isDark ? "text-orange-400" : "text-orange-600"}`}>
+                  <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>
                     <FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />
                     À compléter
                   </p>
-                  <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+                  <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                     {analysis.missing_must.length === 0 && <li>-</li>}
                     {analysis.missing_must.map((kw) => (
-                      <li key={kw} className="flex items-center gap-1">
-                        <span className="text-orange-500">•</span> {kw}
-                      </li>
+                      <li key={kw}>• {kw}</li>
                     ))}
                   </ul>
                 </div>
@@ -411,33 +304,21 @@ export function AIAssistant({
 
 function AIAssistantSkeleton({ isDark }: { isDark: boolean }) {
   return (
-    <div className="mt-5 grid gap-4 md:grid-cols-2">
-      <div className={`rounded-xl border p-4 ${isDark ? "border-gray-700 bg-[#0d1016]/50" : "border-gray-200 bg-white"}`}>
-        <div className={`h-4 w-full rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-        <div className={`h-4 w-3/4 rounded animate-pulse mt-2 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+    <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
+        <div className={`h-4 w-full rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
+        <div className={`h-4 w-3/4 rounded animate-pulse mt-2 ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className="mt-4 flex flex-wrap gap-2">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className={`h-7 w-20 rounded-full animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-          ))}
-        </div>
-        <div className={`h-3 w-16 rounded animate-pulse mt-4 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className={`h-7 w-24 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+            <div key={i} className={`h-6 w-16 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
           ))}
         </div>
       </div>
-      <div className={`rounded-xl border p-4 ${isDark ? "border-gray-700 bg-[#0d1016]/50" : "border-gray-200 bg-white"}`}>
-        <div className={`h-3 w-24 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+      <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
+        <div className={`h-3 w-24 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className="mt-2 flex flex-wrap gap-2">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className={`h-7 w-16 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-          ))}
-        </div>
-        <div className={`h-3 w-32 rounded animate-pulse mt-4 ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className={`h-7 w-14 rounded-lg animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
+            <div key={i} className={`h-6 w-14 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
           ))}
         </div>
       </div>

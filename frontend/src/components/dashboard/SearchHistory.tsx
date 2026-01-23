@@ -1,14 +1,7 @@
 "use client";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faHistory,
-  faRotate,
-  faPlus,
-  faCalendarAlt,
-  faSearch,
-  faDatabase,
-} from "@fortawesome/free-solid-svg-icons";
+import { faHistory, faRotate, faSearch, faDatabase, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { JobRun } from "../../lib/api";
 
 interface SearchHistoryProps {
@@ -40,70 +33,49 @@ export function SearchHistory({
   onRefresh,
 }: SearchHistoryProps) {
   return (
-    <div
-      className={`
-        rounded-2xl border p-5
-        ${isDark ? "border-gray-700 bg-[#0f1116]" : "border-gray-200 bg-white"}
-      `}
-    >
+    <div className={`rounded-lg border p-4 ${isDark ? "border-gray-800 bg-[#0a0b0f]" : "border-gray-200 bg-white"}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`rounded-xl p-2.5 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
-            <FontAwesomeIcon icon={faHistory} className={`text-lg ${isDark ? "text-gray-400" : "text-gray-500"}`} />
-          </div>
-          <div>
-            <h2 className={`text-lg font-semibold ${isDark ? "text-gray-100" : "text-gray-900"}`}>
-              Historique des recherches
-            </h2>
-            <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-              Derniers lancements et resultats
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <FontAwesomeIcon icon={faHistory} className={isDark ? "text-gray-400" : "text-gray-500"} />
+          <h2 className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
+            Historique des recherches
+          </h2>
         </div>
         <button
           onClick={onRefresh}
           disabled={runsLoading}
-          className={`
-            inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all
-            disabled:opacity-50
-            ${isDark
-              ? "border border-gray-700 text-gray-300 hover:bg-gray-800"
-              : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-            }
-          `}
+          className={`p-2 rounded-md transition-colors disabled:opacity-50 ${
+            isDark ? "text-gray-400 hover:bg-gray-800" : "text-gray-500 hover:bg-gray-100"
+          }`}
         >
           <FontAwesomeIcon icon={faRotate} className={runsLoading ? "animate-spin" : ""} />
-          Rafraichir
         </button>
       </div>
 
       {/* Content */}
-      <div className="mt-4 min-h-[150px]">
+      <div className="mt-4">
         {runsError ? (
-          <div className={`
-            flex flex-col items-center justify-center py-8 text-center rounded-xl
-            ${isDark ? "bg-red-900/20 border border-red-800/50" : "bg-red-50 border border-red-200"}
-          `}>
-            <p className={`text-sm ${isDark ? "text-red-300" : "text-red-600"}`}>{runsError}</p>
+          <div className={`rounded-md p-3 ${isDark ? "bg-red-900/20 text-red-300" : "bg-red-50 text-red-600"}`}>
+            <p className="text-sm">{runsError}</p>
             <button
               onClick={onRefresh}
-              className={`
-                mt-3 text-sm px-4 py-2 rounded-lg transition-all
-                ${isDark ? "bg-red-800/50 hover:bg-red-800 text-red-200" : "bg-red-100 hover:bg-red-200 text-red-700"}
-              `}
+              className={`mt-2 text-xs px-3 py-1 rounded ${
+                isDark ? "bg-red-900/50 hover:bg-red-900 text-red-200" : "bg-red-100 hover:bg-red-200 text-red-700"
+              }`}
             >
               Réessayer
             </button>
           </div>
         ) : runsLoading && runs.length === 0 ? (
-          <SearchHistorySkeleton isDark={isDark} />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={`h-16 rounded-md animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-100"}`} />
+            ))}
+          </div>
         ) : runs.length === 0 ? (
-          <div className={`
-            flex flex-col items-center justify-center py-8 text-center
-            ${isDark ? "text-gray-500" : "text-gray-400"}
-          `}>
-            <FontAwesomeIcon icon={faHistory} className="text-4xl mb-3" />
+          <div className={`text-center py-8 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+            <FontAwesomeIcon icon={faHistory} className="text-3xl mb-2" />
             <p className="text-sm">Pas encore d'historique</p>
             <p className="text-xs mt-1">Lancez une recherche IA pour commencer</p>
           </div>
@@ -112,52 +84,38 @@ export function SearchHistory({
             {runs.map((run) => (
               <div
                 key={run.id}
-                className={`
-                  rounded-xl border p-4 transition-all hover:scale-[1.01]
-                  ${isDark
-                    ? "border-gray-800 bg-[#0d1016] hover:border-gray-700"
-                    : "border-gray-100 bg-gray-50 hover:border-gray-200"
-                  }
-                `}
+                className={`rounded-md border p-3 ${
+                  isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"
+                }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Date */}
-                    <div className={`flex items-center gap-2 text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
-                      <FontAwesomeIcon icon={faCalendarAlt} className={`text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`} />
+                    <p className={`text-sm font-medium ${isDark ? "text-gray-200" : "text-gray-800"}`}>
                       {formatDate(run.created_at)}
-                    </div>
+                    </p>
 
                     {/* Queries */}
-                    <div className={`mt-2 flex items-start gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                      <FontAwesomeIcon icon={faSearch} className={`mt-0.5 text-xs ${isDark ? "text-gray-600" : "text-gray-400"}`} />
-                      <div className="flex-1">
+                    <div className={`mt-1 flex items-start gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                      <FontAwesomeIcon icon={faSearch} className="mt-0.5 text-xs" />
+                      <span className="truncate">
                         {run.tried_queries && run.tried_queries.length > 0
-                          ? run.tried_queries.map((q, i) => (
-                              <span key={q}>
-                                <span className={isDark ? "text-gray-300" : "text-gray-700"}>{q}</span>
-                                {i < run.tried_queries.length - 1 && (
-                                  <span className={isDark ? "text-gray-600" : "text-gray-400"}> • </span>
-                                )}
-                              </span>
-                            ))
-                          : <span className="italic">Aucune requete</span>
-                        }
-                      </div>
+                          ? run.tried_queries.join(" • ")
+                          : "Aucune requête"}
+                      </span>
                     </div>
 
                     {/* Sources */}
                     {run.sources && Object.keys(run.sources).length > 0 && (
-                      <div className={`mt-2 flex items-start gap-2 text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-                        <FontAwesomeIcon icon={faDatabase} className={`mt-0.5 ${isDark ? "text-gray-600" : "text-gray-400"}`} />
-                        <div className="flex flex-wrap gap-2">
+                      <div className={`mt-2 flex items-center gap-2 text-xs ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+                        <FontAwesomeIcon icon={faDatabase} />
+                        <div className="flex flex-wrap gap-1">
                           {Object.entries(run.sources).map(([source, count]) => (
                             <span
                               key={source}
-                              className={`
-                                rounded-full px-2 py-0.5
-                                ${isDark ? "bg-gray-800 text-gray-400" : "bg-gray-200 text-gray-600"}
-                              `}
+                              className={`rounded px-1.5 py-0.5 ${
+                                isDark ? "bg-gray-800 text-gray-400" : "bg-gray-200 text-gray-600"
+                              }`}
                             >
                               {source}: {count}
                             </span>
@@ -167,40 +125,19 @@ export function SearchHistory({
                     )}
                   </div>
 
-                  {/* Inserted count badge */}
+                  {/* Inserted count */}
                   <div
-                    className={`
-                      flex-shrink-0 rounded-xl px-3 py-2 text-center
-                      ${run.inserted > 0
-                        ? isDark
-                          ? "bg-emerald-900/30 border border-emerald-800"
-                          : "bg-emerald-50 border border-emerald-200"
-                        : isDark
-                          ? "bg-gray-800 border border-gray-700"
-                          : "bg-gray-100 border border-gray-200"
-                      }
-                    `}
+                    className={`flex-shrink-0 rounded-md px-3 py-2 text-center ${
+                      run.inserted > 0
+                        ? isDark ? "bg-green-900/30 text-green-400" : "bg-green-100 text-green-700"
+                        : isDark ? "bg-gray-800 text-gray-500" : "bg-gray-100 text-gray-500"
+                    }`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <FontAwesomeIcon
-                        icon={faPlus}
-                        className={`text-xs ${run.inserted > 0
-                          ? isDark ? "text-emerald-400" : "text-emerald-600"
-                          : isDark ? "text-gray-500" : "text-gray-400"
-                        }`}
-                      />
-                      <span
-                        className={`text-lg font-bold ${run.inserted > 0
-                          ? isDark ? "text-emerald-400" : "text-emerald-600"
-                          : isDark ? "text-gray-400" : "text-gray-500"
-                        }`}
-                      >
-                        {run.inserted}
-                      </span>
+                    <div className="flex items-center gap-1">
+                      <FontAwesomeIcon icon={faPlus} className="text-xs" />
+                      <span className="text-lg font-semibold">{run.inserted}</span>
                     </div>
-                    <div className={`text-[10px] ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                      offres
-                    </div>
+                    <div className="text-[10px]">offres</div>
                   </div>
                 </div>
               </div>
@@ -208,31 +145,6 @@ export function SearchHistory({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function SearchHistorySkeleton({ isDark }: { isDark: boolean }) {
-  return (
-    <div className="space-y-3">
-      {[...Array(3)].map((_, i) => (
-        <div
-          key={i}
-          className={`
-            rounded-xl border p-4
-            ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-100 bg-gray-50"}
-          `}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              <div className={`h-4 w-32 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-              <div className={`h-3 w-48 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-              <div className={`h-3 w-40 rounded animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-            </div>
-            <div className={`h-14 w-16 rounded-xl animate-pulse ${isDark ? "bg-gray-700" : "bg-gray-200"}`} />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
