@@ -42,7 +42,7 @@ export function AIAssistant({
             Assistant IA
           </h2>
           <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-            Analyse ton CV et tes préférences pour des recherches ciblées
+            Analyse ton CV et tes preferences pour des recherches ciblees
           </p>
         </div>
 
@@ -97,7 +97,7 @@ export function AIAssistant({
                     isDark ? "bg-gray-800 text-gray-300" : "bg-gray-200 text-gray-700"
                   }`}>
                     {analysis.niveau_experience === "senior" ? "Senior" :
-                     analysis.niveau_experience === "confirme" ? "Confirmé" : "Junior"}
+                     analysis.niveau_experience === "confirme" ? "Confirme" : "Junior"}
                   </span>
                 )}
                 {analysis.titre_poste_cible && (
@@ -123,10 +123,10 @@ export function AIAssistant({
               <div className={`mt-4 rounded-md p-3 ${isDark ? "bg-gray-800/50" : "bg-white border border-gray-200"}`}>
                 <div className="flex items-center justify-between">
                   <span className={`text-xs font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                    Qualité du CV
+                    Qualite du CV
                   </span>
                   <span className={`text-sm font-medium ${isDark ? "text-white" : "text-gray-900"}`}>
-                    {analysis.cv_quality_score.grade} • {analysis.cv_quality_score.total_score}/100
+                    {analysis.cv_quality_score.grade} - {analysis.cv_quality_score.total_score}/100
                   </span>
                 </div>
                 <p className={`mt-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
@@ -146,10 +146,10 @@ export function AIAssistant({
                 )}
                 {analysis.cv_quality_score.suggestions && analysis.cv_quality_score.suggestions.length > 0 && (
                   <div className="mt-2">
-                    <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>À améliorer</p>
+                    <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>A ameliorer</p>
                     <ul className={`mt-1 space-y-1 text-xs ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                       {analysis.cv_quality_score.suggestions.slice(0, 2).map((s) => (
-                        <li key={s}>• {s}</li>
+                        <li key={s}>- {s}</li>
                       ))}
                     </ul>
                   </div>
@@ -160,12 +160,12 @@ export function AIAssistant({
             {/* Suggested queries */}
             <div className="mt-4">
               <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                Requêtes IA
+                Requetes IA
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {analysis.suggested_queries.length === 0 && (
                   <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                    Ajoute un CV ou des préférences.
+                    Ajoute un CV ou des preferences.
                   </span>
                 )}
                 {analysis.suggested_queries.map((q) => (
@@ -175,7 +175,6 @@ export function AIAssistant({
                 ))}
               </div>
             </div>
-          )}
 
             {/* Sectors */}
             {analysis.secteurs_cibles && analysis.secteurs_cibles.length > 0 && (
@@ -200,7 +199,7 @@ export function AIAssistant({
             {/* Key skills */}
             <div>
               <p className={`text-xs font-medium uppercase ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                Compétences clés
+                Competences cles
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {analysis.top_keywords.slice(0, 10).map((kw) => (
@@ -208,6 +207,11 @@ export function AIAssistant({
                     isDark ? "bg-gray-800 text-gray-200" : "bg-gray-200 text-gray-800"
                   }`}>{kw}</span>
                 ))}
+                {analysis.top_keywords.length === 0 && (
+                  <span className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                    Aucune competence detectee.
+                  </span>
+                )}
               </div>
             </div>
 
@@ -268,30 +272,30 @@ export function AIAssistant({
                 <div>
                   <p className={`text-xs font-medium ${isDark ? "text-green-400" : "text-green-600"}`}>
                     <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
-                    Mots-clés trouvés
+                    Mots-cles trouves
                   </p>
                   <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                     {analysis.must_hits.length === 0 && <li>-</li>}
                     {analysis.must_hits.map((kw) => (
-                      <li key={kw}>• {kw}</li>
+                      <li key={kw}>- {kw}</li>
                     ))}
                   </ul>
                 </div>
                 <div>
                   <p className={`text-xs font-medium ${isDark ? "text-orange-400" : "text-orange-600"}`}>
                     <FontAwesomeIcon icon={faExclamationCircle} className="mr-1" />
-                    À compléter
+                    A completer
                   </p>
                   <ul className={`mt-1 space-y-0.5 text-xs ${isDark ? "text-gray-300" : "text-gray-600"}`}>
                     {analysis.missing_must.length === 0 && <li>-</li>}
                     {analysis.missing_must.map((kw) => (
-                      <li key={kw}>• {kw}</li>
+                      <li key={kw}>- {kw}</li>
                     ))}
                   </ul>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -305,7 +309,7 @@ function AIAssistantSkeleton({ isDark }: { isDark: boolean }) {
         <div className={`h-4 w-full rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className={`h-4 w-3/4 rounded animate-pulse mt-2 ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className="mt-4 flex flex-wrap gap-2">
-          {[...Array(3)].map((_, i) => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className={`h-6 w-16 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
           ))}
         </div>
@@ -313,7 +317,7 @@ function AIAssistantSkeleton({ isDark }: { isDark: boolean }) {
       <div className={`rounded-md border p-4 ${isDark ? "border-gray-800 bg-[#0d1016]" : "border-gray-200 bg-gray-50"}`}>
         <div className={`h-3 w-24 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
         <div className="mt-2 flex flex-wrap gap-2">
-          {[...Array(6)].map((_, i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className={`h-6 w-14 rounded animate-pulse ${isDark ? "bg-gray-800" : "bg-gray-200"}`} />
           ))}
         </div>

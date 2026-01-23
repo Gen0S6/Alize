@@ -604,29 +604,6 @@ export default function ProfilePage() {
                           </p>
                         </div>
 
-                        <div>
-                          <label className={labelClass}>
-                            Nombre d'offres par email
-                          </label>
-                          <input
-                            className={inputClass}
-                            type="number"
-                            min={1}
-                            max={20}
-                            value={notificationPref.notification_max_jobs ?? 5}
-                            onChange={(e) => {
-                              const parsed = Number.parseInt(e.target.value, 10);
-                              if (Number.isNaN(parsed)) return;
-                              const nextValue = Math.min(20, Math.max(1, parsed));
-                              const nextPref = { ...notificationPref, notification_max_jobs: nextValue };
-                              updateNotificationField("notification_max_jobs", nextValue);
-                              void saveNotifications(nextPref);
-                            }}
-                          />
-                          <p className={`text-xs mt-2 ${textMuted}`}>
-                            Entre 1 et 20 offres par envoi.
-                          </p>
-                        </div>
                       </div>
                     </div>
                   </div>
