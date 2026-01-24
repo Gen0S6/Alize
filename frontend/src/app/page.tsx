@@ -130,9 +130,9 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: faFileAlt, title: "1. Télécharge ton CV", desc: "Notre IA analyse ton CV pour extraire tes compétences et expériences.", color: "sky" },
-              { icon: faBriefcase, title: "2. Configure tes préférences", desc: "Localisation, type de contrat, mots-clés à rechercher ou éviter.", color: "emerald" },
-              { icon: faChartSimple, title: "3. Reçois les offres", desc: "L'IA score chaque offre de 0 à 10 selon ton profil.", color: "amber" },
+              { icon: faFileAlt, title: "1. Télécharge ton CV", desc: "Notre IA analyse ton CV pour extraire tes compétences et expériences." },
+              { icon: faBriefcase, title: "2. Configure tes préférences", desc: "Localisation, type de contrat, mots-clés à rechercher ou éviter." },
+              { icon: faChartSimple, title: "3. Reçois les offres", desc: "L'IA score chaque offre de 0 à 10 selon ton profil." },
             ].map((item, i) => (
               <div
                 key={item.title}
@@ -143,11 +143,7 @@ export default function HomePage() {
                 }`}
               >
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 ${
-                  item.color === "sky"
-                    ? isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"
-                    : item.color === "emerald"
-                      ? isDark ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"
-                      : isDark ? "bg-amber-500/20 text-amber-400" : "bg-amber-100 text-amber-600"
+                  isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"
                 }`}>
                   <FontAwesomeIcon icon={item.icon} className="text-xl" />
                 </div>
@@ -176,20 +172,14 @@ export default function HomePage() {
 
               <div className="space-y-6">
                 {[
-                  { title: "Multi-sources", desc: "France Travail, Adzuna et LinkedIn réunis", color: "sky" },
-                  { title: "Scoring intelligent", desc: "Chaque offre notée selon ton profil", color: "emerald" },
-                  { title: "Notifications email", desc: "Digest des nouvelles offres", color: "amber" },
-                  { title: "100% gratuit", desc: "Pas de frais cachés, jamais", color: "purple" },
+                  { title: "Multi-sources", desc: "France Travail, Adzuna et LinkedIn réunis" },
+                  { title: "Scoring intelligent", desc: "Chaque offre notée selon ton profil" },
+                  { title: "Notifications email", desc: "Digest des nouvelles offres" },
+                  { title: "100% gratuit", desc: "Pas de frais cachés, jamais" },
                 ].map((item) => (
                   <div key={item.title} className="flex gap-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      item.color === "sky"
-                        ? isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"
-                        : item.color === "emerald"
-                          ? isDark ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"
-                          : item.color === "amber"
-                            ? isDark ? "bg-amber-500/20 text-amber-400" : "bg-amber-100 text-amber-600"
-                            : isDark ? "bg-purple-500/20 text-purple-400" : "bg-purple-100 text-purple-600"
+                      isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"
                     }`}>
                       <FontAwesomeIcon icon={faCheck} className="text-sm" />
                     </div>
