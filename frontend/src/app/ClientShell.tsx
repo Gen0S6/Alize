@@ -398,8 +398,11 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
             <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Built by a
             </span>
-            <span className={`text-base font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
-              Gen0S7 Member
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-white" : "text-gray-900"}`}>
+              Gen0S7
+            </span>
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-white" : "text-gray-900"}`}>
+              Member
             </span>
           </div>
         </div>
