@@ -378,30 +378,30 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <Link href="/about" className={badgeClass}>
         <div className={`
-          flex items-center gap-3 px-4 py-3 rounded-lg border
+          flex items-center gap-3 px-4 py-3 rounded-lg
           transition-all duration-200
           ${isDark
-            ? "bg-[#0d1117] border-gray-800 hover:border-gray-700"
-            : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+            ? "bg-transparent hover:bg-white/5"
+            : "bg-transparent hover:bg-black/5"
           }
         `}>
           <div className={`
             w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black
             ${isDark
-              ? "bg-white text-black"
-              : "bg-gray-900 text-white"
+              ? "bg-gray-700 text-gray-300"
+              : "bg-gray-200 text-gray-600"
             }
           `}>
             G7
           </div>
-          <div className="flex flex-col">
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+          <div className="flex flex-col items-center">
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
               Built by a
             </span>
-            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-white" : "text-gray-900"}`}>
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-gray-400" : "text-gray-600"}`}>
               Gen0S7
             </span>
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
               Member
             </span>
           </div>
