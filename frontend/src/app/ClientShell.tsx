@@ -401,7 +401,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
             <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-white" : "text-gray-900"}`}>
               Gen0S7
             </span>
-            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-white" : "text-gray-900"}`}>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Member
             </span>
           </div>
