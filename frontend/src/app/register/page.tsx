@@ -47,7 +47,7 @@ export default function RegisterPage() {
       isDark ? "bg-[#0a0b0f]" : "bg-gray-50"
     }`}>
       {/* Background gradient */}
-      <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-30 ${
+      <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-30 pointer-events-none ${
         isDark ? "bg-sky-500/20" : "bg-sky-400/30"
       }`} />
 
