@@ -521,7 +521,9 @@ export default function DashboardPage() {
                 }
               `}
             >
-              <FontAwesomeIcon icon={faSliders} className="text-xs" />
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"}`}>
+                <FontAwesomeIcon icon={faSliders} className="text-xs" />
+              </span>
               Préférences
             </Link>
             <Link
@@ -534,7 +536,9 @@ export default function DashboardPage() {
                 }
               `}
             >
-              <FontAwesomeIcon icon={faFileLines} className="text-xs" />
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"}`}>
+                <FontAwesomeIcon icon={faFileLines} className="text-xs" />
+              </span>
               CV
             </Link>
             <Link
@@ -547,7 +551,9 @@ export default function DashboardPage() {
                 }
               `}
             >
-              <FontAwesomeIcon icon={faUser} className="text-xs" />
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? "bg-sky-500/20 text-sky-400" : "bg-sky-100 text-sky-600"}`}>
+                <FontAwesomeIcon icon={faUser} className="text-xs" />
+              </span>
               Profil
             </Link>
           </div>
