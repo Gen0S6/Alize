@@ -387,21 +387,18 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         `}>
           <div className={`
             w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black
-            ${isDark
-              ? "bg-gray-700 text-gray-300"
-              : "bg-gray-200 text-gray-600"
-            }
+            bg-gradient-to-br from-sky-500 to-sky-600 text-white
           `}>
             G7
           </div>
           <div className="flex flex-col items-center">
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Built by a
             </span>
-            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-sky-400" : "text-sky-600"}`}>
               Gen0S7
             </span>
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Member
             </span>
           </div>
