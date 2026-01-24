@@ -11,7 +11,6 @@ import {
   faChartSimple,
   faArrowRight,
   faCheck,
-  faWandMagicSparkles,
   faRocket,
   faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
@@ -43,10 +42,10 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-5xl px-6 text-center">
           {/* Badge */}
           <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8 text-sm font-medium ${
-            isDark ? "bg-sky-500/10 text-sky-400 ring-1 ring-sky-500/20" : "bg-sky-50 text-sky-600 ring-1 ring-sky-100"
+            isDark ? "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20" : "bg-amber-50 text-amber-600 ring-1 ring-amber-100"
           }`}>
-            <FontAwesomeIcon icon={faWandMagicSparkles} className="text-xs" />
-            Propulsé par l'IA
+            <span className="w-5 h-5 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-[10px] font-bold text-white">A</span>
+            Site en développement
           </div>
 
           <h1 className={`text-4xl md:text-6xl font-bold tracking-tight leading-tight ${
