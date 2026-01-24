@@ -5,6 +5,8 @@ import {
   faSearch,
   faTableCells,
   faList,
+  faStar,
+  faBolt,
 } from "@fortawesome/free-solid-svg-icons";
 import { SortOption } from "../../lib/api";
 
@@ -57,16 +59,16 @@ export function FilterBar({
   page,
   isLoading,
 }: FilterBarProps) {
-  const inputClass = `w-full rounded-md border py-2 px-3 text-sm focus:outline-none focus:ring-1 ${
+  const inputClass = `w-full rounded-lg border py-2.5 px-3 text-sm transition-all focus:outline-none focus:ring-2 ${
     isDark
-      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-sky-500 focus:ring-sky-500"
-      : "border-gray-300 bg-white text-gray-900 focus:border-sky-500 focus:ring-sky-500"
+      ? "border-gray-700 bg-gray-800/50 text-gray-100 placeholder-gray-500 focus:border-sky-500 focus:ring-sky-500/20"
+      : "border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:ring-sky-500/20"
   }`;
 
-  const selectClass = `rounded-md border py-2 px-3 text-sm focus:outline-none focus:ring-1 ${
+  const selectClass = `rounded-lg border py-2.5 px-3 text-sm transition-all focus:outline-none focus:ring-2 cursor-pointer ${
     isDark
-      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-sky-500 focus:ring-sky-500"
-      : "border-gray-300 bg-white text-gray-900 focus:border-sky-500 focus:ring-sky-500"
+      ? "border-gray-700 bg-gray-800/50 text-gray-100 focus:border-sky-500 focus:ring-sky-500/20"
+      : "border-gray-200 bg-gray-50 text-gray-900 focus:border-sky-500 focus:ring-sky-500/20"
   }`;
 
   return (
@@ -82,15 +84,15 @@ export function FilterBar({
             }`}
           />
           <input
-            className={`${inputClass} pl-9`}
-            placeholder="Rechercher..."
+            className={`${inputClass} pl-10`}
+            placeholder="Rechercher une offre..."
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
           />
         </div>
 
         {/* Score min */}
-        <div className="w-24">
+        <div className="w-28">
           <input
             className={inputClass}
             type="number"
@@ -129,24 +131,32 @@ export function FilterBar({
         </select>
 
         {/* View toggle */}
-        <div className={`flex rounded-md border ${isDark ? "border-gray-700" : "border-gray-300"}`}>
+        <div className={`flex rounded-lg border overflow-hidden ${isDark ? "border-gray-700" : "border-gray-200"}`}>
           <button
             onClick={() => setViewMode("grid")}
-            className={`px-3 py-2 ${
+            className={`px-3.5 py-2.5 transition-all ${
               viewMode === "grid"
-                ? "bg-sky-600 text-white"
-                : isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
+                ? "bg-sky-500 text-white"
+                : isDark
+                  ? "bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700"
+                  : "bg-gray-50 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             }`}
+            title="Vue grille"
           >
             <FontAwesomeIcon icon={faTableCells} />
           </button>
           <button
             onClick={() => setViewMode("table")}
-            className={`px-3 py-2 ${
+            className={`px-3.5 py-2.5 transition-all border-l ${
+              isDark ? "border-gray-700" : "border-gray-200"
+            } ${
               viewMode === "table"
-                ? "bg-sky-600 text-white"
-                : isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
+                ? "bg-sky-500 text-white"
+                : isDark
+                  ? "bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700"
+                  : "bg-gray-50 text-gray-500 hover:text-gray-900 hover:bg-gray-100"
             }`}
+            title="Vue liste"
           >
             <FontAwesomeIcon icon={faList} />
           </button>
@@ -155,43 +165,68 @@ export function FilterBar({
 
       {/* Second row: Toggles and count */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Saved only */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={savedOnly}
-              onChange={(e) => setSavedOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-            />
-            <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-              Sauvegardées {savedCount > 0 && `(${savedCount})`}
-            </span>
-          </label>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Saved only toggle */}
+          <button
+            onClick={() => setSavedOnly(!savedOnly)}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+              savedOnly
+                ? "bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/30"
+                : isDark
+                  ? "text-gray-400 hover:text-amber-400 hover:bg-gray-800"
+                  : "text-gray-500 hover:text-amber-600 hover:bg-gray-100"
+            }`}
+          >
+            <FontAwesomeIcon icon={faStar} className="text-xs" />
+            <span>Sauvegardées</span>
+            {savedCount > 0 && (
+              <span className={`rounded-full px-1.5 py-0.5 text-xs ${
+                savedOnly
+                  ? "bg-amber-500/30"
+                  : isDark ? "bg-gray-800" : "bg-gray-200"
+              }`}>
+                {savedCount}
+              </span>
+            )}
+          </button>
 
-          {/* New only */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={newOnly}
-              onChange={(e) => setNewOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-            />
-            <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
-              Nouveautés uniquement {newCount > 0 && `(${newCount})`}
-            </span>
-          </label>
+          {/* New only toggle */}
+          <button
+            onClick={() => setNewOnly(!newOnly)}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+              newOnly
+                ? "bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/30"
+                : isDark
+                  ? "text-gray-400 hover:text-emerald-400 hover:bg-gray-800"
+                  : "text-gray-500 hover:text-emerald-600 hover:bg-gray-100"
+            }`}
+          >
+            <FontAwesomeIcon icon={faBolt} className="text-xs" />
+            <span>Nouveautés</span>
+            {newCount > 0 && (
+              <span className={`rounded-full px-1.5 py-0.5 text-xs ${
+                newOnly
+                  ? "bg-emerald-500/30"
+                  : isDark ? "bg-gray-800" : "bg-gray-200"
+              }`}>
+                {newCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Results count */}
-        <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+        <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
           {isLoading && (
             <svg className="h-4 w-4 animate-spin text-sky-500" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           )}
-          {currentCount} sur {totalMatches}
+          <span className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{currentCount}</span>
+          <span>sur</span>
+          <span className={`font-medium ${isDark ? "text-white" : "text-gray-900"}`}>{totalMatches}</span>
+          <span>offres</span>
         </div>
       </div>
     </div>
