@@ -764,8 +764,8 @@ export default function DashboardPage() {
                       disabled={searching}
                       className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${
                         isDark
-                          ? "bg-blue-600 text-white hover:bg-blue-500"
-                          : "bg-blue-600 text-white hover:bg-blue-700"
+                          ? "bg-sky-600 text-white hover:bg-sky-500"
+                          : "bg-sky-600 text-white hover:bg-sky-700"
                       }`}
                     >
                       {searching ? "Recherche..." : "Lancer la recherche IA"}
@@ -874,8 +874,8 @@ export default function DashboardPage() {
                                   onClick={() => markVisited(m.url, m.id)}
                                   className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                                     isDark
-                                      ? "text-gray-400 hover:text-blue-400 hover:bg-gray-800"
-                                      : "text-gray-500 hover:text-blue-600 hover:bg-gray-100"
+                                      ? "text-gray-400 hover:text-sky-400 hover:bg-gray-800"
+                                      : "text-gray-500 hover:text-sky-600 hover:bg-gray-100"
                                   }`}
                                   title="Voir l'offre"
                                 >

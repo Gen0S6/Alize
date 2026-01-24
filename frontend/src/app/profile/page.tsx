@@ -249,16 +249,16 @@ export default function ProfilePage() {
   const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
 
   const inputClass = isDark
-    ? "w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-    : "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
+    ? "w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+    : "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all";
 
   const labelClass = isDark
     ? "block text-sm font-medium text-gray-200 mb-2"
     : "block text-sm font-medium text-gray-700 mb-2";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-sky-600 hover:bg-sky-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "rounded-xl bg-sky-600 hover:bg-sky-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -367,8 +367,8 @@ export default function ProfilePage() {
             {/* Informations du compte */}
             <div className={cardClass}>
               <div className="flex items-center gap-2 mb-6">
-                <div className={`p-2 rounded-lg ${isDark ? "bg-blue-900/30" : "bg-blue-100"}`}>
-                  <svg className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`p-2 rounded-lg ${isDark ? "bg-sky-900/30" : "bg-sky-100"}`}>
+                  <svg className={`w-5 h-5 ${isDark ? "text-sky-400" : "text-sky-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                   </svg>
                 </div>
@@ -422,8 +422,8 @@ export default function ProfilePage() {
                         disabled={sendingVerification}
                         className={`text-sm px-3 py-1.5 rounded-lg transition-all disabled:opacity-50 ${
                           isDark
-                            ? "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30"
-                            : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                            ? "bg-sky-600/20 text-sky-400 hover:bg-sky-600/30"
+                            : "bg-sky-50 text-sky-600 hover:bg-sky-100"
                         }`}
                       >
                         {sendingVerification ? "Envoi..." : "Vérifier mon email"}

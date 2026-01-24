@@ -139,7 +139,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <div
         aria-hidden
         className={`pointer-events-none absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full blur-3xl ${
-          isDark ? "bg-blue-500/10" : "bg-blue-400/20"
+          isDark ? "bg-sky-500/10" : "bg-sky-400/20"
         }`}
       />
       <div
@@ -153,7 +153,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className={`flex items-center gap-3 text-lg font-semibold ${linkClass}`}>
               <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${
-                isDark ? "bg-blue-500/15 text-blue-300" : "bg-blue-100 text-blue-700"
+                isDark ? "bg-sky-500/15 text-sky-300" : "bg-sky-100 text-sky-700"
               }`}>
                 A
               </span>
@@ -193,8 +193,8 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                       userDropdownOpen ? "scale-95" : ""
                     } ${
                       isDark
-                        ? "bg-blue-500/80 text-white"
-                        : "bg-blue-600 text-white"
+                        ? "bg-sky-500/80 text-white"
+                        : "bg-sky-600 text-white"
                     }`}>
                       {getUserInitials()}
                     </div>
@@ -284,7 +284,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                 {isAuthed && userProfile && (
                   <div className={`flex items-center gap-3 py-3 mb-2 border-b ${isDark ? "border-gray-800" : "border-gray-100"}`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                      isDark ? "bg-blue-600 text-white" : "bg-blue-500 text-white"
+                      isDark ? "bg-sky-600 text-white" : "bg-sky-500 text-white"
                     }`}>
                       {getUserInitials()}
                     </div>
@@ -378,28 +378,31 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <Link href="/about" className={badgeClass}>
         <div className={`
-          flex items-center gap-3 px-4 py-3 rounded-lg border
+          flex items-center gap-3 px-4 py-3 rounded-lg
           transition-all duration-200
           ${isDark
-            ? "bg-[#0d1117] border-gray-800 hover:border-gray-700"
-            : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+            ? "bg-transparent hover:bg-white/5"
+            : "bg-transparent hover:bg-black/5"
           }
         `}>
           <div className={`
             w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black
             ${isDark
-              ? "bg-white text-black"
-              : "bg-gray-900 text-white"
+              ? "bg-gray-700 text-gray-300"
+              : "bg-gray-200 text-gray-600"
             }
           `}>
             G7
           </div>
-          <div className="flex flex-col">
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+          <div className="flex flex-col items-center">
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
               Built by a
             </span>
-            <span className={`text-base font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
-              Gen0S7 Member
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+              Gen0S7
+            </span>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
+              Member
             </span>
           </div>
         </div>

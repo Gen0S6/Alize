@@ -107,8 +107,8 @@ export function JobCard({
               key={reason}
               className={`rounded-md px-2 py-0.5 text-xs ${
                 isDark
-                  ? "bg-blue-900/30 text-blue-300 ring-1 ring-blue-800"
-                  : "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+                  ? "bg-sky-900/30 text-sky-300 ring-1 ring-sky-800"
+                  : "bg-sky-50 text-sky-700 ring-1 ring-sky-200"
               }`}
             >
               {reason}
@@ -124,7 +124,7 @@ export function JobCard({
           target="_blank"
           rel="noreferrer"
           onClick={onVisit}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
         >
           <FontAwesomeIcon icon={faExternalLink} className="text-xs" />
           Voir l'offre

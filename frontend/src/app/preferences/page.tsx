@@ -145,16 +145,16 @@ export default function PreferencesPage() {
   const textPrimary = isDark ? "text-gray-100" : "text-gray-900";
 
   const inputClass = isDark
-    ? "w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-    : "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
+    ? "w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+    : "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all";
 
   const labelClass = isDark
     ? "block text-sm font-medium text-gray-200 mb-2"
     : "block text-sm font-medium text-gray-700 mb-2";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-sky-600 hover:bg-sky-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "rounded-xl bg-sky-600 hover:bg-sky-700 px-6 py-3 font-medium text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -237,8 +237,8 @@ export default function PreferencesPage() {
           {/* Critères principaux */}
           <div className={cardClass}>
             <div className="flex items-center gap-2 mb-6">
-              <div className={`p-2 rounded-lg ${isDark ? "bg-blue-900/30" : "bg-blue-100"}`}>
-                <svg className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className={`p-2 rounded-lg ${isDark ? "bg-sky-900/30" : "bg-sky-100"}`}>
+                <svg className={`w-5 h-5 ${isDark ? "text-sky-400" : "text-sky-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -429,7 +429,7 @@ export default function PreferencesPage() {
             {checking ? (
               <div className="text-center py-4">
                 <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
-                  <svg className={`animate-spin w-6 h-6 ${isDark ? "text-blue-400" : "text-blue-600"}`} fill="none" viewBox="0 0 24 24">
+                  <svg className={`animate-spin w-6 h-6 ${isDark ? "text-sky-400" : "text-sky-600"}`} fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>

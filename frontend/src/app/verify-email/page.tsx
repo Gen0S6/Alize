@@ -55,7 +55,7 @@ function VerifyEmailContent() {
       <div className={cardClass}>
         {verifying ? (
           <>
-            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-sky-500 border-t-transparent"></div>
             <h1 className={`mt-4 text-xl font-bold ${textClass}`}>
               Vérification en cours...
             </h1>
@@ -120,7 +120,7 @@ function VerifyEmailContent() {
         <div className="mt-6">
           <Link
             href="/dashboard"
-            className="text-blue-500 hover:underline text-sm"
+            className="text-sky-500 hover:underline text-sm"
           >
             Aller au tableau de bord →
           </Link>
@@ -134,7 +134,7 @@ function LoadingFallback() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent"></div>
         <p className="mt-4 text-gray-600">Chargement...</p>
       </div>
     </main>

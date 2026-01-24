@@ -13,7 +13,7 @@ interface StatCardProps {
 
 export function StatCard({ value, label, icon, color, isDark }: StatCardProps) {
   const iconColors: Record<string, string> = {
-    blue: "text-blue-600",
+    blue: "text-sky-600",
     green: "text-green-600",
     amber: "text-amber-600",
     gray: "text-gray-500",

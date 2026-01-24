@@ -79,12 +79,12 @@ function ResetPasswordContent() {
     : "w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl";
 
   const inputClass = isDark
-    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-    : "mt-1 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none";
+    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-sky-500 focus:outline-none"
+    : "mt-1 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-sky-500 focus:outline-none";
 
   const buttonClass = isDark
-    ? "w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-    : "w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "w-full rounded-xl bg-sky-600 px-4 py-3 font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "w-full rounded-xl bg-sky-600 px-4 py-3 font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const textClass = isDark ? "text-gray-100" : "text-gray-900";
   const mutedClass = isDark ? "text-gray-400" : "text-gray-600";
@@ -156,7 +156,7 @@ function ResetPasswordContent() {
           )}
 
           <p className={`mt-6 text-center text-sm ${mutedClass}`}>
-            <Link href="/login" className="text-blue-500 hover:underline">
+            <Link href="/login" className="text-sky-500 hover:underline">
               ← Retour à la connexion
             </Link>
           </p>
@@ -215,7 +215,7 @@ function ResetPasswordContent() {
         )}
 
         <p className={`mt-6 text-center text-sm ${mutedClass}`}>
-          <Link href="/login" className="text-blue-500 hover:underline">
+          <Link href="/login" className="text-sky-500 hover:underline">
             ← Retour à la connexion
           </Link>
         </p>
@@ -228,7 +228,7 @@ function LoadingFallback() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <div className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl text-center">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-sky-500 border-t-transparent"></div>
         <p className="mt-4 text-gray-600">Chargement...</p>
       </div>
     </main>

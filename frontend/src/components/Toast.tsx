@@ -73,7 +73,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const bgColors: Record<ToastType, string> = {
     success: "bg-green-500",
     error: "bg-red-500",
-    info: "bg-blue-500",
+    info: "bg-sky-500",
     warning: "bg-yellow-500",
   };
 
