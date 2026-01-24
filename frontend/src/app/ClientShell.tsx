@@ -378,30 +378,28 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <Link href="/about" className={badgeClass}>
         <div className={`
-          flex items-center gap-2.5 px-4 py-2.5 rounded-full border backdrop-blur-md
-          transition-all duration-300 ease-out
+          flex items-center gap-3 px-4 py-3 rounded-lg border
+          transition-all duration-200
           ${isDark
-            ? "bg-gradient-to-r from-gray-900/90 to-gray-800/90 border-gray-700/60 hover:border-gray-600 hover:from-gray-800/95 hover:to-gray-700/95 shadow-lg shadow-black/20"
-            : "bg-gradient-to-r from-white/95 to-gray-50/95 border-gray-200/80 hover:border-gray-300 hover:shadow-md shadow-sm"
+            ? "bg-[#0d1117] border-gray-800 hover:border-gray-700"
+            : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
           }
-          group-hover:scale-105
         `}>
           <div className={`
-            w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-            transition-transform duration-300 group-hover:rotate-12
+            w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black
             ${isDark
-              ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
-              : "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
+              ? "bg-white text-black"
+              : "bg-gray-900 text-white"
             }
           `}>
             G7
           </div>
           <div className="flex flex-col">
-            <span className={`text-[10px] uppercase tracking-wider leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-              Built by
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+              Built by a
             </span>
-            <span className={`text-sm font-bold leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
-              a Gen0S7 member
+            <span className={`text-base font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
+              Gen0S7 Member
             </span>
           </div>
         </div>
