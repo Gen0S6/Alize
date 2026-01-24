@@ -52,7 +52,7 @@ function LoginForm() {
   }
 
   return (
-    <div className={`w-full max-w-md rounded-2xl border p-8 shadow-2xl ${
+    <div className={`relative w-full max-w-md rounded-2xl border p-8 shadow-2xl ${
       isDark
         ? "border-gray-800 bg-[#0d1117]"
         : "border-gray-200 bg-white"
@@ -220,7 +220,7 @@ export default function LoginPage() {
       isDark ? "bg-[#0a0b0f]" : "bg-gray-50"
     }`}>
       {/* Background gradient */}
-      <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-30 ${
+      <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-30 pointer-events-none ${
         isDark ? "bg-sky-500/20" : "bg-sky-400/30"
       }`} />
 
