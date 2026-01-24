@@ -162,7 +162,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation */}
             <nav className={`hidden md:flex ${navClass}`}>
-              {(!isHomePage || isAuthed) && (
+              {isAuthed && (
                 <>
                   <Link href="/dashboard" className={`${linkClass} transition-colors duration-200`}>
                     Tableau de bord
@@ -299,7 +299,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
 
-                {(!isHomePage || isAuthed) && (
+                {isAuthed && (
                   <>
                     <Link
                       href="/dashboard"
@@ -328,17 +328,17 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                     >
                       CV
                     </Link>
+                    <Link
+                      href="/profile"
+                      className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                        isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                      }`}
+                      style={{ animationDelay: "200ms" }}
+                    >
+                      Profil
+                    </Link>
                   </>
                 )}
-                <Link
-                  href="/profile"
-                  className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
-                    isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
-                  }`}
-                  style={{ animationDelay: "200ms" }}
-                >
-                  Profil
-                </Link>
 
                 {/* Logout button for mobile */}
                 {isAuthed && (
@@ -387,21 +387,18 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         `}>
           <div className={`
             w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black
-            ${isDark
-              ? "bg-gray-700 text-gray-300"
-              : "bg-gray-200 text-gray-600"
-            }
+            bg-gradient-to-br from-sky-500 to-sky-600 text-white
           `}>
             G7
           </div>
           <div className="flex flex-col items-center">
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Built by a
             </span>
-            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? "text-sky-400" : "text-sky-600"}`}>
               Gen0S7
             </span>
-            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-600" : "text-gray-400"}`}>
+            <span className={`text-[9px] font-medium uppercase tracking-widest leading-tight ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               Member
             </span>
           </div>

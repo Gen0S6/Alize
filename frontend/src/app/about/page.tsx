@@ -11,7 +11,6 @@ import {
   faLightbulb,
   faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
 
 export default function AboutPage() {
   const { theme } = useTheme();
@@ -183,28 +182,24 @@ export default function AboutPage() {
 
         {/* Contact Section */}
         <div className={`text-center py-8 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}>
-          <p className={`mb-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-            Envie de nous rejoindre ou de collaborer ?
+          <p className={`leading-relaxed ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            Envie de nous rejoindre ou de collaborer, ou vous avez tout simplement trouvé quelque chose qui ne va pas ?
           </p>
-          <a
-            href="https://github.com/Gen0S7"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 font-medium transition-all ${
-              isDark
-                ? "bg-gray-800 text-gray-200 hover:bg-gray-700 border border-gray-700"
-                : "bg-gray-900 text-white hover:bg-gray-800"
-            }`}
-          >
-            <FontAwesomeIcon icon={faGithub} />
-            Suivre Gen0S7 sur GitHub
-          </a>
+          <p className={`mt-2 ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+            Contactez nous sur{" "}
+            <a
+              href="mailto:chajosste@gmail.com"
+              className="text-sky-500 hover:text-sky-400 font-medium transition-colors"
+            >
+              chajosste@gmail.com
+            </a>
+          </p>
         </div>
 
         {/* Footer */}
         <div className={`text-center mt-8 pt-8 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}>
           <p className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-            © 2024-2025 Gen0S7. Tous droits réservés.
+            © 2025-2026 Gen0S7. Tous droits réservés.
           </p>
         </div>
       </div>

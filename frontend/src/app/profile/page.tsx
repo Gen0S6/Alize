@@ -213,6 +213,7 @@ export default function ProfilePage() {
       const updated = await updatePreferences({
         notification_frequency: payload.notification_frequency ?? "every_3_days",
         send_empty_digest: payload.send_empty_digest ?? true,
+        notification_max_jobs: payload.notification_max_jobs ?? 5,
       });
       setNotificationPref(updated);
       setInitialNotificationPref(updated);
@@ -604,6 +605,28 @@ export default function ProfilePage() {
                           </p>
                         </div>
 
+                        <div>
+                          <label className={labelClass}>
+                            Nombre max d'offres par email
+                          </label>
+                          <select
+                            className={inputClass}
+                            value={notificationPref.notification_max_jobs ?? 5}
+                            onChange={(e) => {
+                              const nextValue = Number(e.target.value);
+                              const nextPref = { ...notificationPref, notification_max_jobs: nextValue };
+                              updateNotificationField("notification_max_jobs", nextValue);
+                              void saveNotifications(nextPref);
+                            }}
+                          >
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                              <option key={n} value={n}>{n} offre{n > 1 ? "s" : ""}</option>
+                            ))}
+                          </select>
+                          <p className={`text-xs mt-2 ${textMuted}`}>
+                            Limite le nombre d'offres incluses dans chaque email.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
