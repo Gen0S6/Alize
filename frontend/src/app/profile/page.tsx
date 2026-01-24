@@ -155,7 +155,8 @@ export default function ProfilePage() {
       setError("Le nouveau mot de passe doit contenir au moins 8 caractères.");
       return;
     }
-    if (newPassword && !currentPassword) {
+    // Only require current password if user already has one
+    if (newPassword && profile.has_password && !currentPassword) {
       setError("Veuillez entrer votre mot de passe actuel pour en définir un nouveau.");
       return;
     }
@@ -446,24 +447,44 @@ export default function ProfilePage() {
                 <h2 className={`text-lg font-semibold ${textPrimary}`}>Sécurité</h2>
               </div>
 
-              <div className="space-y-5">
-                <div>
-                  <label className={labelClass}>
-                    <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                      </svg>
-                      Mot de passe actuel
-                    </span>
-                  </label>
-                  <input
-                    className={inputClass}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    type="password"
-                    placeholder="Requis pour changer de mot de passe"
-                  />
+              {/* Message for OAuth users without password */}
+              {!profile.has_password && (
+                <div className={`mb-5 p-4 rounded-xl flex items-start gap-3 ${isDark ? "bg-sky-900/20 border border-sky-700/30" : "bg-sky-50 border border-sky-100"}`}>
+                  <svg className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isDark ? "text-sky-400" : "text-sky-600"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className={`text-sm font-medium ${isDark ? "text-sky-300" : "text-sky-700"}`}>
+                      Compte créé via Google
+                    </p>
+                    <p className={`text-sm mt-1 ${isDark ? "text-sky-400/80" : "text-sky-600"}`}>
+                      Tu peux définir un mot de passe pour te connecter aussi avec ton email.
+                    </p>
+                  </div>
                 </div>
+              )}
+
+              <div className="space-y-5">
+                {/* Only show current password field if user has a password */}
+                {profile.has_password && (
+                  <div>
+                    <label className={labelClass}>
+                      <span className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        Mot de passe actuel
+                      </span>
+                    </label>
+                    <input
+                      className={inputClass}
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      type="password"
+                      placeholder="Requis pour changer de mot de passe"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className={labelClass}>
@@ -471,7 +492,7 @@ export default function ProfilePage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                       </svg>
-                      Nouveau mot de passe
+                      {profile.has_password ? "Nouveau mot de passe" : "Définir un mot de passe"}
                     </span>
                   </label>
                   <input
@@ -479,7 +500,7 @@ export default function ProfilePage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     type="password"
-                    placeholder="Laisse vide pour ne pas changer"
+                    placeholder={profile.has_password ? "Laisse vide pour ne pas changer" : "Choisis un mot de passe"}
                   />
                   <p className={`text-xs mt-2 ${textMuted}`}>
                     8 caractères minimum

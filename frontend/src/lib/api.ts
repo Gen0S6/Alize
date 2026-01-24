@@ -167,6 +167,7 @@ export type Profile = {
   email: string;
   notifications_enabled: boolean;
   email_verified: boolean;
+  has_password: boolean;
   created_at: string;
 };
 

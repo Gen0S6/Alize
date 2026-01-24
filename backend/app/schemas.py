@@ -185,6 +185,7 @@ class ProfileOut(BaseModel):
     email: EmailStr
     notifications_enabled: bool
     email_verified: bool = False
+    has_password: bool = True
     created_at: datetime
 
 
