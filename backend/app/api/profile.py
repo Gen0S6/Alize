@@ -19,6 +19,7 @@ def get_profile(user: User = Depends(get_current_user)):
         email=user.email,
         notifications_enabled=user.notifications_enabled,
         email_verified=getattr(user, 'email_verified', False),
+        has_password=user.password_hash is not None,
         created_at=user.created_at,
     )
 
@@ -70,19 +71,22 @@ def update_profile(
         # Mark email as unverified when changed
         user.email_verified = False
 
-    # Update password if provided - requires current password
+    # Update password if provided
     if payload.new_password:
-        if not payload.current_password:
-            raise HTTPException(
-                status_code=400,
-                detail="Le mot de passe actuel est requis pour changer de mot de passe"
-            )
-        # Verify current password
-        if not verify_password(payload.current_password, user.password_hash):
-            raise HTTPException(
-                status_code=400,
-                detail="Mot de passe actuel incorrect"
-            )
+        # If user has a password, require current password to change it
+        if user.password_hash is not None:
+            if not payload.current_password:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Le mot de passe actuel est requis pour changer de mot de passe"
+                )
+            # Verify current password
+            if not verify_password(payload.current_password, user.password_hash):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Mot de passe actuel incorrect"
+                )
+        # OAuth users (no password) can set a password without current_password
         # Validate and set new password
         safe_pwd = _sanitize_password(payload.new_password)
         user.password_hash = hash_password(safe_pwd)
@@ -100,5 +104,6 @@ def update_profile(
         email=user.email,
         notifications_enabled=user.notifications_enabled,
         email_verified=getattr(user, 'email_verified', False),
+        has_password=user.password_hash is not None,
         created_at=user.created_at,
     )
