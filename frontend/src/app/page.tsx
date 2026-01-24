@@ -254,59 +254,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Sources Section */}
-      <section className={`py-16 ${isDark ? "bg-[#0d1117]" : "bg-gray-50"}`}>
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="text-center mb-12">
-            <p className={`text-sm uppercase tracking-wider font-medium mb-2 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-              Nous agrégeons les offres de
-            </p>
-            <h2 className={`text-2xl md:text-3xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-              3 plateformes majeures
-            </h2>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            {[
-              { name: "France Travail", desc: "Offres publiques" },
-              { name: "Adzuna", desc: "Agrégateur mondial" },
-              { name: "LinkedIn", desc: "Réseau professionnel" },
-            ].map((source) => (
-              <div key={source.name} className="text-center">
-                <div className={`text-xl md:text-2xl font-bold ${isDark ? "text-white" : "text-gray-900"}`}>
-                  {source.name}
-                </div>
-                <div className={`text-sm ${isDark ? "text-gray-500" : "text-gray-500"}`}>
-                  {source.desc}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: "100%", label: "Gratuit" },
-              { value: "3", label: "Sources" },
-              { value: "IA", label: "Scoring" },
-              { value: "24/7", label: "Disponible" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className={`text-3xl md:text-4xl font-bold bg-gradient-to-r from-sky-500 to-sky-600 bg-clip-text text-transparent`}>
-                  {stat.value}
-                </div>
-                <div className={`mt-1 text-sm font-medium ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className={`py-24 ${isDark ? "bg-[#0d1117]" : "bg-gray-50"}`}>
         <div className="mx-auto max-w-3xl px-6 text-center">
