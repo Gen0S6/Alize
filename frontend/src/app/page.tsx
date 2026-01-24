@@ -40,7 +40,7 @@ export default function HomePage() {
           }`}>
             Trouve ton prochain emploi,
             <br />
-            <span className="text-blue-600">sans effort.</span>
+            <span className="text-sky-600">sans effort.</span>
           </h1>
 
           <p className={`mx-auto mt-6 max-w-2xl text-lg ${
@@ -56,7 +56,7 @@ export default function HomePage() {
               <>
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-6 py-3 text-base font-medium text-white hover:bg-sky-700 transition-colors"
                 >
                   Commencer gratuitement
                   <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
@@ -75,7 +75,7 @@ export default function HomePage() {
             ) : (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-6 py-3 text-base font-medium text-white hover:bg-sky-700 transition-colors"
               >
                 Accéder au tableau de bord
                 <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
@@ -101,7 +101,7 @@ export default function HomePage() {
             {/* Step 1 */}
             <div className="text-center">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                isDark ? "bg-blue-900/50 text-blue-400" : "bg-blue-100 text-blue-600"
+                isDark ? "bg-sky-900/50 text-sky-400" : "bg-sky-100 text-sky-600"
               }`}>
                 <FontAwesomeIcon icon={faFileAlt} />
               </div>
@@ -116,7 +116,7 @@ export default function HomePage() {
             {/* Step 2 */}
             <div className="text-center">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                isDark ? "bg-blue-900/50 text-blue-400" : "bg-blue-100 text-blue-600"
+                isDark ? "bg-sky-900/50 text-sky-400" : "bg-sky-100 text-sky-600"
               }`}>
                 <FontAwesomeIcon icon={faBriefcase} />
               </div>
@@ -131,7 +131,7 @@ export default function HomePage() {
             {/* Step 3 */}
             <div className="text-center">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                isDark ? "bg-blue-900/50 text-blue-400" : "bg-blue-100 text-blue-600"
+                isDark ? "bg-sky-900/50 text-sky-400" : "bg-sky-100 text-sky-600"
               }`}>
                 <FontAwesomeIcon icon={faChartSimple} />
               </div>
@@ -233,7 +233,7 @@ export default function HomePage() {
           {!isAuthed ? (
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-6 py-3 text-base font-medium text-white hover:bg-sky-700 transition-colors"
             >
               Créer mon compte
               <FontAwesomeIcon icon={faArrowRight} className="text-sm" />
@@ -241,7 +241,7 @@ export default function HomePage() {
           ) : (
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-6 py-3 text-base font-medium text-white hover:bg-sky-700 transition-colors"
             >
               Voir mes offres
               <FontAwesomeIcon icon={faArrowRight} className="text-sm" />

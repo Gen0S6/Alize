@@ -56,12 +56,12 @@ function LoginForm() {
     : "w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl";
 
   const inputClass = isDark
-    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-    : "mt-1 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none";
+    ? "mt-1 w-full rounded-xl border border-gray-700 bg-[#0d1016] px-4 py-3 text-gray-100 placeholder-gray-500 focus:border-sky-500 focus:outline-none"
+    : "mt-1 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-sky-500 focus:outline-none";
 
   const buttonClass = isDark
-    ? "w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-    : "w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "w-full rounded-xl bg-sky-600 px-4 py-3 font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed"
+    : "w-full rounded-xl bg-sky-600 px-4 py-3 font-medium text-white hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const secondaryButtonClass = isDark
     ? "w-full rounded-xl border border-gray-700 px-4 py-3 text-sm text-gray-300 hover:bg-gray-800"
@@ -100,7 +100,7 @@ function LoginForm() {
             <label className={`text-sm font-medium ${textClass}`}>Mot de passe</label>
             <Link
               href="/reset-password"
-              className="text-sm text-blue-500 hover:underline"
+              className="text-sm text-sky-500 hover:underline"
             >
               Mot de passe oublié ?
             </Link>

@@ -59,14 +59,14 @@ export function FilterBar({
 }: FilterBarProps) {
   const inputClass = `w-full rounded-md border py-2 px-3 text-sm focus:outline-none focus:ring-1 ${
     isDark
-      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-blue-500 focus:ring-blue-500"
-      : "border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-sky-500 focus:ring-sky-500"
+      : "border-gray-300 bg-white text-gray-900 focus:border-sky-500 focus:ring-sky-500"
   }`;
 
   const selectClass = `rounded-md border py-2 px-3 text-sm focus:outline-none focus:ring-1 ${
     isDark
-      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-blue-500 focus:ring-blue-500"
-      : "border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+      ? "border-gray-700 bg-[#0a0b0f] text-gray-100 focus:border-sky-500 focus:ring-sky-500"
+      : "border-gray-300 bg-white text-gray-900 focus:border-sky-500 focus:ring-sky-500"
   }`;
 
   return (
@@ -134,7 +134,7 @@ export function FilterBar({
             onClick={() => setViewMode("grid")}
             className={`px-3 py-2 ${
               viewMode === "grid"
-                ? "bg-blue-600 text-white"
+                ? "bg-sky-600 text-white"
                 : isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
             }`}
           >
@@ -144,7 +144,7 @@ export function FilterBar({
             onClick={() => setViewMode("table")}
             className={`px-3 py-2 ${
               viewMode === "table"
-                ? "bg-blue-600 text-white"
+                ? "bg-sky-600 text-white"
                 : isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
             }`}
           >
@@ -162,7 +162,7 @@ export function FilterBar({
               type="checkbox"
               checked={savedOnly}
               onChange={(e) => setSavedOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
             />
             <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
               Sauvegardées {savedCount > 0 && `(${savedCount})`}
@@ -175,7 +175,7 @@ export function FilterBar({
               type="checkbox"
               checked={newOnly}
               onChange={(e) => setNewOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
             />
             <span className={`text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
               Nouveautés uniquement {newCount > 0 && `(${newCount})`}
@@ -186,7 +186,7 @@ export function FilterBar({
         {/* Results count */}
         <div className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
           {isLoading && (
-            <svg className="h-4 w-4 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+            <svg className="h-4 w-4 animate-spin text-sky-500" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>

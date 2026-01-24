@@ -139,7 +139,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
       <div
         aria-hidden
         className={`pointer-events-none absolute -top-32 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full blur-3xl ${
-          isDark ? "bg-blue-500/10" : "bg-blue-400/20"
+          isDark ? "bg-sky-500/10" : "bg-sky-400/20"
         }`}
       />
       <div
@@ -153,7 +153,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className={`flex items-center gap-3 text-lg font-semibold ${linkClass}`}>
               <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${
-                isDark ? "bg-blue-500/15 text-blue-300" : "bg-blue-100 text-blue-700"
+                isDark ? "bg-sky-500/15 text-sky-300" : "bg-sky-100 text-sky-700"
               }`}>
                 A
               </span>
@@ -193,8 +193,8 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                       userDropdownOpen ? "scale-95" : ""
                     } ${
                       isDark
-                        ? "bg-blue-500/80 text-white"
-                        : "bg-blue-600 text-white"
+                        ? "bg-sky-500/80 text-white"
+                        : "bg-sky-600 text-white"
                     }`}>
                       {getUserInitials()}
                     </div>
@@ -284,7 +284,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                 {isAuthed && userProfile && (
                   <div className={`flex items-center gap-3 py-3 mb-2 border-b ${isDark ? "border-gray-800" : "border-gray-100"}`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                      isDark ? "bg-blue-600 text-white" : "bg-blue-500 text-white"
+                      isDark ? "bg-sky-600 text-white" : "bg-sky-500 text-white"
                     }`}>
                       {getUserInitials()}
                     </div>

@@ -207,8 +207,8 @@ export default function CVPage() {
   const textSecondary = isDark ? "text-gray-300" : "text-gray-700";
 
   const btnPrimary = isDark
-    ? "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
-    : "rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+    ? "rounded-xl bg-sky-600 hover:bg-sky-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-600/20"
+    : "rounded-xl bg-sky-600 hover:bg-sky-700 px-5 py-2.5 font-medium text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const btnSecondary = isDark
     ? "rounded-xl border border-gray-600 bg-[#0f1116] hover:bg-gray-800 px-4 py-2 font-medium text-gray-200 transition-all duration-200"
@@ -216,7 +216,7 @@ export default function CVPage() {
 
   const badgeClass = (color: string) => {
     const colors: Record<string, string> = {
-      blue: isDark ? "bg-blue-900/40 text-blue-300 border-blue-700/50" : "bg-blue-100/80 text-blue-800 border-blue-300",
+      blue: isDark ? "bg-sky-900/40 text-sky-300 border-sky-700/50" : "bg-sky-100/80 text-sky-800 border-sky-300",
       green: isDark ? "bg-emerald-900/40 text-emerald-300 border-emerald-700/50" : "bg-emerald-100/80 text-emerald-800 border-emerald-300",
       purple: isDark ? "bg-purple-900/40 text-purple-300 border-purple-700/50" : "bg-purple-100/80 text-purple-800 border-purple-300",
       amber: isDark ? "bg-amber-900/40 text-amber-300 border-amber-700/50" : "bg-amber-100/80 text-amber-800 border-amber-300",
@@ -231,7 +231,7 @@ export default function CVPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-            <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 shadow-lg shadow-blue-600/20" : "p-2.5 rounded-xl bg-blue-600 shadow-md"}>
+            <span className={isDark ? "p-2.5 rounded-xl bg-gradient-to-br from-sky-600 to-sky-700 shadow-lg shadow-sky-600/20" : "p-2.5 rounded-xl bg-sky-600 shadow-md"}>
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -256,7 +256,7 @@ export default function CVPage() {
           {/* Zone d'upload */}
           <div className={cardClass}>
             <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${textPrimary}`}>
-              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               Uploader un CV
@@ -272,7 +272,7 @@ export default function CVPage() {
               className={`
                 relative cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200
                 ${dragActive
-                  ? (isDark ? "border-blue-500 bg-blue-900/20" : "border-blue-500 bg-blue-50")
+                  ? (isDark ? "border-sky-500 bg-sky-900/20" : "border-sky-500 bg-sky-50")
                   : (isDark ? "border-gray-600 hover:border-gray-500 hover:bg-gray-800/50" : "border-gray-300 hover:border-gray-400 hover:bg-gray-50")
                 }
               `}
@@ -291,10 +291,10 @@ export default function CVPage() {
 
               <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${
                 dragActive
-                  ? (isDark ? "bg-blue-900/40" : "bg-blue-100")
+                  ? (isDark ? "bg-sky-900/40" : "bg-sky-100")
                   : (isDark ? "bg-gray-800" : "bg-gray-100")
               }`}>
-                <svg className={`w-8 h-8 ${dragActive ? "text-blue-400" : textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-8 h-8 ${dragActive ? "text-sky-400" : textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </div>
@@ -348,7 +348,7 @@ export default function CVPage() {
                 </div>
                 <div className={`h-2 rounded-full overflow-hidden ${isDark ? "bg-gray-800" : "bg-gray-200"}`}>
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out"
+                    className="h-full bg-gradient-to-r from-sky-500 to-sky-600 transition-all duration-300 ease-out"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -660,8 +660,8 @@ export default function CVPage() {
               href="/dashboard"
               className={`block text-center p-4 rounded-xl transition-all duration-200 ${
                 isDark
-                  ? "bg-gradient-to-r from-blue-900/40 to-purple-900/40 border border-blue-700/30 hover:border-blue-600/50"
-                  : "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 hover:border-blue-300"
+                  ? "bg-gradient-to-r from-sky-900/40 to-purple-900/40 border border-sky-700/30 hover:border-sky-600/50"
+                  : "bg-gradient-to-r from-sky-50 to-purple-50 border border-sky-200 hover:border-sky-300"
               }`}
             >
               <p className={`font-medium ${textPrimary}`}>Voir les offres correspondantes</p>

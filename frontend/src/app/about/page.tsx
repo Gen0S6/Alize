@@ -46,7 +46,7 @@ export default function AboutPage() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 ${
-            isDark ? "bg-gradient-to-br from-blue-600 to-purple-600" : "bg-gradient-to-br from-blue-500 to-purple-500"
+            isDark ? "bg-gradient-to-br from-sky-600 to-purple-600" : "bg-gradient-to-br from-sky-500 to-purple-500"
           }`}>
             <span className="text-3xl font-bold text-white">G7</span>
           </div>
@@ -61,8 +61,8 @@ export default function AboutPage() {
         {/* Mission Section */}
         <div className={cardClass + " mb-8"}>
           <div className="flex items-start gap-4">
-            <div className={`rounded-xl p-3 ${isDark ? "bg-blue-900/30" : "bg-blue-100"}`}>
-              <FontAwesomeIcon icon={faRocket} className={`text-xl ${isDark ? "text-blue-400" : "text-blue-600"}`} />
+            <div className={`rounded-xl p-3 ${isDark ? "bg-sky-900/30" : "bg-sky-100"}`}>
+              <FontAwesomeIcon icon={faRocket} className={`text-xl ${isDark ? "text-sky-400" : "text-sky-600"}`} />
             </div>
             <div>
               <h2 className={`text-xl font-semibold mb-3 ${isDark ? "text-gray-100" : "text-gray-900"}`}>
@@ -163,19 +163,19 @@ export default function AboutPage() {
           </p>
           <ul className={`space-y-2 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
             <li className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-blue-400" : "bg-blue-500"}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-sky-400" : "bg-sky-500"}`} />
               Analyse intelligente de CV avec extraction de compétences
             </li>
             <li className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-blue-400" : "bg-blue-500"}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-sky-400" : "bg-sky-500"}`} />
               Scoring personnalisé des offres (0-10)
             </li>
             <li className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-blue-400" : "bg-blue-500"}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-sky-400" : "bg-sky-500"}`} />
               Agrégation multi-sources sans doublons
             </li>
             <li className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-blue-400" : "bg-blue-500"}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-sky-400" : "bg-sky-500"}`} />
               Notifications email personnalisées
             </li>
           </ul>

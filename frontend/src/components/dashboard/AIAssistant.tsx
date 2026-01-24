@@ -66,7 +66,7 @@ export function AIAssistant({
           <button
             onClick={onLaunchSearch}
             disabled={searching}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
           >
             <FontAwesomeIcon icon={faSearch} className={searching ? "animate-pulse" : ""} />
             {searching ? "Recherche..." : "Lancer"}
@@ -106,7 +106,7 @@ export function AIAssistant({
                 )}
                 {analysis.titre_poste_cible && (
                   <span className={`rounded px-2 py-1 text-xs font-medium ${
-                    isDark ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-700"
+                    isDark ? "bg-sky-900/30 text-sky-300" : "bg-sky-100 text-sky-700"
                   }`}>
                     {analysis.titre_poste_cible}
                   </span>
@@ -257,7 +257,7 @@ export function AIAssistant({
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {analysis.competences_techniques.map((skill: string) => (
                         <span key={skill} className={`rounded px-2 py-0.5 text-xs ${
-                          isDark ? "bg-blue-900/30 text-blue-300" : "bg-blue-100 text-blue-700"
+                          isDark ? "bg-sky-900/30 text-sky-300" : "bg-sky-100 text-sky-700"
                         }`}>{skill}</span>
                       ))}
                     </div>
