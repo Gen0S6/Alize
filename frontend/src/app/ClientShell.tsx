@@ -162,7 +162,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
 
             {/* Desktop Navigation */}
             <nav className={`hidden md:flex ${navClass}`}>
-              {(!isHomePage || isAuthed) && (
+              {isAuthed && (
                 <>
                   <Link href="/dashboard" className={`${linkClass} transition-colors duration-200`}>
                     Tableau de bord
@@ -299,7 +299,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
 
-                {(!isHomePage || isAuthed) && (
+                {isAuthed && (
                   <>
                     <Link
                       href="/dashboard"
@@ -328,17 +328,17 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
                     >
                       CV
                     </Link>
+                    <Link
+                      href="/profile"
+                      className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
+                        isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+                      }`}
+                      style={{ animationDelay: "200ms" }}
+                    >
+                      Profil
+                    </Link>
                   </>
                 )}
-                <Link
-                  href="/profile"
-                  className={`${linkClass} py-3 px-2 rounded-lg transition-colors duration-200 ${
-                    isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
-                  }`}
-                  style={{ animationDelay: "200ms" }}
-                >
-                  Profil
-                </Link>
 
                 {/* Logout button for mobile */}
                 {isAuthed && (
