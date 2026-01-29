@@ -66,6 +66,7 @@ class UserPreference(Base):
     # Notifications preferences
     notification_frequency = Column(String(20), default="every_3_days", nullable=False)
     send_empty_digest = Column(Boolean, default=True, nullable=False)
+    notification_max_jobs = Column(Integer, default=5, nullable=False)
 
     # Recherche automatique
     last_search_at = Column(DateTime, nullable=True)  # Dernière recherche automatique

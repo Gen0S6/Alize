@@ -29,6 +29,7 @@ def get_preferences(
         avoid_keywords=pref.avoid_keywords,
         notification_frequency=pref.notification_frequency,
         send_empty_digest=pref.send_empty_digest,
+        notification_max_jobs=pref.notification_max_jobs,
     )
 
 
@@ -40,12 +41,24 @@ def upsert_preferences(
 ):
     pref = get_or_create_pref(user, db)
 
+    # Track if search-related fields changed (not notification settings)
+    search_fields = ["role", "location", "contract_type", "salary_min", "must_keywords", "avoid_keywords"]
+    search_changed = False
+
     for field, value in payload.model_dump().items():
-        setattr(pref, field, value)
+        if value is not None:  # Only update if value is provided
+            old_value = getattr(pref, field, None)
+            if field in search_fields and old_value != value:
+                search_changed = True
+            setattr(pref, field, value)
+
     pref.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(pref)
-    clear_user_job_data(db, user.id)
+
+    # Only clear job data if search-related preferences changed
+    if search_changed:
+        clear_user_job_data(db, user.id)
 
     return PreferenceOut(
         id=pref.id,
@@ -58,4 +71,5 @@ def upsert_preferences(
         avoid_keywords=pref.avoid_keywords,
         notification_frequency=pref.notification_frequency,
         send_empty_digest=pref.send_empty_digest,
+        notification_max_jobs=pref.notification_max_jobs,
     )

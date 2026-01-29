@@ -28,6 +28,7 @@ class PreferenceIn(BaseModel):
         pattern=r"^(daily|weekly|every_3_days)$",
     )
     send_empty_digest: Optional[bool] = None
+    notification_max_jobs: Optional[int] = Field(default=None, ge=1, le=10)
 
 
 class PreferenceOut(PreferenceIn):

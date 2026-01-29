@@ -89,14 +89,14 @@ def format_matches_html(matches: list) -> str:
 
 
 def build_notification_body(matches: list) -> tuple[str, str]:
-    """Construit le corps de l'email avec les 5 meilleures offres."""
+    """Construit le corps de l'email avec les meilleures offres."""
     unsubscribe_url = os.getenv("NOTIFY_UNSUBSCRIBE_URL")
 
-    # Prendre les 5 meilleures offres
+    # Trier par score (la limite est déjà appliquée par l'appelant)
     if isinstance(matches[0], dict) if matches else False:
-        top = sorted(matches, key=lambda m: m.get("score", 0) or 0, reverse=True)[:5]
+        top = sorted(matches, key=lambda m: m.get("score", 0) or 0, reverse=True)
     else:
-        top = sorted(matches, key=lambda m: m.score or 0, reverse=True)[:5]
+        top = sorted(matches, key=lambda m: m.score or 0, reverse=True)
 
     count = len(top)
     header = f"Vos {count} meilleures offres"
@@ -156,6 +156,12 @@ def send_email_via_resend(
     api_key = os.getenv("RESEND_API_KEY")
     from_email = os.getenv("RESEND_FROM")
     if not api_key or not from_email or not to_email:
+        if not api_key:
+            log.debug("Resend skipped: RESEND_API_KEY not configured")
+        elif not from_email:
+            log.debug("Resend skipped: RESEND_FROM not configured")
+        elif not to_email:
+            log.warning("Resend skipped: no recipient email")
         return False
 
     payload = {
@@ -216,11 +222,20 @@ def send_email_via_smtp(
     smtp_use_ssl = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
 
     if not smtp_host or not smtp_user or not smtp_pass or not to_email:
+        if not smtp_host:
+            log.debug("SMTP skipped: SMTP_HOST not configured")
+        elif not smtp_user:
+            log.debug("SMTP skipped: SMTP_USER not configured")
+        elif not smtp_pass:
+            log.debug("SMTP skipped: SMTP_PASS not configured")
+        elif not to_email:
+            log.warning("SMTP skipped: no recipient email")
         return False
 
     try:
         smtp_port = int(smtp_port_str)
     except ValueError:
+        log.error("SMTP skipped: invalid SMTP_PORT value '%s'", smtp_port_str)
         return False
 
     msg = EmailMessage()
@@ -272,7 +287,7 @@ def send_email_notification(
         return True
     if send_email_via_smtp(to_email, subject, body_text, body_html):
         return True
-    log.error("Email notification failed for %s", to_email)
+    log.error("Email notification failed for %s - neither Resend nor SMTP succeeded", to_email)
     return False
 
 
@@ -328,11 +343,12 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             frequency = (pref.notification_frequency if pref else None) or "every_3_days"
             cooldown = timedelta(minutes=FREQUENCY_MINUTES.get(frequency, NOTIFY_INTERVAL_MINUTES))
 
-            # Vérifier le cooldown (basé sur last_email_at)
-            if pref and pref.last_email_at:
-                last_email = _as_aware(pref.last_email_at)
-                if now < last_email + cooldown:
-                    log.info("Skip user=%s cooldown not reached", user.email)
+            # Vérifier le cooldown (basé sur last_search_at, pas last_email_at)
+            # Cela évite de relancer des recherches trop fréquemment même si aucun email n'est envoyé
+            if pref and pref.last_search_at:
+                last_search = _as_aware(pref.last_search_at)
+                if now < last_search + cooldown:
+                    log.info("Skip user=%s cooldown not reached (last_search=%s)", user.email, last_search)
                     continue
 
             # Lancer une nouvelle recherche si refresh=True
@@ -398,8 +414,9 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 except Exception as exc:
                     log.error("Job search failed for user %s: %s", user.email, exc)
 
-            # Récupérer les 5 meilleures offres non consultées et non notifiées
-            top_jobs = get_top_unnotified_jobs(db, user.id, limit=5)
+            # Récupérer les meilleures offres non consultées et non notifiées
+            max_jobs = getattr(pref, 'notification_max_jobs', 5) or 5
+            top_jobs = get_top_unnotified_jobs(db, user.id, limit=max_jobs)
 
             email_sent = False
             if not top_jobs:
@@ -424,7 +441,9 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 # Envoyer l'email
                 body_text, body_html = build_notification_body(jobs_data)
                 to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
-                success = send_email_notification(to_email, "Vos 5 meilleures offres Alizè", body_text, body_html)
+                job_count = len(jobs_data)
+                subject = f"Vos {job_count} meilleures offres Alizè" if job_count > 1 else "Votre meilleure offre Alizè"
+                success = send_email_notification(to_email, subject, body_text, body_html)
                 email_sent = success
                 if success:
                     # Marquer les offres comme notifiées
