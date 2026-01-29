@@ -328,11 +328,12 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             frequency = (pref.notification_frequency if pref else None) or "every_3_days"
             cooldown = timedelta(minutes=FREQUENCY_MINUTES.get(frequency, NOTIFY_INTERVAL_MINUTES))
 
-            # Vérifier le cooldown (basé sur last_email_at)
-            if pref and pref.last_email_at:
-                last_email = _as_aware(pref.last_email_at)
-                if now < last_email + cooldown:
-                    log.info("Skip user=%s cooldown not reached", user.email)
+            # Vérifier le cooldown (basé sur last_search_at, pas last_email_at)
+            # Cela évite de relancer des recherches trop fréquemment même si aucun email n'est envoyé
+            if pref and pref.last_search_at:
+                last_search = _as_aware(pref.last_search_at)
+                if now < last_search + cooldown:
+                    log.info("Skip user=%s cooldown not reached (last_search=%s)", user.email, last_search)
                     continue
 
             # Lancer une nouvelle recherche si refresh=True
