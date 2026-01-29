@@ -156,6 +156,12 @@ def send_email_via_resend(
     api_key = os.getenv("RESEND_API_KEY")
     from_email = os.getenv("RESEND_FROM")
     if not api_key or not from_email or not to_email:
+        if not api_key:
+            log.debug("Resend skipped: RESEND_API_KEY not configured")
+        elif not from_email:
+            log.debug("Resend skipped: RESEND_FROM not configured")
+        elif not to_email:
+            log.warning("Resend skipped: no recipient email")
         return False
 
     payload = {
@@ -216,11 +222,20 @@ def send_email_via_smtp(
     smtp_use_ssl = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
 
     if not smtp_host or not smtp_user or not smtp_pass or not to_email:
+        if not smtp_host:
+            log.debug("SMTP skipped: SMTP_HOST not configured")
+        elif not smtp_user:
+            log.debug("SMTP skipped: SMTP_USER not configured")
+        elif not smtp_pass:
+            log.debug("SMTP skipped: SMTP_PASS not configured")
+        elif not to_email:
+            log.warning("SMTP skipped: no recipient email")
         return False
 
     try:
         smtp_port = int(smtp_port_str)
     except ValueError:
+        log.error("SMTP skipped: invalid SMTP_PORT value '%s'", smtp_port_str)
         return False
 
     msg = EmailMessage()
@@ -272,7 +287,7 @@ def send_email_notification(
         return True
     if send_email_via_smtp(to_email, subject, body_text, body_html):
         return True
-    log.error("Email notification failed for %s", to_email)
+    log.error("Email notification failed for %s - neither Resend nor SMTP succeeded", to_email)
     return False
 
 
