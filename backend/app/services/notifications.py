@@ -89,14 +89,14 @@ def format_matches_html(matches: list) -> str:
 
 
 def build_notification_body(matches: list) -> tuple[str, str]:
-    """Construit le corps de l'email avec les 5 meilleures offres."""
+    """Construit le corps de l'email avec les meilleures offres."""
     unsubscribe_url = os.getenv("NOTIFY_UNSUBSCRIBE_URL")
 
-    # Prendre les 5 meilleures offres
+    # Trier par score (la limite est déjà appliquée par l'appelant)
     if isinstance(matches[0], dict) if matches else False:
-        top = sorted(matches, key=lambda m: m.get("score", 0) or 0, reverse=True)[:5]
+        top = sorted(matches, key=lambda m: m.get("score", 0) or 0, reverse=True)
     else:
-        top = sorted(matches, key=lambda m: m.score or 0, reverse=True)[:5]
+        top = sorted(matches, key=lambda m: m.score or 0, reverse=True)
 
     count = len(top)
     header = f"Vos {count} meilleures offres"
@@ -398,8 +398,9 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 except Exception as exc:
                     log.error("Job search failed for user %s: %s", user.email, exc)
 
-            # Récupérer les 5 meilleures offres non consultées et non notifiées
-            top_jobs = get_top_unnotified_jobs(db, user.id, limit=5)
+            # Récupérer les meilleures offres non consultées et non notifiées
+            max_jobs = getattr(pref, 'notification_max_jobs', 5) or 5
+            top_jobs = get_top_unnotified_jobs(db, user.id, limit=max_jobs)
 
             email_sent = False
             if not top_jobs:
@@ -424,7 +425,9 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 # Envoyer l'email
                 body_text, body_html = build_notification_body(jobs_data)
                 to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
-                success = send_email_notification(to_email, "Vos 5 meilleures offres Alizè", body_text, body_html)
+                job_count = len(jobs_data)
+                subject = f"Vos {job_count} meilleures offres Alizè" if job_count > 1 else "Votre meilleure offre Alizè"
+                success = send_email_notification(to_email, subject, body_text, body_html)
                 email_sent = success
                 if success:
                     # Marquer les offres comme notifiées
