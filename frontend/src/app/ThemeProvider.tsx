@@ -29,10 +29,10 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       if (saved === "light" || saved === "dark") {
         setTheme(saved);
       } else {
-        setTheme("dark"); // Default to dark
+        setTheme("light"); // Default to light
       }
     } catch (_err) {
-      setTheme("dark");
+      setTheme("light");
     }
     setMounted(true);
   }, []);
@@ -61,13 +61,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   // Don't render until theme is loaded to prevent flash
   if (!mounted || !theme) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#06070f',
-        visibility: 'hidden'
-      }} />
-    );
+    return null;
   }
 
   return (
