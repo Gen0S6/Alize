@@ -417,14 +417,18 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             # Récupérer les meilleures offres non consultées et non notifiées
             max_jobs = getattr(pref, 'notification_max_jobs', 5) or 5
             top_jobs = get_top_unnotified_jobs(db, user.id, limit=max_jobs)
+            log.info("User=%s found %d unnotified jobs to send", user.email, len(top_jobs))
 
             email_sent = False
             if not top_jobs:
                 if pref is None or pref.send_empty_digest:
                     # Envoyer un email vide si aucune offre
+                    log.info("User=%s no jobs, sending empty digest", user.email)
                     empty_text, empty_html = build_empty_notification_body()
                     to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
                     email_sent = send_email_notification(to_email, "Vos offres Alizè", empty_text, empty_html)
+                else:
+                    log.info("User=%s no jobs and send_empty_digest=False, skipping", user.email)
             else:
                 # Construire la liste des offres pour l'email
                 jobs_data = []
@@ -443,8 +447,10 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
                 job_count = len(jobs_data)
                 subject = f"Vos {job_count} meilleures offres Alizè" if job_count > 1 else "Votre meilleure offre Alizè"
+                log.info("User=%s sending email with %d jobs to %s", user.email, job_count, to_email)
                 success = send_email_notification(to_email, subject, body_text, body_html)
                 email_sent = success
+                log.info("User=%s email send result: %s", user.email, success)
                 if success:
                     # Marquer les offres comme notifiées
                     for user_job, _ in top_jobs:
