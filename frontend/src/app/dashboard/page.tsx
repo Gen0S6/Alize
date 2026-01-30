@@ -488,10 +488,42 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    const id = setInterval(() => {
-      loadRuns();
-    }, 60_000);
-    return () => clearInterval(id);
+    let id: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (id) return;
+      id = setInterval(() => {
+        loadRuns();
+      }, 60_000);
+    };
+
+    const stopPolling = () => {
+      if (id) {
+        clearInterval(id);
+        id = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadRuns(); // Refresh when tab becomes visible
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    // Start polling only if tab is visible
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const maxPage = Math.max(1, Math.ceil(totalMatches / pageSize));
