@@ -11,28 +11,17 @@ export const metadata: Metadata = {
   description: "AI-powered job matching platform",
 };
 
-// Script to apply theme immediately - runs before page renders
+// Script to apply theme immediately on html element
 const themeScript = `
 (function() {
-  var d = document.documentElement;
-  var b = document.body;
   try {
     var theme = localStorage.getItem('theme') || 'dark';
+    var d = document.documentElement;
     d.classList.add(theme);
-    if (theme === 'dark') {
-      d.style.backgroundColor = '#06070f';
-      b.style.backgroundColor = '#06070f';
-      d.style.colorScheme = 'dark';
-    } else {
-      d.style.backgroundColor = '#f8fafc';
-      b.style.backgroundColor = '#f8fafc';
-    }
+    d.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
   } catch (e) {
-    d.classList.add('dark');
-    d.style.backgroundColor = '#06070f';
-    b.style.backgroundColor = '#06070f';
+    document.documentElement.classList.add('dark');
   }
-  b.style.visibility = 'visible';
 })();
 `;
 
@@ -46,7 +35,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body style={{ backgroundColor: '#06070f', visibility: 'hidden' }} suppressHydrationWarning>
+      <body style={{ backgroundColor: '#06070f' }} suppressHydrationWarning>
         <ClientShell>{children}</ClientShell>
       </body>
     </html>

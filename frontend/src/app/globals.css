@@ -5,15 +5,26 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Prevent flash of light theme when dark mode is active */
+/* Dark mode styles */
 html.dark {
-  background-color: #0b0c10;
+  background-color: #06070f !important;
   color-scheme: dark;
 }
 
 html.dark body {
-  background-color: #06070f;
+  background-color: #06070f !important;
   color: #f1f5f9;
+}
+
+/* Light mode styles */
+html.light {
+  background-color: #f8fafc !important;
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a;
 }
 
 body {
