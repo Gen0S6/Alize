@@ -11,24 +11,37 @@ export const metadata: Metadata = {
   description: "AI-powered job matching platform",
 };
 
+// Critical CSS that loads before the main stylesheet
+// Hide body until theme is determined to prevent flash
+const criticalStyles = `
+  html { background-color: #06070f; }
+  body { visibility: hidden; }
+  html.theme-ready body { visibility: visible; }
+  html.light { background-color: #f8fafc; }
+  html.light body { background-color: #f8fafc; }
+  html.dark { background-color: #06070f; color-scheme: dark; }
+  html.dark body { background-color: #06070f; color: #f1f5f9; }
+`;
+
 // Script to prevent flash of unstyled content (FOUC) for dark mode
 // This runs before anything renders
 const themeScript = `
 (function() {
+  var d = document.documentElement;
   try {
-    var theme = localStorage.getItem('theme');
+    var theme = localStorage.getItem('theme') || 'dark';
+    d.classList.add(theme);
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.cssText = 'color-scheme: dark; background-color: #06070f;';
+      d.style.backgroundColor = '#06070f';
+      d.style.colorScheme = 'dark';
+    } else {
+      d.style.backgroundColor = '#f8fafc';
     }
-  } catch (e) {}
+  } catch (e) {
+    d.classList.add('dark');
+  }
+  d.classList.add('theme-ready');
 })();
-`;
-
-// Critical CSS that loads before the main stylesheet
-const criticalStyles = `
-  html.dark { background-color: #06070f; color-scheme: dark; }
-  html.dark body { background-color: #06070f; color: #f1f5f9; }
 `;
 
 export default function RootLayout({
