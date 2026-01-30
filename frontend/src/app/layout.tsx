@@ -11,36 +11,28 @@ export const metadata: Metadata = {
   description: "AI-powered job matching platform",
 };
 
-// Critical CSS that loads before the main stylesheet
-// Hide body until theme is determined to prevent flash
-const criticalStyles = `
-  html { background-color: #06070f; }
-  body { visibility: hidden; }
-  html.theme-ready body { visibility: visible; }
-  html.light { background-color: #f8fafc; }
-  html.light body { background-color: #f8fafc; }
-  html.dark { background-color: #06070f; color-scheme: dark; }
-  html.dark body { background-color: #06070f; color: #f1f5f9; }
-`;
-
-// Script to prevent flash of unstyled content (FOUC) for dark mode
-// This runs before anything renders
+// Script to apply theme immediately - runs before page renders
 const themeScript = `
 (function() {
   var d = document.documentElement;
+  var b = document.body;
   try {
     var theme = localStorage.getItem('theme') || 'dark';
     d.classList.add(theme);
     if (theme === 'dark') {
       d.style.backgroundColor = '#06070f';
+      b.style.backgroundColor = '#06070f';
       d.style.colorScheme = 'dark';
     } else {
       d.style.backgroundColor = '#f8fafc';
+      b.style.backgroundColor = '#f8fafc';
     }
   } catch (e) {
     d.classList.add('dark');
+    d.style.backgroundColor = '#06070f';
+    b.style.backgroundColor = '#06070f';
   }
-  d.classList.add('theme-ready');
+  b.style.visibility = 'visible';
 })();
 `;
 
@@ -50,12 +42,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" style={{ backgroundColor: '#06070f' }} suppressHydrationWarning>
       <head>
-        <style dangerouslySetInnerHTML={{ __html: criticalStyles }} />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body suppressHydrationWarning>
+      <body style={{ backgroundColor: '#06070f', visibility: 'hidden' }} suppressHydrationWarning>
         <ClientShell>{children}</ClientShell>
       </body>
     </html>
