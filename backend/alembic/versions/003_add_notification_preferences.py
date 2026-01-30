@@ -1,7 +1,7 @@
 """add notification preferences to user_preferences
 
 Revision ID: 003_add_notification_preferences
-Revises: 002_ensure_user_preferences_columns
+Revises: 002
 Create Date: 2025-02-20 00:00:00.000000
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "003_add_notification_preferences"
-down_revision = "002_ensure_user_preferences_columns"
+down_revision = "002"
 branch_labels = None
 depends_on = None
 
