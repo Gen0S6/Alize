@@ -1,4 +1,5 @@
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import UserPreference, User
@@ -40,9 +41,14 @@ def get_or_create_pref(user: User, db: Session) -> UserPreference:
     if not pref:
         pref = UserPreference(user_id=user.id)
         db.add(pref)
-        db.commit()
-        db.refresh(pref)
-        return pref
+        try:
+            db.commit()
+            db.refresh(pref)
+            return pref
+        except IntegrityError:
+            # Race condition: another request created the preference
+            db.rollback()
+            pref = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
     updated = False
     if not pref.notification_frequency:
         pref.notification_frequency = "every_3_days"
