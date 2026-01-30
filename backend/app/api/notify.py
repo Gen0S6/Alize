@@ -90,6 +90,7 @@ def notify_test(
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
+                "User-Agent": "Alize/1.0",
             },
             method="POST",
         )
