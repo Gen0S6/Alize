@@ -157,12 +157,14 @@ def send_email_via_resend(
     from_email = os.getenv("RESEND_FROM")
     if not api_key or not from_email or not to_email:
         if not api_key:
-            log.debug("Resend skipped: RESEND_API_KEY not configured")
+            log.warning("Resend skipped: RESEND_API_KEY not configured")
         elif not from_email:
-            log.debug("Resend skipped: RESEND_FROM not configured")
+            log.warning("Resend skipped: RESEND_FROM not configured")
         elif not to_email:
             log.warning("Resend skipped: no recipient email")
         return False
+
+    log.info("Resend: sending email to %s from %s", to_email, from_email)
 
     payload = {
         "from": from_email,
@@ -223,11 +225,11 @@ def send_email_via_smtp(
 
     if not smtp_host or not smtp_user or not smtp_pass or not to_email:
         if not smtp_host:
-            log.debug("SMTP skipped: SMTP_HOST not configured")
+            log.warning("SMTP skipped: SMTP_HOST not configured")
         elif not smtp_user:
-            log.debug("SMTP skipped: SMTP_USER not configured")
+            log.warning("SMTP skipped: SMTP_USER not configured")
         elif not smtp_pass:
-            log.debug("SMTP skipped: SMTP_PASS not configured")
+            log.warning("SMTP skipped: SMTP_PASS not configured")
         elif not to_email:
             log.warning("SMTP skipped: no recipient email")
         return False
