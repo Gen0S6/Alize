@@ -193,13 +193,18 @@ def send_email_via_resend(
                 log.info("Resend notification sent to %s (status=%s)", to_email, resp.status)
                 return True
         except HTTPError as exc:
-            log.error("Resend API error (attempt %d/%d): status=%s", attempt + 1, max_retries, exc.code)
-            last_error = exc
+            error_body = ""
+            try:
+                error_body = exc.read().decode("utf-8")
+            except Exception:
+                pass
+            log.error("Resend API error (attempt %d/%d): status=%s body=%s", attempt + 1, max_retries, exc.code, error_body)
+            last_error = f"HTTP {exc.code}: {error_body}"
             if 400 <= exc.code < 500 and exc.code != 429:
                 return False
         except Exception as exc:
             log.error("Resend error (attempt %d/%d): %s", attempt + 1, max_retries, exc)
-            last_error = exc
+            last_error = str(exc)
 
         if attempt < max_retries - 1:
             time.sleep(2 ** attempt)

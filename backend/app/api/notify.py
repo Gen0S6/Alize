@@ -59,55 +59,82 @@ def notify_test(
     db: Session = Depends(get_db),
 ):
     """Test l'envoi d'email - envoie un email simple à l'utilisateur."""
+    import json
+    from urllib import request as urlrequest
+    from urllib.error import HTTPError
+
     to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
+    api_key = os.getenv("RESEND_API_KEY", "")
+    from_email = os.getenv("RESEND_FROM", "")
 
     # Simple test email
     subject = "Test Alizè - Email de test"
-    body_text = "Ceci est un email de test envoyé depuis Alizè. Si vous recevez ce message, la configuration email fonctionne correctement."
-    body_html = """
-    <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>Test Alizè</h2>
-        <p>Ceci est un email de test envoyé depuis Alizè.</p>
-        <p>Si vous recevez ce message, la configuration email fonctionne correctement.</p>
-    </div>
-    """
+    body_text = "Ceci est un email de test envoyé depuis Alizè."
+    body_html = "<div><h2>Test Alizè</h2><p>Email de test.</p></div>"
 
-    log.info("Testing email send to %s", to_email)
+    log.info("Testing email send to %s from %s", to_email, from_email)
 
-    # Test Resend
-    resend_result = send_email_via_resend(to_email, subject, body_text, body_html)
-    log.info("Resend result: %s", resend_result)
-
-    if resend_result:
-        return {
-            "success": True,
-            "method": "resend",
-            "to_email": to_email,
-            "message": "Email envoyé via Resend"
+    # Test Resend directly to capture error
+    if api_key and from_email:
+        payload = {
+            "from": from_email,
+            "to": [to_email],
+            "subject": subject,
+            "text": body_text,
+            "html": body_html,
         }
+        data = json.dumps(payload).encode("utf-8")
+        req = urlrequest.Request(
+            "https://api.resend.com/emails",
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        try:
+            with urlrequest.urlopen(req, timeout=15) as resp:
+                response_body = resp.read().decode("utf-8")
+                return {
+                    "success": True,
+                    "method": "resend",
+                    "to_email": to_email,
+                    "from_email": from_email,
+                    "message": "Email envoyé via Resend",
+                    "response": response_body,
+                }
+        except HTTPError as exc:
+            error_body = ""
+            try:
+                error_body = exc.read().decode("utf-8")
+            except Exception:
+                pass
+            return {
+                "success": False,
+                "method": "resend",
+                "to_email": to_email,
+                "from_email": from_email,
+                "message": f"Erreur Resend HTTP {exc.code}",
+                "error": error_body,
+            }
+        except Exception as exc:
+            return {
+                "success": False,
+                "method": "resend",
+                "to_email": to_email,
+                "from_email": from_email,
+                "message": f"Erreur Resend: {str(exc)}",
+            }
 
-    # Test SMTP if Resend failed
-    smtp_result = send_email_via_smtp(to_email, subject, body_text, body_html)
-    log.info("SMTP result: %s", smtp_result)
-
-    if smtp_result:
-        return {
-            "success": True,
-            "method": "smtp",
-            "to_email": to_email,
-            "message": "Email envoyé via SMTP"
-        }
-
-    # Both failed
     return {
         "success": False,
         "method": None,
         "to_email": to_email,
-        "message": "Échec de l'envoi - ni Resend ni SMTP n'ont fonctionné. Vérifiez les logs et la configuration.",
+        "message": "Configuration Resend manquante",
         "config": {
-            "resend_api_key_set": bool(os.getenv("RESEND_API_KEY")),
-            "resend_from_set": bool(os.getenv("RESEND_FROM")),
-            "smtp_host_set": bool(os.getenv("SMTP_HOST")),
+            "resend_api_key_set": bool(api_key),
+            "resend_from_set": bool(from_email),
         }
     }
 
