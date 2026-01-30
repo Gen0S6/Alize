@@ -7,6 +7,7 @@ Create Date: 2025-01-29 00:00:00.000000
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -17,20 +18,25 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "user_preferences",
-        sa.Column(
+    conn = op.get_bind()
+    inspector = inspect(conn)
+    columns = {col["name"] for col in inspector.get_columns("user_preferences")}
+
+    if "notification_max_jobs" not in columns:
+        op.add_column(
+            "user_preferences",
+            sa.Column(
+                "notification_max_jobs",
+                sa.Integer(),
+                nullable=False,
+                server_default="5",
+            ),
+        )
+        op.alter_column(
+            "user_preferences",
             "notification_max_jobs",
-            sa.Integer(),
-            nullable=False,
-            server_default="5",
-        ),
-    )
-    op.alter_column(
-        "user_preferences",
-        "notification_max_jobs",
-        server_default=None,
-    )
+            server_default=None,
+        )
 
 
 def downgrade() -> None:

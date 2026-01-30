@@ -5,6 +5,17 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Prevent flash of light theme when dark mode is active */
+html.dark {
+  background-color: #0b0c10;
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #06070f;
+  color: #f1f5f9;
+}
+
 body {
   font-family: "Inter", "SF Pro Text", "Segoe UI", system-ui, -apple-system, sans-serif;
   text-rendering: optimizeLegibility;
