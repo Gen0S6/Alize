@@ -264,11 +264,13 @@ export default function DashboardPage() {
     initialized.current = true;
 
     // Check if a search was in progress (page was reloaded during search)
+    let searchWasInProgress = false;
     try {
       const wasSearching = sessionStorage.getItem(SEARCHING_STORAGE_KEY);
       if (wasSearching === "true") {
-        sessionStorage.removeItem(SEARCHING_STORAGE_KEY);
-        addToast("Une recherche était en cours. Les nouvelles offres apparaîtront automatiquement.", "info");
+        searchWasInProgress = true;
+        setSearching(true);
+        addToast("Une recherche est en cours...", "info");
       }
     } catch (_e) {}
 
@@ -284,6 +286,54 @@ export default function DashboardPage() {
           console.error(`Dashboard load error (${index}):`, result.reason);
         }
       });
+
+      // If a search was in progress, poll until it completes
+      if (searchWasInProgress) {
+        const pollForCompletion = async () => {
+          const startTime = Date.now();
+          const maxWait = 120000; // 2 minutes max
+          const pollInterval = 5000; // Check every 5 seconds
+
+          const checkRuns = async (): Promise<boolean> => {
+            try {
+              const latestRuns = await getJobRuns();
+              // Check if there's a recent run (within last 2 minutes)
+              if (latestRuns.length > 0) {
+                const lastRun = latestRuns[0];
+                const runTime = new Date(lastRun.created_at).getTime();
+                if (Date.now() - runTime < 120000) {
+                  return true; // Search completed
+                }
+              }
+            } catch (_e) {}
+            return false;
+          };
+
+          while (Date.now() - startTime < maxWait) {
+            const completed = await checkRuns();
+            if (completed) {
+              // Refresh all data
+              await Promise.all([
+                load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly),
+                loadRuns(),
+                loadStats(),
+              ]);
+              setSearching(false);
+              sessionStorage.removeItem(SEARCHING_STORAGE_KEY);
+              addToast("Recherche terminée !", "success");
+              return;
+            }
+            await new Promise(r => setTimeout(r, pollInterval));
+          }
+
+          // Timeout - stop polling
+          setSearching(false);
+          sessionStorage.removeItem(SEARCHING_STORAGE_KEY);
+          addToast("Délai dépassé. Actualisez pour voir les résultats.", "info");
+        };
+
+        pollForCompletion();
+      }
     });
   }, [router]);
 
@@ -748,7 +798,7 @@ export default function DashboardPage() {
           {(!loading || matchesPage) && !error && (
             <div className="mt-6">
               {loading && !matchesPage ? (
-                <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
                   {[...Array(6)].map((_, i) => (
                     <JobCardSkeleton key={i} isDark={isDark} />
                   ))}
@@ -798,7 +848,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {matches.map((m) => (
                     <JobCard
                       key={m.id}
