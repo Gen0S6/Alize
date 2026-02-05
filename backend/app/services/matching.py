@@ -251,12 +251,29 @@ def clear_all_jobs(db: Session):
 
 def clear_user_job_data(db: Session, user_id: int):
     """
-    Clear job-related data for a specific user only.
+    Clear job-related data for a specific user and delete orphaned jobs.
     This resets the user's job list so they can start fresh.
-    Does NOT delete the jobs themselves (they're shared across all users).
+    Also deletes jobs that are no longer referenced by any user.
     """
+    # Get job IDs associated with this user before deleting
+    user_job_ids = [
+        row[0]
+        for row in db.query(UserJob.job_id).filter(UserJob.user_id == user_id).all()
+    ]
+
+    # Delete user_jobs entries
     db.query(UserJob).filter(UserJob.user_id == user_id).delete()
     db.commit()
+
+    # Delete jobs that are no longer referenced by any user
+    if user_job_ids:
+        for job_id in user_job_ids:
+            # Check if any other user still references this job
+            other_refs = db.query(UserJob).filter(UserJob.job_id == job_id).first()
+            if not other_refs:
+                # No other user has this job, delete it
+                db.query(JobListing).filter(JobListing.id == job_id).delete()
+        db.commit()
 
 
 def cleanup_old_jobs(db: Session) -> int:
