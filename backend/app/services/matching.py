@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Literal
 from urllib import request as urlrequest, error as urlerror
@@ -7,8 +6,6 @@ import re
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-
-log = logging.getLogger(__name__)
 
 from app.models import (
     CV,
@@ -263,15 +260,12 @@ def clear_user_job_data(db: Session, user_id: int):
         row[0]
         for row in db.query(UserJob.job_id).filter(UserJob.user_id == user_id).all()
     ]
-    log.warning("clear_user_job_data: user %d has %d user_jobs to delete", user_id, len(user_job_ids))
 
     # Delete user_jobs entries
-    deleted_count = db.query(UserJob).filter(UserJob.user_id == user_id).delete()
+    db.query(UserJob).filter(UserJob.user_id == user_id).delete()
     db.commit()
-    log.warning("clear_user_job_data: deleted %d user_jobs for user %d", deleted_count, user_id)
 
     # Delete jobs that are no longer referenced by any user
-    orphaned_deleted = 0
     if user_job_ids:
         for job_id in user_job_ids:
             # Check if any other user still references this job
@@ -279,9 +273,7 @@ def clear_user_job_data(db: Session, user_id: int):
             if not other_refs:
                 # No other user has this job, delete it
                 db.query(JobListing).filter(JobListing.id == job_id).delete()
-                orphaned_deleted += 1
         db.commit()
-    log.warning("clear_user_job_data: deleted %d orphaned jobs from jobs table", orphaned_deleted)
 
 
 def cleanup_old_jobs(db: Session) -> int:

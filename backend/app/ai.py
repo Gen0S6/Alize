@@ -2444,11 +2444,8 @@ def search_jobs_for_user(
                 if not existing:
                     existing = find_duplicate_job(job.get("title"), job.get("company"))
                 if existing:
-                    # Le job existe déjà, on le collecte pour le dashboard (si pas déjà vu)
-                    # Il sera rescorré avec les nouvelles préférences
-                    if existing.id not in seen_job_ids:
-                        seen_job_ids.add(existing.id)
-                        new_jobs.append(existing)
+                    # Le job existe déjà dans la base - ne pas le ré-ajouter au dashboard
+                    # Seuls les nouveaux jobs sont ajoutés pour éviter que les anciens reviennent
                     continue
                 record = JobListing(
                     source=job.get("source") or source_name,
