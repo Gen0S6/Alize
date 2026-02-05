@@ -267,11 +267,8 @@ export default function DashboardPage() {
     try {
       const wasSearching = sessionStorage.getItem(SEARCHING_STORAGE_KEY);
       if (wasSearching === "true") {
-        setSearching(true);
-        // Clear the flag and show message
         sessionStorage.removeItem(SEARCHING_STORAGE_KEY);
-        addToast("La recherche précédente a été interrompue. Relancez-la si nécessaire.", "info");
-        setSearching(false);
+        addToast("Une recherche était en cours. Les nouvelles offres apparaîtront automatiquement.", "info");
       }
     } catch (_e) {}
 
