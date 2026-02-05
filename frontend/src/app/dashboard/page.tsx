@@ -77,7 +77,7 @@ export default function DashboardPage() {
   const [newOnly, setNewOnly] = useState(false);
   const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(21);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
