@@ -2364,6 +2364,7 @@ def search_jobs_for_user(
     sources: Dict[str, int] = {}
     inserted = 0
     new_jobs: List[JobListing] = []  # Collecter les nouveaux jobs pour le dashboard
+    seen_job_ids: set[int] = set()  # Track jobs already added to prevent duplicates
 
     def normalize_url(raw: str) -> Optional[str]:
         if not raw:
@@ -2443,9 +2444,8 @@ def search_jobs_for_user(
                 if not existing:
                     existing = find_duplicate_job(job.get("title"), job.get("company"))
                 if existing:
-                    # Le job existe déjà, on le collecte pour le dashboard
-                    # Il sera rescorré avec les nouvelles préférences
-                    new_jobs.append(existing)
+                    # Le job existe déjà dans la base - ne pas le ré-ajouter au dashboard
+                    # Seuls les nouveaux jobs sont ajoutés pour éviter que les anciens reviennent
                     continue
                 record = JobListing(
                     source=job.get("source") or source_name,
@@ -2457,6 +2457,8 @@ def search_jobs_for_user(
                     salary_min=job.get("salary_min"),
                 )
                 db.add(record)
+                db.flush()  # Get the ID immediately
+                seen_job_ids.add(record.id)
                 new_jobs.append(record)  # Collecter pour le dashboard
                 inserted += 1
                 src_key = job.get("source") or source_name
