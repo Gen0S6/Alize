@@ -55,6 +55,7 @@ import {
 const VISITED_STORAGE_KEY = "visitedMatches";
 const FILTERS_STORAGE_KEY = "dashboardFilters";
 const VIEW_MODE_STORAGE_KEY = "dashboardViewMode";
+const SEARCHING_STORAGE_KEY = "dashboardSearching";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function DashboardPage() {
   const [newOnly, setNewOnly] = useState(false);
   const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
+  const [pageSize] = useState(21);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
@@ -220,6 +221,9 @@ export default function DashboardPage() {
     setSearching(true);
     setSearchResult(null);
     try {
+      sessionStorage.setItem(SEARCHING_STORAGE_KEY, "true");
+    } catch (_e) {}
+    try {
       const res = await runJobSearch();
       setSearchResult(res);
       if (res.inserted > 0) {
@@ -227,9 +231,12 @@ export default function DashboardPage() {
       } else {
         addToast("Recherche terminée - aucune nouvelle offre", "info");
       }
-      await load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly);
-      await loadRuns();
-      await loadStats();
+      // Refresh data after search
+      await Promise.all([
+        load(1, debouncedFilterText, debouncedMinScore, debouncedSourceFilter, debouncedSortBy, debouncedNewOnly, debouncedSavedOnly),
+        loadRuns(),
+        loadStats(),
+      ]);
     } catch (err: any) {
       const message =
         err?.message === "Not authenticated"
@@ -238,6 +245,9 @@ export default function DashboardPage() {
       addToast(message, "error");
     } finally {
       setSearching(false);
+      try {
+        sessionStorage.removeItem(SEARCHING_STORAGE_KEY);
+      } catch (_e) {}
     }
   }
 
@@ -252,6 +262,15 @@ export default function DashboardPage() {
     }
 
     initialized.current = true;
+
+    // Check if a search was in progress (page was reloaded during search)
+    try {
+      const wasSearching = sessionStorage.getItem(SEARCHING_STORAGE_KEY);
+      if (wasSearching === "true") {
+        sessionStorage.removeItem(SEARCHING_STORAGE_KEY);
+        addToast("Une recherche était en cours. Les nouvelles offres apparaîtront automatiquement.", "info");
+      }
+    } catch (_e) {}
 
     // Load all data in parallel with individual error handling
     Promise.allSettled([
@@ -729,7 +748,7 @@ export default function DashboardPage() {
           {(!loading || matchesPage) && !error && (
             <div className="mt-6">
               {loading && !matchesPage ? (
-                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
+                <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
                   {[...Array(6)].map((_, i) => (
                     <JobCardSkeleton key={i} isDark={isDark} />
                   ))}
@@ -779,7 +798,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {matches.map((m) => (
                     <JobCard
                       key={m.id}
