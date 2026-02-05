@@ -2364,7 +2364,6 @@ def search_jobs_for_user(
     sources: Dict[str, int] = {}
     inserted = 0
     new_jobs: List[JobListing] = []  # Collecter les nouveaux jobs pour le dashboard
-    seen_job_ids: set[int] = set()  # Track jobs already added to prevent duplicates
 
     def normalize_url(raw: str) -> Optional[str]:
         if not raw:
@@ -2457,8 +2456,6 @@ def search_jobs_for_user(
                     salary_min=job.get("salary_min"),
                 )
                 db.add(record)
-                db.flush()  # Get the ID immediately
-                seen_job_ids.add(record.id)
                 new_jobs.append(record)  # Collecter pour le dashboard
                 inserted += 1
                 src_key = job.get("source") or source_name

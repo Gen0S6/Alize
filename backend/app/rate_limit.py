@@ -31,29 +31,31 @@ IS_TESTING = os.getenv("ENVIRONMENT") == "test"
 # Create the limiter instance
 limiter = Limiter(key_func=get_client_ip, enabled=not IS_TESTING)
 
-# CORS allowed origins for exception handlers
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://alizejobfinder.com",
-    "https://www.alizejobfinder.com",
-]
+# CORS allowed origins for exception handlers - built once at startup
+def _build_allowed_origins() -> set[str]:
+    """Build the set of allowed CORS origins at startup."""
+    origins = {
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://alizejobfinder.com",
+        "https://www.alizejobfinder.com",
+    }
+    extra_origins = os.getenv("CORS_ORIGINS", "")
+    if extra_origins:
+        origins.update(o.strip() for o in extra_origins.split(",") if o.strip())
+    frontend_url = os.getenv("FRONTEND_URL")
+    if frontend_url:
+        origins.add(frontend_url)
+    return origins
+
+CORS_ALLOWED_ORIGINS = _build_allowed_origins()
 
 
 def _get_cors_headers(request: Request) -> dict[str, str]:
     """Get CORS headers for the response based on request origin."""
     origin = request.headers.get("origin", "")
 
-    # Check additional origins from environment
-    allowed_origins = CORS_ALLOWED_ORIGINS.copy()
-    extra_origins = os.getenv("CORS_ORIGINS", "")
-    if extra_origins:
-        allowed_origins.extend([o.strip() for o in extra_origins.split(",") if o.strip()])
-    frontend_url = os.getenv("FRONTEND_URL")
-    if frontend_url:
-        allowed_origins.append(frontend_url)
-
-    if origin in allowed_origins:
+    if origin in CORS_ALLOWED_ORIGINS:
         return {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
