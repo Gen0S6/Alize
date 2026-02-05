@@ -221,7 +221,8 @@ export default function DashboardPage() {
     setSearching(true);
     setSearchResult(null);
     try {
-      sessionStorage.setItem(SEARCHING_STORAGE_KEY, "true");
+      // Store search start time to detect when it completes after reload
+      sessionStorage.setItem(SEARCHING_STORAGE_KEY, Date.now().toString());
     } catch (_e) {}
     try {
       const res = await runJobSearch();
@@ -264,13 +265,15 @@ export default function DashboardPage() {
     initialized.current = true;
 
     // Check if a search was in progress (page was reloaded during search)
-    let searchWasInProgress = false;
+    let searchStartTime: number | null = null;
     try {
-      const wasSearching = sessionStorage.getItem(SEARCHING_STORAGE_KEY);
-      if (wasSearching === "true") {
-        searchWasInProgress = true;
-        setSearching(true);
-        addToast("Une recherche est en cours...", "info");
+      const searchTimestamp = sessionStorage.getItem(SEARCHING_STORAGE_KEY);
+      if (searchTimestamp) {
+        searchStartTime = parseInt(searchTimestamp, 10);
+        if (!isNaN(searchStartTime)) {
+          setSearching(true);
+          addToast("Une recherche est en cours...", "info");
+        }
       }
     } catch (_e) {}
 
@@ -288,20 +291,20 @@ export default function DashboardPage() {
       });
 
       // If a search was in progress, poll until it completes
-      if (searchWasInProgress) {
+      if (searchStartTime) {
         const pollForCompletion = async () => {
-          const startTime = Date.now();
+          const pollStartTime = Date.now();
           const maxWait = 120000; // 2 minutes max
           const pollInterval = 5000; // Check every 5 seconds
 
           const checkRuns = async (): Promise<boolean> => {
             try {
               const latestRuns = await getJobRuns();
-              // Check if there's a recent run (within last 2 minutes)
+              // Check if there's a run created AFTER the search started
               if (latestRuns.length > 0) {
                 const lastRun = latestRuns[0];
                 const runTime = new Date(lastRun.created_at).getTime();
-                if (Date.now() - runTime < 120000) {
+                if (runTime > searchStartTime!) {
                   return true; // Search completed
                 }
               }
@@ -309,7 +312,7 @@ export default function DashboardPage() {
             return false;
           };
 
-          while (Date.now() - startTime < maxWait) {
+          while (Date.now() - pollStartTime < maxWait) {
             const completed = await checkRuns();
             if (completed) {
               // Refresh all data
