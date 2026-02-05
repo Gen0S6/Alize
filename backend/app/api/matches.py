@@ -181,7 +181,7 @@ def dashboard_stats(
     """Statistiques simples du dashboard."""
     total = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status != "deleted").count()
     new_jobs = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "new").count()
-    viewed = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "viewed").count()
+    viewed = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status.in_(["viewed", "saved"])).count()
     saved = db.query(UserJob).filter(UserJob.user_id == user.id, UserJob.status == "saved").count()
 
     pref = get_or_create_pref(user, db)
