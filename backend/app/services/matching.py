@@ -5,6 +5,7 @@ from collections import Counter
 import re
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.models import (
     CV,
@@ -426,7 +427,14 @@ def add_jobs_to_user_dashboard(
 ) -> int:
     """Ajoute des offres au dashboard de l'utilisateur avec leur score."""
     added = 0
+    seen_job_ids: set[int] = set()  # Track jobs added in this batch
+
     for job in jobs:
+        # Skip duplicates in the same batch
+        if job.id in seen_job_ids:
+            continue
+        seen_job_ids.add(job.id)
+
         # Vérifier si l'offre existe déjà pour cet utilisateur
         existing = (
             db.query(UserJob)
@@ -454,7 +462,38 @@ def add_jobs_to_user_dashboard(
         added += 1
 
     if added > 0:
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            # Retry one by one for any remaining conflicts
+            added = 0
+            for job in jobs:
+                if job.id not in seen_job_ids:
+                    continue
+                existing = (
+                    db.query(UserJob)
+                    .filter(UserJob.user_id == user_id, UserJob.job_id == job.id)
+                    .first()
+                )
+                if existing:
+                    continue
+                score = score_job(job, pref, user_cv)
+                if score is None:
+                    continue
+                score_10 = max(0, min(10, round(score / 10)))
+                user_job = UserJob(
+                    user_id=user_id,
+                    job_id=job.id,
+                    score=score_10,
+                    status="new",
+                )
+                db.add(user_job)
+                try:
+                    db.commit()
+                    added += 1
+                except IntegrityError:
+                    db.rollback()
 
     return added
 
