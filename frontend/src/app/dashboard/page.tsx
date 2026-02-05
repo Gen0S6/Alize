@@ -77,7 +77,7 @@ export default function DashboardPage() {
   const [newOnly, setNewOnly] = useState(false);
   const [debouncedFilterText, setDebouncedFilterText] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(21);
+  const [pageSize] = useState(20);
   const [visitedMatches, setVisitedMatches] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<number | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<Match | null>(null);
@@ -798,7 +798,7 @@ export default function DashboardPage() {
           {(!loading || matchesPage) && !error && (
             <div className="mt-6">
               {loading && !matchesPage ? (
-                <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-2"}>
                   {[...Array(6)].map((_, i) => (
                     <JobCardSkeleton key={i} isDark={isDark} />
                   ))}
@@ -848,7 +848,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {matches.map((m) => (
                     <JobCard
                       key={m.id}
