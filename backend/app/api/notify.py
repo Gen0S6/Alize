@@ -40,13 +40,10 @@ def notify_config(user: User = Depends(get_current_user)):
     return {
         "resend_configured": bool(resend_key and resend_from),
         "resend_api_key_set": bool(resend_key),
-        "resend_api_key_preview": f"{resend_key[:8]}...{resend_key[-4:]}" if len(resend_key) > 12 else "too_short_or_empty",
         "resend_from": resend_from,
         "smtp_configured": bool(
             os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASS")
         ),
-        "smtp_host": os.getenv("SMTP_HOST"),
-        "smtp_port": os.getenv("SMTP_PORT", "587"),
         "notify_enabled": os.getenv("NOTIFY_ENABLED", "true"),
         "user_notifications_enabled": user.notifications_enabled,
         "user_email": user.email,

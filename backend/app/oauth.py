@@ -1,10 +1,13 @@
 """
 OAuth2 configuration for Google Sign-In
 """
+import logging
 import os
 import secrets
 from typing import Optional
 from urllib.parse import urlencode
+
+log = logging.getLogger(__name__)
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -177,7 +180,7 @@ async def google_callback(
         finally:
             db.close()
     except Exception as e:
-        print(f"Google OAuth error: {e}")
+        log.error("Google OAuth error: %s", e)
         return RedirectResponse(url=f"{FRONTEND_URL}/login?error=oauth_failed")
 
 

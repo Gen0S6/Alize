@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from jose import jwt
 
@@ -27,7 +27,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     return pwd_context.verify(password, password_hash)
 
 def create_access_token(user_id: int) -> str:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "iat": int(now.timestamp()),

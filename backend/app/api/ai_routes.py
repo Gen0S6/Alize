@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -5,6 +6,8 @@ from app.ai import analyze_profile, search_jobs_for_user, latest_cv
 from app.auth import get_current_user
 from app.deps import get_db
 import json
+
+log = logging.getLogger(__name__)
 
 from datetime import datetime, timezone
 from app.models import User, JobSearchRun, UserAnalysisCache
@@ -49,8 +52,8 @@ def ai_analysis(
             try:
                 cached = json.loads(cache.analysis_json) if cache.analysis_json else {}
                 return AnalysisOut(**cached)
-            except Exception:
-                pass
+            except Exception as exc:
+                log.warning("Failed to parse cached analysis for user %d: %s", user.id, exc)
 
     analysis = analyze_profile(db, user.id, pref)
     now = datetime.now(timezone.utc)
@@ -107,7 +110,7 @@ def jobs_search(
         db.commit()
     except Exception as exc:
         # ne bloque pas la réponse si l'enregistrement échoue
-        print(f"Failed to record job search run: {exc}")
+        log.error("Failed to record job search run: %s", exc)
     return JobSearchOut(
         inserted=result.get("inserted", 0),
         tried_queries=result.get("tried_queries", []),

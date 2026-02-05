@@ -1,7 +1,10 @@
+import logging
 import os
 from typing import Optional
 
 import boto3
+
+log = logging.getLogger(__name__)
 from botocore.client import Config
 from fastapi import HTTPException, status
 
@@ -73,9 +76,9 @@ def delete_object(key: str):
     client = _client()
     try:
         client.delete_object(Bucket=AWS_S3_BUCKET, Key=key)
-    except Exception:
-        # Best effort, on n'empêche pas la suite
-        pass
+    except Exception as exc:
+        # Best effort, on n'empêche pas la suite mais on log
+        log.warning("Failed to delete S3 object %s: %s", key, exc)
 
 
 def get_object_stream(key: str):
@@ -83,5 +86,6 @@ def get_object_stream(key: str):
     client = _client()
     try:
         return client.get_object(Bucket=AWS_S3_BUCKET, Key=key)
-    except Exception:
+    except Exception as exc:
+        log.warning("Failed to get S3 object %s: %s", key, exc)
         return None

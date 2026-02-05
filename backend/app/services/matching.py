@@ -255,6 +255,8 @@ def clear_user_job_data(db: Session, user_id: int):
     This resets the user's job list so they can start fresh.
     Also deletes jobs that are no longer referenced by any user.
     """
+    from sqlalchemy import func
+
     # Get job IDs associated with this user before deleting
     user_job_ids = [
         row[0]
@@ -265,15 +267,21 @@ def clear_user_job_data(db: Session, user_id: int):
     db.query(UserJob).filter(UserJob.user_id == user_id).delete()
     db.commit()
 
-    # Delete jobs that are no longer referenced by any user
+    # Delete orphaned jobs in a single query
     if user_job_ids:
-        for job_id in user_job_ids:
-            # Check if any other user still references this job
-            other_refs = db.query(UserJob).filter(UserJob.job_id == job_id).first()
-            if not other_refs:
-                # No other user has this job, delete it
-                db.query(JobListing).filter(JobListing.id == job_id).delete()
-        db.commit()
+        # Find jobs that are still referenced by other users
+        referenced_job_ids = {
+            row[0]
+            for row in db.query(UserJob.job_id)
+            .filter(UserJob.job_id.in_(user_job_ids))
+            .distinct()
+            .all()
+        }
+        # Delete jobs that have no references
+        orphaned_ids = set(user_job_ids) - referenced_job_ids
+        if orphaned_ids:
+            db.query(JobListing).filter(JobListing.id.in_(orphaned_ids)).delete(synchronize_session=False)
+            db.commit()
 
 
 def cleanup_old_jobs(db: Session) -> int:
