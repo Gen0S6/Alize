@@ -11,6 +11,8 @@ class User(Base):
     password_hash = Column(String, nullable=True)  # Nullable for OAuth users
     notifications_enabled = Column(Boolean, default=True, nullable=False)
     email_verified = Column(Boolean, default=False, nullable=False)
+    # Token pour désabonnement par email (sans authentification)
+    unsubscribe_token = Column(String(64), unique=True, nullable=True, index=True)
     # OAuth fields
     oauth_provider = Column(String(20), nullable=True, index=True)  # "google", "apple", or null
     oauth_id = Column(String(255), nullable=True, index=True)  # Provider's unique user ID
