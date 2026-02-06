@@ -56,21 +56,6 @@ def get_or_create_unsubscribe_token(user: "User", db: "Session") -> str:
     return token
 
 
-def get_user_first_name(email: str) -> Optional[str]:
-    """Extrait un prénom potentiel de l'email (avant le point ou @)."""
-    local_part = email.split("@")[0]
-    # Si le local_part contient un point, prendre la première partie
-    if "." in local_part:
-        name = local_part.split(".")[0]
-    else:
-        name = local_part
-
-    # Capitaliser et retourner si ça ressemble à un nom
-    if name and len(name) > 1 and name.isalpha():
-        return name.capitalize()
-    return None
-
-
 def format_matches(matches: list) -> str:
     """Format des offres en texte simple."""
     lines = []
@@ -151,7 +136,6 @@ def format_matches_html(matches: list) -> str:
 
 def build_notification_body(
     matches: list,
-    user_name: Optional[str] = None,
     frequency: Optional[str] = None,
     unsubscribe_url: Optional[str] = None,
 ) -> tuple[str, str]:
@@ -165,7 +149,7 @@ def build_notification_body(
         top = sorted(matches, key=lambda m: m.score or 0, reverse=True)
 
     count = len(top)
-    greeting = f"Bonjour{' ' + user_name if user_name else ''}"
+    greeting = "Bonjour"
     header = f"VOS {count} MEILLEURES OFFRES" if count > 1 else "VOTRE MEILLEURE OFFRE"
 
     # Corps texte simple
@@ -325,13 +309,12 @@ def build_notification_body(
 
 
 def build_empty_notification_body(
-    user_name: Optional[str] = None,
     frequency: Optional[str] = None,
     unsubscribe_url: Optional[str] = None,
 ) -> tuple[str, str]:
     """Construit le corps de l'email quand aucune offre n'est disponible."""
     frontend_url = os.getenv("FRONTEND_URL", "https://alize.app")
-    greeting = f"Bonjour{' ' + user_name if user_name else ''}"
+    greeting = "Bonjour"
 
     text = f"{greeting},\n\nAucune nouvelle offre pour le moment.\nNous continuons à surveiller les offres selon vos critères.\n\nVoir mes offres: {frontend_url}/dashboard"
     if unsubscribe_url:
@@ -752,7 +735,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             log.info("User=%s found %d unnotified jobs to send", user.email, len(top_jobs))
 
             # Préparer les paramètres pour le template d'email
-            user_name = get_user_first_name(user.email)
             unsubscribe_token = get_or_create_unsubscribe_token(user, db)
             backend_url = os.getenv("BACKEND_URL", os.getenv("FRONTEND_URL", "https://alize.app").replace(":3000", ":8000"))
             unsubscribe_url = f"{backend_url}/notify/unsubscribe/{unsubscribe_token}"
@@ -763,7 +745,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                     # Envoyer un email vide si aucune offre
                     log.info("User=%s no jobs, sending empty digest", user.email)
                     empty_text, empty_html = build_empty_notification_body(
-                        user_name=user_name,
                         frequency=frequency,
                         unsubscribe_url=unsubscribe_url,
                     )
@@ -787,7 +768,6 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                 # Envoyer l'email
                 body_text, body_html = build_notification_body(
                     jobs_data,
-                    user_name=user_name,
                     frequency=frequency,
                     unsubscribe_url=unsubscribe_url,
                 )
