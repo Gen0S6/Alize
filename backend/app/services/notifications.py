@@ -2,6 +2,7 @@ import html
 import json
 import logging
 import os
+import secrets
 import time
 from datetime import datetime, timedelta, timezone
 import smtplib
@@ -43,6 +44,18 @@ FREQUENCY_MINUTES = {
 }
 
 
+def get_or_create_unsubscribe_token(user: "User", db: "Session") -> str:
+    """Récupère ou crée un token de désabonnement pour l'utilisateur."""
+    if user.unsubscribe_token:
+        return user.unsubscribe_token
+
+    # Générer un token unique
+    token = secrets.token_urlsafe(32)
+    user.unsubscribe_token = token
+    db.commit()
+    return token
+
+
 def format_matches(matches: list) -> str:
     """Format des offres en texte simple."""
     lines = []
@@ -55,7 +68,7 @@ def format_matches(matches: list) -> str:
 
 
 def format_matches_html(matches: list) -> str:
-    """Format des offres en HTML."""
+    """Format des offres en HTML avec design amélioré."""
     if not matches:
         return "<p style='color:#475467;font-family:Inter,Arial,sans-serif;'>Aucun match pour le moment.</p>"
     cards = []
@@ -65,32 +78,69 @@ def format_matches_html(matches: list) -> str:
             company = html.escape(m.get("company", "N/A"))
             location = html.escape(m.get("location", "N/A"))
             url = html.escape(m.get("url", "#"))
-            score = html.escape(str(m.get("score", "?")))
+            score_val = m.get("score", 0) or 0
+            score = html.escape(str(score_val))
         else:
             title = html.escape(m.title or "Sans titre")
             company = html.escape(m.company or "N/A")
             location = html.escape(m.location or "N/A")
             url = html.escape(m.url or "#")
-            score = html.escape(str(m.score) if m.score is not None else "?")
+            score_val = m.score if m.score is not None else 0
+            score = html.escape(str(score_val))
+
+        # Couleur du score: vert pour 7+, orange pour 5-6, gris pour moins
+        if score_val >= 7:
+            score_bg = "#ECFDF3"
+            score_color = "#16A34A"
+        elif score_val >= 5:
+            score_bg = "#FFF7ED"
+            score_color = "#EA580C"
+        else:
+            score_bg = "#F3F4F6"
+            score_color = "#6B7280"
+
         cards.append(
             f"""
-            <a href="{url}" style="text-decoration:none;color:#111827;">
-              <div style="border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#FFFFFF;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <div style="font-weight:600;font-size:14px;">{title}</div>
-                  <span style="background:#ECFDF3;color:#16A34A;font-weight:600;font-size:11px;padding:2px 8px;border-radius:999px;">{score}/10</span>
-                </div>
-                <div style="margin-top:4px;color:#4B5563;font-size:13px;">{company} • {location}</div>
-              </div>
-            </a>
+            <tr>
+              <td style="padding:6px 0;">
+                <a href="{url}" style="text-decoration:none;color:inherit;display:block;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;">
+                    <tr>
+                      <td style="padding:16px 18px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td style="vertical-align:top;">
+                              <div style="font-family:Inter,Arial,sans-serif;font-weight:600;font-size:15px;color:#111827;line-height:1.4;">{title}</div>
+                              <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;margin-top:4px;">{company} • {location}</div>
+                            </td>
+                            <td width="60" style="vertical-align:top;text-align:right;">
+                              <div style="background:{score_bg};color:{score_color};font-family:Inter,Arial,sans-serif;font-weight:700;font-size:13px;padding:6px 10px;border-radius:8px;display:inline-block;">{score}/10</div>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td colspan="2" style="padding-top:10px;">
+                              <span style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#0EA5E9;font-weight:500;">Voir l'offre →</span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </a>
+              </td>
+            </tr>
             """
         )
     return "".join(cards)
 
 
-def build_notification_body(matches: list) -> tuple[str, str]:
-    """Construit le corps de l'email avec les meilleures offres."""
-    unsubscribe_url = os.getenv("NOTIFY_UNSUBSCRIBE_URL")
+def build_notification_body(
+    matches: list,
+    frequency: Optional[str] = None,
+    unsubscribe_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Construit le corps de l'email avec les meilleures offres et design amélioré."""
+    frontend_url = os.getenv("FRONTEND_URL", "https://alize.app")
 
     # Trier par score (la limite est déjà appliquée par l'appelant)
     if isinstance(matches[0], dict) if matches else False:
@@ -99,48 +149,305 @@ def build_notification_body(matches: list) -> tuple[str, str]:
         top = sorted(matches, key=lambda m: m.score or 0, reverse=True)
 
     count = len(top)
-    header = f"Vos {count} meilleures offres"
-    text_body = header + ":\n" + format_matches(top)
-    if unsubscribe_url:
-        text_body += f"\n\nSe désinscrire: {unsubscribe_url}"
+    greeting = "Bonjour"
+    header = f"VOS {count} MEILLEURES OFFRES" if count > 1 else "VOTRE MEILLEURE OFFRE"
 
-    footer_unsub = (
-        f"<div style='margin-top:12px;'><a href='{html.escape(unsubscribe_url)}' style='color:#6B7280;font-size:11px;'>Se désinscrire</a></div>"
-        if unsubscribe_url
-        else ""
-    )
+    # Corps texte simple
+    text_body = f"{greeting},\n\n{header}\nBasées sur votre profil et vos préférences\n\n"
+    text_body += format_matches(top)
+    text_body += f"\n\nVoir toutes mes offres: {frontend_url}/dashboard"
+    if unsubscribe_url:
+        text_body += f"\n\nSe désinscrire des notifications: {unsubscribe_url}"
+    text_body += "\n\n---\nAlizé - Votre assistant emploi intelligent\n© 2024 Gen0S7"
+
+    # Fréquence en français
+    frequency_labels = {
+        "daily": "Tous les jours",
+        "weekly": "Toutes les semaines",
+        "every_3_days": "Tous les 3 jours",
+    }
+    frequency_text = frequency_labels.get(frequency, "Tous les 3 jours")
+
+    # Section désabonnement
+    unsubscribe_section = ""
+    if unsubscribe_url:
+        unsubscribe_section = f"""
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E5E7EB;">
+              <tr>
+                <td style="padding-top:20px;text-align:center;">
+                  <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;margin-bottom:12px;">
+                    📧 Fréquence actuelle : <strong>{frequency_text}</strong>
+                  </div>
+                  <a href="{html.escape(unsubscribe_url)}" style="display:inline-block;background:#FEE2E2;color:#DC2626;font-family:Inter,Arial,sans-serif;font-size:13px;font-weight:500;padding:10px 20px;border-radius:8px;text-decoration:none;">
+                    🔕 Désactiver les notifications par email
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        """
+
+    # Template HTML complet
     html_body = f"""
-    <div style="font-family:Inter,Arial,sans-serif;max-width:720px;margin:0 auto;background:#F3F4F6;padding:20px;">
-      <div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:18px;padding:20px;">
-        <div style="font-weight:700;font-size:16px;color:#111827;">{html.escape(header)}</div>
-        <div style="margin-top:8px;color:#4B5563;font-size:13px;line-height:1.5;">
-          Voici vos meilleures opportunités non encore consultées.
-        </div>
-        <div style="margin-top:14px;">{format_matches_html(top)}</div>
-        <div style="margin-top:18px;font-size:12px;color:#9CA3AF;">Built by Gen0S7's members</div>
-        {footer_unsub}
-      </div>
-    </div>
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Vos offres Alizé</title>
+    </head>
+    <body style="margin:0;padding:0;background-color:#F3F4F6;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F3F4F6;">
+        <tr>
+          <td align="center" style="padding:32px 16px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#FFFFFF;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+              <!-- Header -->
+              <tr>
+                <td style="padding:28px 32px 20px 32px;border-bottom:1px solid #E5E7EB;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td>
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:24px;font-weight:700;color:#0EA5E9;">🌬️ ALIZÉ</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Greeting -->
+              <tr>
+                <td style="padding:28px 32px 0 32px;">
+                  <div style="font-family:Inter,Arial,sans-serif;font-size:18px;color:#111827;">
+                    👋 {html.escape(greeting)},
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Header Box -->
+              <tr>
+                <td style="padding:20px 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);border-radius:12px;">
+                    <tr>
+                      <td style="padding:18px 20px;text-align:center;">
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:16px;font-weight:700;color:#1E40AF;">🎯 {header}</div>
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#3B82F6;margin-top:4px;">Basées sur votre profil et vos préférences</div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Job Cards -->
+              <tr>
+                <td style="padding:0 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    {format_matches_html(top)}
+                  </table>
+                </td>
+              </tr>
+
+              <!-- CTA Button -->
+              <tr>
+                <td style="padding:24px 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center">
+                        <a href="{html.escape(frontend_url)}/dashboard" style="display:inline-block;background:linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);color:#FFFFFF;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;box-shadow:0 4px 14px rgba(14,165,233,0.35);">
+                          📊 VOIR TOUTES MES OFFRES
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Tip -->
+              <tr>
+                <td style="padding:0 32px 24px 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;">
+                    <tr>
+                      <td style="padding:14px 16px;">
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#92400E;line-height:1.5;">
+                          💡 <strong>Astuce :</strong> Mettez à jour votre CV pour améliorer la pertinence de vos recommandations.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Unsubscribe Section -->
+              {unsubscribe_section}
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding:24px 32px;border-top:1px solid #E5E7EB;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center">
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;line-height:1.6;">
+                          Alizé - Votre assistant emploi intelligent<br>
+                          <span style="color:#9CA3AF;">© 2024 Gen0S7 • <a href="{html.escape(frontend_url)}/preferences" style="color:#0EA5E9;text-decoration:none;">Gérer mes préférences</a></span>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
     """
     return text_body, html_body
 
 
-def build_empty_notification_body() -> tuple[str, str]:
-    text = "Aucune nouvelle offre pour le moment. On relance régulièrement."
-    html_content = """
-    <div style="font-family:Inter,Arial,sans-serif;max-width:720px;margin:0 auto;background:#F3F4F6;padding:20px;">
-      <div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:18px;padding:20px;text-align:center;">
-        <div style="font-weight:700;font-size:16px;color:#111827;">Aucune nouvelle offre trouvée</div>
-        <p style="margin-top:10px;color:#4B5563;font-size:13px;line-height:1.6;">
-          Nous continuons à surveiller les offres selon vos critères.
-          Vous recevrez un email dès que de nouvelles opportunités seront disponibles.
-        </p>
-        <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #E5E7EB;border-radius:12px;background:#F9FAFB;color:#374151;font-size:13px;">
-          <span style="font-weight:600;">Conseil :</span>
-          Mettez à jour votre CV ou vos préférences pour élargir la recherche.
-        </div>
-      </div>
-    </div>
+def build_empty_notification_body(
+    frequency: Optional[str] = None,
+    unsubscribe_url: Optional[str] = None,
+) -> tuple[str, str]:
+    """Construit le corps de l'email quand aucune offre n'est disponible."""
+    frontend_url = os.getenv("FRONTEND_URL", "https://alize.app")
+    greeting = "Bonjour"
+
+    text = f"{greeting},\n\nAucune nouvelle offre pour le moment.\nNous continuons à surveiller les offres selon vos critères.\n\nVoir mes offres: {frontend_url}/dashboard"
+    if unsubscribe_url:
+        text += f"\n\nSe désinscrire: {unsubscribe_url}"
+    text += "\n\n---\nAlizé - Votre assistant emploi intelligent"
+
+    # Fréquence en français
+    frequency_labels = {
+        "daily": "Tous les jours",
+        "weekly": "Toutes les semaines",
+        "every_3_days": "Tous les 3 jours",
+    }
+    frequency_text = frequency_labels.get(frequency, "Tous les 3 jours")
+
+    # Section désabonnement
+    unsubscribe_section = ""
+    if unsubscribe_url:
+        unsubscribe_section = f"""
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E5E7EB;">
+              <tr>
+                <td style="padding-top:20px;text-align:center;">
+                  <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;margin-bottom:12px;">
+                    📧 Fréquence actuelle : <strong>{frequency_text}</strong>
+                  </div>
+                  <a href="{html.escape(unsubscribe_url)}" style="display:inline-block;background:#FEE2E2;color:#DC2626;font-family:Inter,Arial,sans-serif;font-size:13px;font-weight:500;padding:10px 20px;border-radius:8px;text-decoration:none;">
+                    🔕 Désactiver les notifications par email
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        """
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Alizé - Mise à jour</title>
+    </head>
+    <body style="margin:0;padding:0;background-color:#F3F4F6;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F3F4F6;">
+        <tr>
+          <td align="center" style="padding:32px 16px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#FFFFFF;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+              <!-- Header -->
+              <tr>
+                <td style="padding:28px 32px 20px 32px;border-bottom:1px solid #E5E7EB;">
+                  <div style="font-family:Inter,Arial,sans-serif;font-size:24px;font-weight:700;color:#0EA5E9;">🌬️ ALIZÉ</div>
+                </td>
+              </tr>
+
+              <!-- Greeting -->
+              <tr>
+                <td style="padding:28px 32px 0 32px;">
+                  <div style="font-family:Inter,Arial,sans-serif;font-size:18px;color:#111827;">
+                    👋 {html.escape(greeting)},
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Content -->
+              <tr>
+                <td style="padding:24px 32px;text-align:center;">
+                  <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+                  <div style="font-family:Inter,Arial,sans-serif;font-weight:700;font-size:18px;color:#111827;margin-bottom:12px;">
+                    Aucune nouvelle offre trouvée
+                  </div>
+                  <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#6B7280;line-height:1.6;max-width:380px;margin:0 auto;">
+                    Nous continuons à surveiller les offres selon vos critères.
+                    Vous recevrez un email dès que de nouvelles opportunités seront disponibles.
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Tip -->
+              <tr>
+                <td style="padding:0 32px 24px 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
+                    <tr>
+                      <td style="padding:14px 16px;">
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#0369A1;line-height:1.5;">
+                          💡 <strong>Conseil :</strong> Mettez à jour votre CV ou vos préférences pour élargir la recherche et recevoir plus d'offres.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- CTA Button -->
+              <tr>
+                <td style="padding:0 32px 24px 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center">
+                        <a href="{html.escape(frontend_url)}/preferences" style="display:inline-block;background:linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);color:#FFFFFF;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;box-shadow:0 4px 14px rgba(14,165,233,0.35);">
+                          ⚙️ Modifier mes préférences
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Unsubscribe Section -->
+              {unsubscribe_section}
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding:24px 32px;border-top:1px solid #E5E7EB;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td align="center">
+                        <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;line-height:1.6;">
+                          Alizé - Votre assistant emploi intelligent<br>
+                          <span style="color:#9CA3AF;">© 2024 Gen0S7</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
     """
     return text, html_content
 
@@ -427,14 +734,22 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
             top_jobs = get_top_unnotified_jobs(db, user.id, limit=max_jobs)
             log.info("User=%s found %d unnotified jobs to send", user.email, len(top_jobs))
 
+            # Préparer les paramètres pour le template d'email
+            unsubscribe_token = get_or_create_unsubscribe_token(user, db)
+            backend_url = os.getenv("BACKEND_URL", os.getenv("FRONTEND_URL", "https://alize.app").replace(":3000", ":8000"))
+            unsubscribe_url = f"{backend_url}/notify/unsubscribe/{unsubscribe_token}"
+
             email_sent = False
             if not top_jobs:
                 if pref is None or pref.send_empty_digest:
                     # Envoyer un email vide si aucune offre
                     log.info("User=%s no jobs, sending empty digest", user.email)
-                    empty_text, empty_html = build_empty_notification_body()
+                    empty_text, empty_html = build_empty_notification_body(
+                        frequency=frequency,
+                        unsubscribe_url=unsubscribe_url,
+                    )
                     to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
-                    email_sent = send_email_notification(to_email, "Vos offres Alizè", empty_text, empty_html)
+                    email_sent = send_email_notification(to_email, "Vos offres Alizé", empty_text, empty_html)
                 else:
                     log.info("User=%s no jobs and send_empty_digest=False, skipping", user.email)
             else:
@@ -451,10 +766,14 @@ def notify_all_users(db: Session, matches_func, refresh: bool = False):
                     })
 
                 # Envoyer l'email
-                body_text, body_html = build_notification_body(jobs_data)
+                body_text, body_html = build_notification_body(
+                    jobs_data,
+                    frequency=frequency,
+                    unsubscribe_url=unsubscribe_url,
+                )
                 to_email = os.getenv("NOTIFY_EMAIL_TO") or user.email
                 job_count = len(jobs_data)
-                subject = f"Vos {job_count} meilleures offres Alizè" if job_count > 1 else "Votre meilleure offre Alizè"
+                subject = f"🎯 Vos {job_count} meilleures offres Alizé" if job_count > 1 else "🎯 Votre meilleure offre Alizé"
                 log.info("User=%s sending email with %d jobs to %s", user.email, job_count, to_email)
                 success = send_email_notification(to_email, subject, body_text, body_html)
                 email_sent = success
