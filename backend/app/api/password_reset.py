@@ -61,8 +61,8 @@ L'équipe Alizè
 <head>
     <meta charset="utf-8">
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
+        .container {{ max-width: 640px; margin: 0 auto; padding: 20px 12px; }}
         .button {{
             display: inline-block;
             padding: 12px 24px;
@@ -116,8 +116,8 @@ L'équipe Alizè
 <head>
     <meta charset="utf-8">
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }}
+        .container {{ max-width: 640px; margin: 0 auto; padding: 20px 12px; }}
         .button {{
             display: inline-block;
             padding: 12px 24px;
