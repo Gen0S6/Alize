@@ -173,10 +173,10 @@ def build_notification_body(
     if unsubscribe_url:
         unsubscribe_section = f"""
         <tr>
-          <td style="padding:24px 32px 0 32px;">
+          <td style="padding:20px 20px 0 20px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E5E7EB;">
               <tr>
-                <td style="padding-top:20px;text-align:center;">
+                <td style="padding-top:16px;text-align:center;">
                   <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;margin-bottom:12px;">
                     📧 Fréquence actuelle : <strong>{frequency_text}</strong>
                   </div>
@@ -202,11 +202,11 @@ def build_notification_body(
     <body style="margin:0;padding:0;background-color:#F3F4F6;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F3F4F6;">
         <tr>
-          <td align="center" style="padding:32px 16px;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#FFFFFF;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+          <td align="center" style="padding:24px 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background:#FFFFFF;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
               <!-- Header -->
               <tr>
-                <td style="padding:28px 32px 20px 32px;border-bottom:1px solid #E5E7EB;">
+                <td style="padding:24px 20px 16px 20px;border-bottom:1px solid #E5E7EB;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td>
@@ -219,7 +219,7 @@ def build_notification_body(
 
               <!-- Greeting -->
               <tr>
-                <td style="padding:28px 32px 0 32px;">
+                <td style="padding:24px 20px 0 20px;">
                   <div style="font-family:Inter,Arial,sans-serif;font-size:18px;color:#111827;">
                     👋 {html.escape(greeting)},
                   </div>
@@ -228,7 +228,7 @@ def build_notification_body(
 
               <!-- Header Box -->
               <tr>
-                <td style="padding:20px 32px;">
+                <td style="padding:16px 20px;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);border-radius:12px;">
                     <tr>
                       <td style="padding:18px 20px;text-align:center;">
@@ -242,7 +242,7 @@ def build_notification_body(
 
               <!-- Job Cards -->
               <tr>
-                <td style="padding:0 32px;">
+                <td style="padding:0 20px;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     {format_matches_html(top)}
                   </table>
@@ -251,7 +251,7 @@ def build_notification_body(
 
               <!-- CTA Button -->
               <tr>
-                <td style="padding:24px 32px;">
+                <td style="padding:20px 20px;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td align="center">
@@ -266,7 +266,7 @@ def build_notification_body(
 
               <!-- Tip -->
               <tr>
-                <td style="padding:0 32px 24px 32px;">
+                <td style="padding:0 20px 20px 20px;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;">
                     <tr>
                       <td style="padding:14px 16px;">
@@ -284,7 +284,7 @@ def build_notification_body(
 
               <!-- Footer -->
               <tr>
-                <td style="padding:24px 32px;border-top:1px solid #E5E7EB;">
+                <td style="padding:20px 20px;border-top:1px solid #E5E7EB;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td align="center">
@@ -334,10 +334,10 @@ def build_empty_notification_body(
     if unsubscribe_url:
         unsubscribe_section = f"""
         <tr>
-          <td style="padding:24px 32px 0 32px;">
+          <td style="padding:20px 20px 0 20px;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E5E7EB;">
               <tr>
-                <td style="padding-top:20px;text-align:center;">
+                <td style="padding-top:16px;text-align:center;">
                   <div style="font-family:Inter,Arial,sans-serif;font-size:13px;color:#6B7280;margin-bottom:12px;">
                     📧 Fréquence actuelle : <strong>{frequency_text}</strong>
                   </div>
@@ -362,18 +362,18 @@ def build_empty_notification_body(
     <body style="margin:0;padding:0;background-color:#F3F4F6;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F3F4F6;">
         <tr>
-          <td align="center" style="padding:32px 16px;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#FFFFFF;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+          <td align="center" style="padding:24px 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px;background:#FFFFFF;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
               <!-- Header -->
               <tr>
-                <td style="padding:28px 32px 20px 32px;border-bottom:1px solid #E5E7EB;">
+                <td style="padding:24px 20px 16px 20px;border-bottom:1px solid #E5E7EB;">
                   <div style="font-family:Inter,Arial,sans-serif;font-size:24px;font-weight:700;color:#0EA5E9;">🌬️ ALIZÉ</div>
                 </td>
               </tr>
 
               <!-- Greeting -->
               <tr>
-                <td style="padding:28px 32px 0 32px;">
+                <td style="padding:24px 20px 0 20px;">
                   <div style="font-family:Inter,Arial,sans-serif;font-size:18px;color:#111827;">
                     👋 {html.escape(greeting)},
                   </div>
@@ -382,7 +382,7 @@ def build_empty_notification_body(
 
               <!-- Content -->
               <tr>
-                <td style="padding:24px 32px;text-align:center;">
+                <td style="padding:20px 20px;text-align:center;">
                   <div style="font-size:48px;margin-bottom:16px;">🔍</div>
                   <div style="font-family:Inter,Arial,sans-serif;font-weight:700;font-size:18px;color:#111827;margin-bottom:12px;">
                     Aucune nouvelle offre trouvée
@@ -396,7 +396,7 @@ def build_empty_notification_body(
 
               <!-- Tip -->
               <tr>
-                <td style="padding:0 32px 24px 32px;">
+                <td style="padding:0 20px 20px 20px;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;">
                     <tr>
                       <td style="padding:14px 16px;">
@@ -411,11 +411,11 @@ def build_empty_notification_body(
 
               <!-- CTA Button -->
               <tr>
-                <td style="padding:0 32px 24px 32px;">
+                <td style="padding:0 20px 20px 20px;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td align="center">
-                        <a href="{html.escape(frontend_url)}/preferences" style="display:inline-block;background:linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);color:#FFFFFF;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;box-shadow:0 4px 14px rgba(14,165,233,0.35);">
+                        <a href="{html.escape(frontend_url)}/preferences" style="display:inline-block;background:linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);color:#FFFFFF;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:600;padding:14px 28px;border-radius:10px;text-decoration:none;box-shadow:0 4px 14px rgba(14,165,233,0.35);">
                           ⚙️ Modifier mes préférences
                         </a>
                       </td>
@@ -429,7 +429,7 @@ def build_empty_notification_body(
 
               <!-- Footer -->
               <tr>
-                <td style="padding:24px 32px;border-top:1px solid #E5E7EB;">
+                <td style="padding:20px 20px;border-top:1px solid #E5E7EB;">
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td align="center">
